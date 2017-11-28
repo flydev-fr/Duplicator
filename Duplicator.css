@@ -1,0 +1,104 @@
+.warning-notes p {
+    color: orangered;;
+}
+
+.warning-notes .notes {
+    color: #777;
+}
+/*
+.warning-notes .notes {
+    border: 1px solid;
+    margin: 10px 0px;
+    padding:15px 10px 15px 50px;
+    color: #9F6000;
+    background: #FEEFB3;
+    background-image: url('./Assets/warning.png');
+    background-repeat: no-repeat;
+    background-position: 10px center;
+}
+*/
+
+.pw-notes span {
+    font-family: 'Consolas';
+}
+
+#wrap_cronMode .InputfieldRadiosStacked {
+    background-image: url('./Assets/cron.png');
+    background-position: right 10px top;
+    background-repeat: no-repeat;
+    background-size: 70px;
+}
+
+#Inputfield_maxPackages, #Inputfield_awsRegion {
+    width: 100%;
+}
+
+.AdminThemeDefault #wrap_Inputfield_useLocalFolder .InputfieldContent {
+    background-image: url('./Assets/localfolder.png');
+    background-position: right 20px top !important;
+    background-repeat: no-repeat;
+    background-size: 100px;
+}
+#wrap_Inputfield_useLocalFolder .InputfieldContent {
+    background-image: url('./Assets/localfolder.png');
+    background-position: right 10px top 10px;
+    background-repeat: no-repeat;
+    background-size: 110px;
+}
+
+.AdminThemeDefault #wrap_Inputfield_useFTP .InputfieldContent {
+    background-image: url('./Assets/ftp.png');
+    background-position: right 20px top !important;
+    background-repeat: no-repeat;
+    background-size: 100px;
+}
+#wrap_Inputfield_useFTP .InputfieldContent {
+    background-image: url('./Assets/ftp.png');
+    background-position: right 20px top 15px;
+    background-repeat: no-repeat;
+    background-size: 100px;
+}
+
+#wrap_Inputfield_useGoogleDrive .InputfieldContent p.description {
+    padding-right: 100px;
+}
+#wrap_Inputfield_useGoogleDrive .InputfieldContent {
+    background-image: url('./Assets/googledrive.png');
+    background-position: right 10px top;
+    background-repeat: no-repeat;
+    background-size: 110px;
+}
+
+#wrap_Inputfield_useDropbox .InputfieldContent  p.description {
+    padding-right: 100px;
+}
+#wrap_Inputfield_useDropbox .InputfieldContent {
+    background-image: url('./Assets/dropbox.png');
+    background-position: right 10px top;
+    background-repeat: no-repeat;
+    background-size: 105px;
+}
+
+#wrap_Inputfield_useAmazonS3 .InputfieldContent  p.description {
+    padding-right: 100px;
+}
+#wrap_Inputfield_useAmazonS3 .InputfieldContent {
+    background-image: url('./Assets/amazon.png');
+    background-position: right 10px top;
+    background-repeat: no-repeat;
+    background-size: 105px;
+}
+
+.invisible {
+    display: none !important;
+}
+
+.donate-btn {
+    max-width: 200px;
+    float: right;
+}
+
+#pruneBackups {
+    position: absolute;
+    right: 20px;
+}

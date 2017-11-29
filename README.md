@@ -1,3 +1,5 @@
+![Duplicator](https://processwire.com/talk/uploads/monthly_2017_11/Duplicator-logo-v2-Dlong.png.891733350c03c3eb44ad77544a07a4c6.png)
+
 # Install
 Download the module and [install it](https://modules.processwire.com/install-uninstall/)
 

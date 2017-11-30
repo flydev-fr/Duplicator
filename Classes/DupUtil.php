@@ -1,5 +1,6 @@
 <?php
 
+define('DS', DIRECTORY_SEPARATOR);
 
 class DUP_Util
 {

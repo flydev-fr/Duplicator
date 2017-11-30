@@ -9,9 +9,8 @@ require_once (__DIR__ . DIRECTORY_SEPARATOR . 'Classes/BackupDatabase.php');
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
     const DUP_APPLICATION_NAME          = 'Duplicator';
-    const DUP_VERSION                   = '0.0.44';
+    const DUP_VERSION                   = '1.0.0';
     const DUP_MIN_VERSION               = '2.7.3';
-
     const DUP_LOG_FILENAME              = 'duplicator';
     const DUP_SITE_FOLDER               = 'site';
     const DUP_DEFAULT_LOCAL_FOLDER      = 'backups';
@@ -21,7 +20,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     const DUP_PACKAGE_MIME_TYPE         = 'application/zip';
     const DUP_TIMESTAMP_FORMAT          = 'Y-m-d_H-i-s';
     const DUP_MAX_PACKAGES              = 100;
-
     const DUP_PHP_MAX_MEMORY            = 512;
     const DUP_DB_MAX_TIME               = 5000;
     const DUP_PHP_EXECUTION_TIME        = 300;
@@ -281,10 +279,10 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             //'allowHidden'   => true
         );
         $options = array_merge($options, $defaultOptions);
-        $root = str_replace('/', DIRECTORY_SEPARATOR, wire('config')->paths->root);
-        $path = str_replace('/', DIRECTORY_SEPARATOR, wire('config')->paths->root . self::DUP_SITE_FOLDER . DIRECTORY_SEPARATOR . basename(wire('config')->paths->assets) . DIRECTORY_SEPARATOR);
+        $root = str_replace('/', DS, wire('config')->paths->root);
+        $path = str_replace('/', DS, wire('config')->paths->root . self::DUP_SITE_FOLDER . DS . basename(wire('config')->paths->assets) . DS);
 
-        array_push($options['exclude'], $path . 'cache' . DIRECTORY_SEPARATOR . 'WireTempDir');
+        array_push($options['exclude'], $path . 'cache' . DS . 'WireTempDir');
         if ($this->backupWire) array_push($options['exclude'], $root . 'wire');
         if ($this->backups) array_push($options['exclude'], $path . 'backups');
         if ($this->backupLogs) array_push($options['exclude'], $path . 'logs');
@@ -393,7 +391,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                 $packageInfos['db']['zipfile'],
                 $packageInfos['pw']['zipfile']
             );
-            $zipfile = $options['path'] . DIRECTORY_SEPARATOR . $options['filename'];
+            $zipfile = $options['path'] . DS . $options['filename'];
             $result = wireZipFile($zipfile, $files);
             foreach ($files as $file) {
                 DUP_Util::deleteFile($file);
@@ -407,7 +405,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                 $package['zipfile'] = $zipfile;
                 $package['size'] = filesize($zipfile);
                 $package['info'] = $packageInfos;
-                //$fp = fopen($options['path'] . DIRECTORY_SEPARATOR . $options['filename'] . '.json', 'w');
+                //$fp = fopen($options['path'] . DS . $options['filename'] . '.json', 'w');
                 //fwrite($fp, json_encode($package));
                 //fclose($fp);
                 return $package;
@@ -657,7 +655,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             //$href = wire('config')->urls->admin . "module/edit?name=" . DUP_APPLICATION_NAME . "&action=view_listing";
             $href = wire('config')->urls->admin . "setup/". self::DUP_APPLICATION_NAME ."/?action=packages";
             //$preview = ($pkgs === 0) ? '' : "<a href='{$href}' class='pw-modal'><i class='fa fa-eye'></i> Manage Package(s)</a>";
-            $preview = "<a href='{$href}'><i class='fa fa-eye'></i> Package Manager</a>";
+            $preview = wire('modules')->isInstalled("ProcessDuplicator") ? "<a href='{$href}'><i class='fa fa-eye'></i> Package Manager</a>" : "";
             $infos['markupText'] = sprintf("Local packages overview › <span class='notes'>%s</span><br>Disk space used › \t<span class='notes'>&nbsp;~%s&nbsp;</span><br>Disk space remaining › <span class='notes'>&nbsp;%s/%s&nbsp;</span><br>Package(s) found › <span class='notes'>&nbsp;%d&nbsp;</span> {$preview}",
                 self::$_data->path,
                 ($pkgs == 0) ? '0' : DUP_Util::human_filesize(DUP_Util::foldersize($path), 0),
@@ -730,7 +728,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
          * removed in v0.0.41
          *
         $fsa = $modules->get("InputfieldFieldset");
-        $fsa->label = _("Actions");
+        $fsa->label = __("Actions");
         $fsa->icon = 'bolt';
         //$fsa->collapsed = Inputfield::collapsedHidden;
 
@@ -757,16 +755,16 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         */
 
         $fs = $modules->get("InputfieldFieldset");
-        $fs->label = _("Package settings");
+        $fs->label = __("Package settings");
         $fs->icon = 'cogs';
-        $fs->description = _("Override module's settings.");
+        $fs->description = __("Override module's settings.");
         $fs->collapsed = false;
 
         $field = $modules->get("InputfieldText");
         $field->attr('name', 'packageName');
-        $field->label = _("Name");
+        $field->label = __("Name");
         $field->icon = 'file';
-        $field->description = _("Name of the final package file - without extension.");
+        $field->description = __("Name of the final package file - without extension.");
         if ($data['packageName']) $field->attr('value', $data['packageName']);
         $field->collapsed = false;
         $field->notes = 'Default name: {timestamp}-' . $config->httpHost . '.' . self::DUP_PACKAGE_EXTENSION;
@@ -776,13 +774,13 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $field->label = "Files and folders excluded from...";
         $field->description = "Files and folders excluded from the package.";
         $field->icon = 'times-circle';
-        //$field->notes = _("");
+        //$field->notes = __("");
         $field->collapsed = false;
 
         $fim = $modules->get("InputfieldMarkup");
         $fim->attr('class', 'warning-notes');
         $fim->markupText = '<p><strong><i class="fa fa-warning"></i> Are you sure you want to include the &laquo;Backups&raquo; folder ?</strong></p>';
-        $fim->notes = _('Including this folder will make the final package file growing exponentially.');
+        $fim->notes = __('Including this folder will make the final package file growing exponentially.');
         $fim->showIf = "backups=0";
         $field->append($fim);
 
@@ -819,8 +817,8 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
         $f = $modules->get('InputfieldAsmSelect');
         $f->name = 'ignoredExtensions';
-        $f->label = _('Filetype exclusions');
-        $f->description = _('Default set of extensions to exclude.');
+        $f->label = __('Filetype exclusions');
+        $f->description = __('Default set of extensions to exclude.');
         $f->collapsed = Inputfield::collapsedNever;
         $f->columnWidth = 50;
         $f->addOption('*.pdf', 'PDF');
@@ -848,9 +846,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $field->attr('max', self::DUP_MAX_PACKAGES);
         $field->attr('type', 'number');
         $field->set('collapsed', true);
-        $field->label = _('Maximum number of packages');
-        $field->description = _('How many packages do you want to keep in the storage directory ?');
-        $field->notes = sprintf(_("max value: %d"), self::DUP_MAX_PACKAGES);
+        $field->label = __('Maximum number of packages');
+        $field->description = __('How many packages do you want to keep in the storage directory ?');
+        $field->notes = sprintf(__("max value: %d"), self::DUP_MAX_PACKAGES);
         $field->columnWidth = 50;
         $field->collapsed = false;
         $fs->add($field);
@@ -867,17 +865,17 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $fields->append($fs);
 
         $fs = $modules->get("InputfieldFieldset");
-        $fs->label = _("Cron and timing settings");
+        $fs->label = __("Cron and timing settings");
         $fs->icon = 'clock-o';
         $fs->collapsed = false;
 
         $field = $modules->get("InputfieldRadios");
-        $field->label = _("Select a mode for running cron jobs");
+        $field->label = __("Select a mode for running cron jobs");
         $field->attr('id+name', 'cronMode');
         $mod = $modules->isInstalled('LazyCron') ? '(installed)' : '(not installed)';
-        $field->addOption('LazyCron', _("LazyCron - Triggered by a pageview {$mod}"));
+        $field->addOption('LazyCron', __("LazyCron - Triggered by a pageview {$mod}"));
         $mod = $modules->isInstalled('PwCron') ? " (installed)" : ' (not installed)';
-        $field->addOption('PWCron', _("PWCron - Cron or equivalent system required {$mod}"));
+        $field->addOption('PWCron', __("PWCron - Cron or equivalent system required {$mod}"));
         $field->addOption('none', 'None');
         $field->attr('value', is_null($data['cronMode']) ? 'none' : $data['cronMode']);
         $fs->append($field);
@@ -885,44 +883,44 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $field = $modules->get("InputfieldSelect");
         $field->attr('name', 'cycle');
         $field->attr('class', 'invisble');
-        $field->label = _("Event trigger");
+        $field->label = __("Event trigger");
         $field->icon = 'refresh';
-        $field->description = _("Select a time interval for automated LazyCron backups.");
-        if ($data['cycle'] == 'logoutTrigger') $field->notes = _("The cronjob to backup your database executes only if current user has db-backup permission.");
+        $field->description = __("Select a time interval for automated LazyCron backups.");
+        if ($data['cycle'] == 'logoutTrigger') $field->notes = __("The cronjob to backup your database executes only if current user has db-backup permission.");
         $field->addOptions(array(
-            0 => _('Trigger disabled'),
-            //'every30Seconds' => _('30 seconds [dev]'), // dev use
+            0 => __('Trigger disabled'),
+            //'every30Seconds' => __('30 seconds [dev]'), // dev use
             //'every2Minutes' => '2 minutes [dev]',
             //'every5Minutes' => '5 minutes [dev]',
             //'every10Minutes' => '10 minutes [dev]',
-            //'submitTrigger' => _('OnSubmit  [dev]'), // dev use
-            'everyHour' => _('1 hour'),
-            'every6Hours' => _('6 hours'),
-            'everyDay' => _('1 day'),
-            'every2Days' => _('2 days'),
-            'everyWeek' => _('1 week'),
-            'every2Weeks' => _('2 weeks'),
-            'every4Weeks' => _('4 weeks'),
-            'logoutTrigger' => _('logout trigger')
+            //'submitTrigger' => __('OnSubmit  [dev]'), // dev use
+            'everyHour' => __('1 hour'),
+            'every6Hours' => __('6 hours'),
+            'everyDay' => __('1 day'),
+            'every2Days' => __('2 days'),
+            'everyWeek' => __('1 week'),
+            'every2Weeks' => __('2 weeks'),
+            'every4Weeks' => __('4 weeks'),
+            'logoutTrigger' => __('logout trigger')
         ));
-        if ($input->post->cycle && $input->post->cycle != $data['cycle']) $field->message(_('Backup cycle interval changed to') . ' ' . $input->post->cycle);
+        if ($input->post->cycle && $input->post->cycle != $data['cycle']) $field->message(__('Backup cycle interval changed to') . ' ' . $input->post->cycle);
         $field->value = $data['cycle'];
         $field->notes = "This setting does not apply to PWCron.";
         $fs->add($field);
 
         $field = $modules->get("InputfieldSelect");
         $field->attr('name', 'deadline');
-        $field->label = _('Remove backup packages older than');
+        $field->label = __('Remove backup packages older than');
         $field->icon = 'calendar';
-        $field->description = _("Select a time interval after a backup will be deleted sustainably by the cron job.");
+        $field->description = __("Select a time interval after a backup will be deleted sustainably by the cron job.");
         $field->set('collapsed', true);
         $field->addOptions(array(
-            null => _('never'),
-            '1 minute' => _('1 minute'), // for development use
-            '1 day' => _('1 day'),
-            '1 week' => _('1 week'),
-            '1 month' => _('1 month'),
-            '1 year' => _('1 year'),
+            null => __('never'),
+            '1 minute' => __('1 minute'), // for development use
+            '1 day' => __('1 day'),
+            '1 week' => __('1 week'),
+            '1 month' => __('1 month'),
+            '1 year' => __('1 year'),
         ));
         $field->value = $data['deadline'];
         $field->collapsed = false;
@@ -931,7 +929,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $fields->append($fs);
 
         $fs = $modules->get("InputfieldFieldset");
-        $fs->label = _("Advanced Settings");
+        $fs->label = __("Advanced Settings");
         $fs->icon = 'user-md';
         $fs->collapsed = false;
 
@@ -965,8 +963,8 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
         $field = $modules->get("InputfieldText");
         $field->attr('name', 'path');
-        $field->label = _("Path");
-        $field->description = _('Absolute path of the directory where packages are saved.');
+        $field->label = __("Path");
+        $field->description = __('Absolute path of the directory where packages are saved.');
         $field->value = $data['path'];
         $field->notes = 'Default path: ' . self::$_data->defaultPath;
         $fslocalfolder->append($field);
@@ -989,63 +987,63 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
         $field = $modules->get("InputfieldText");
         $field->attr('name', 'ftpHostname');
-        $field->label = _("Hostname");
+        $field->label = __("Hostname");
         $field->value = $data['ftpHostname'];
         $field->columnWidth = 50;
         $fsftp->append($field);
 
         $field = $modules->get("InputfieldText");
         $field->attr('name', 'ftpUsername');
-        $field->label = _("Username");
+        $field->label = __("Username");
         $field->value = $data['ftpUsername'];
         $field->columnWidth = 25;
         $fsftp->append($field);
 
         $field = $modules->get("InputfieldText");
         $field->attr('name', 'ftpPassword');
-        $field->label = _("Password");
+        $field->label = __("Password");
         $field->value = $data['ftpPassword'];
         $field->columnWidth = 25;
         $fsftp->append($field);
 
         $field = $modules->get('InputfieldText');
         $field->attr('name', 'ftpPort');
-        $field->label = _("Port");
-        $field->description = _("Default: 21");
+        $field->label = __("Port");
+        $field->description = __("Default: 21");
         $field->value = $data['ftpPort'];
         $field->columnWidth = 25;
         $fsftp->append($field);
 
         $field = $modules->get('InputfieldText');
         $field->attr('name', 'ftpTimeout');
-        $field->label = _("Timeout");
-        $field->description = _("Default: 90 seconds");
+        $field->label = __("Timeout");
+        $field->description = __("Default: 90 seconds");
         $field->value = $data['ftpTimeout'];
         $field->columnWidth = 25;
         $fsftp->append($field);
 
         $field = $modules->get('InputfieldCheckbox');
         $field->attr('name', 'ftpSSL');
-        $field->label = _("Use SSL/TLS");
-        $field->description = _("Cryptographic protocols");
+        $field->label = __("Use SSL/TLS");
+        $field->description = __("Cryptographic protocols");
         $field->attr('checked', $data['ftpSSL'] == '1' ? 'checked' : '');
         $field->columnWidth = 25;
         $fsftp->append($field);
 
         $field = $modules->get('InputfieldCheckbox');
         $field->attr('name', 'ftpPassive');
-        $field->label = _("Passive Mode");
-        $field->description = _("Passive connection");
+        $field->label = __("Passive Mode");
+        $field->description = __("Passive connection");
         $field->attr('checked', $data['ftpPassive'] == '1' ? 'checked' : '');
         $field->columnWidth = 25;
         $fsftp->append($field);
 
         $field = $modules->get("InputfieldText");
         $field->attr('name', 'ftpDirectory');
-        $field->label = _("Upload directory");
-        $field->description = _("Directory on the server where the packages will be stored.");
+        $field->label = __("Upload directory");
+        $field->description = __("Directory on the server where the packages will be stored.");
         $field->value = $data['ftpDirectory'];
-        $field->notes = _("Example: backups/subdir/anothersubdir");
+        $field->notes = __("Example: backups/subdir/anothersubdir");
         $field->columnWidth = 100;
         $fsftp->append($field);
 
@@ -1055,7 +1053,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         if(!class_exists('GoogleDriveClient')) {
             $skip = true;
         }
-        $description = ($skip == false) ? $disabled = '' : _("The required SDK is not installed. You can download it [here](https://github.com/flydev-fr/duplicator-google-drive) or install it with [Composer](https://getcomposer.org/doc/00-intro.md). Run **composer require google/apiclient**");
+        $description = ($skip == false) ? $disabled = '' : __("The required SDK is not installed. You can download it [here](https://github.com/flydev-fr/duplicator-google-drive) or install it with [Composer](https://getcomposer.org/doc/00-intro.md). Run **composer require google/apiclient**");
         $field = $modules->get('InputfieldCheckbox');
         $field->attr('name', 'useGoogleDrive');
         $field->label = 'Google Drive';
@@ -1074,15 +1072,15 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
         $field = $modules->get('InputfieldTextarea');
         $field->name = "googleKeyFile";
-        $field->label = _("Key File");
-        $field->description = _("Paste here the content of the JSON Key file of your service account. You can obtain the credentials [here](https://console.developers.google.com/apis/credentials) ([How to get a key ?](https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/?page=2#comment-139376)).");
+        $field->label = __("Key File");
+        $field->description = __("Paste here the content of the JSON Key file of your service account. You can obtain the credentials [here](https://console.developers.google.com/apis/credentials) ([How to get a key ?](https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/?page=2#comment-139376)).");
         $field->value = $data['googleKeyFile'];
         $fsgd->append($field);
 
         $field = $modules->get('InputfieldText');
         $field->attr('name', 'shareWithEmail');
-        $field->label = _("Email address");
-        $field->description = _("Enter the email address of the contact with whom you want to share the files.");
+        $field->label = __("Email address");
+        $field->description = __("Enter the email address of the contact with whom you want to share the files.");
         $field->value = $data['shareWithEmail'];
         $fsgd->append($field);
         $fs->append($fsgd);
@@ -1091,7 +1089,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         if(!class_exists('DropboxClient')) {
             $skip = true;
         }
-        $description = ($skip == false) ? $disabled = '' : _("The required SDK is not installed. You can download it [here](https://github.com/flydev-fr/duplicator-dropbox) or install it with [Composer](https://getcomposer.org/doc/00-intro.md). Run **composer require dropbox/dropbox-sdk**");
+        $description = ($skip == false) ? $disabled = '' : __("The required SDK is not installed. You can download it [here](https://github.com/flydev-fr/duplicator-dropbox) or install it with [Composer](https://getcomposer.org/doc/00-intro.md). Run **composer require dropbox/dropbox-sdk**");
         $field = $modules->get('InputfieldCheckbox');
         $field->attr('name', 'useDropbox');
         $field->label = 'Dropbox';
@@ -1110,7 +1108,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
         $field = $modules->get('InputfieldText');
         $field->attr('name', 'dropboxAccessToken');
-        $field->label = _("Generated access token");
+        $field->label = __("Generated access token");
         $field->description = "Obtain an Access Token [here](https://www.dropbox.com/developers/apps).";
         $field->value = $data['dropboxAccessToken'];
         $fsdb->append($field);
@@ -1120,7 +1118,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         if(!class_exists('AmazonS3Client')) {
             $skip = true;
         }
-        $description = ($skip == false) ? $disabled = '' : _("The required SDK is not installed. You can download it [here](https://github.com/flydev-fr/duplicator-amazon-s3) or install it with [Composer](https://getcomposer.org/doc/00-intro.md). Run **composer require aws/aws-sdk-php**");
+        $description = ($skip == false) ? $disabled = '' : __("The required SDK is not installed. You can download it [here](https://github.com/flydev-fr/duplicator-amazon-s3) or install it with [Composer](https://getcomposer.org/doc/00-intro.md). Run **composer require aws/aws-sdk-php**");
         $field = $modules->get('InputfieldCheckbox');
         $field->attr('name', 'useAmazonS3');
         $field->label = 'Amazon S3';
@@ -1139,25 +1137,25 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
         $field = $modules->get('InputfieldText');
         $field->attr('name', 'awsAccessKey');
-        $field->label = _("Access Key ID");
-        $field->description = _('You can obtain the credentials [here](https://console.aws.amazon.com/iam/home?#/users).');
+        $field->label = __("Access Key ID");
+        $field->description = __('You can obtain the credentials [here](https://console.aws.amazon.com/iam/home?#/users).');
         $field->value = $data['awsAccessKey'];
         $field->columnWidth = 50;
         $fsaws->append($field);
 
         $field = $modules->get('InputfieldText');
         $field->attr('name', 'awsSecretKey');
-        $field->label = _("Secret Key");
-        $field->description = _("User secret key.");
+        $field->label = __("Secret Key");
+        $field->description = __("User secret key.");
         $field->value = $data['awsSecretKey'];
         $field->columnWidth = 50;
         $fsaws->append($field);
 
         $field = $modules->get('InputfieldText');
         $field->attr('name', 'awsBucketName');
-        $field->label = _("Bucket Name");
-        $field->description = _("The bucket where the packages will be stored.");
-        $field->notes = _("The bucket will be created automatically if not found.");
+        $field->label = __("Bucket Name");
+        $field->description = __("The bucket where the packages will be stored.");
+        $field->notes = __("The bucket will be created automatically if not found.");
         $field->value = $data['awsBucketName'];
         $field->columnWidth = 70;
         $fsaws->append($field);
@@ -1165,9 +1163,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         // http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
         $field = $modules->get("InputfieldSelect");
         $field->attr('name', 'awsRegion');
-        $field->label = _("Region");
-        $field->description = _("Select a region");
-        $field->notes = _("Last update: 2017-08-12");
+        $field->label = __("Region");
+        $field->description = __("Select a region");
+        $field->notes = __("Last update: 2017-08-12");
         $field->addOptions(array(
             'us-east-1' => 'US East (N. Virginia)',
             'us-east-2' => 'US East (Ohio)',

@@ -1,8 +1,14 @@
 ## [Unreleased]
 - new logging mechanism
 - auto-deploy thought FTP/FTPS
-- installer fix for windows machine
 - installer optional deletion
+
+
+## [1.0.1] - 2017-12-01
+### Fixed
+- the installer parse correctly the config.php file on windows machine
+- small typo in ProcessDuplicator
+
 
 ## [1.0.0] - 2017-11-30
 ### Added

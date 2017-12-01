@@ -1,5 +1,5 @@
 <?php session_start();
-define('DUPLICATOR_INSTALLER', "1.x");
+define('DUPLICATOR_INSTALLER', "1.1");
 set_time_limit(300);
 
 /**
@@ -138,11 +138,11 @@ class Installer
             <html lang='en'>
             <head>
                 <title>" . htmlentities($title, ENT_QUOTES, 'UTF-8') . "</title>
-            
-                <meta name='robots' content='noindex, nofollow' />   
+
+                <meta name='robots' content='noindex, nofollow' />
                 <link rel='stylesheet' type='text/css' href='https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' />
                  <style>
-                  
+
                     #content, #footer {
                         padding-right: 20px;
                         padding-left: 20px;
@@ -216,12 +216,12 @@ class Installer
                         color: #2F4248;
                         font-weight: bold;
                     }
-                 
+
                     #breadcrumbs li.title {
                         width: 50%;
                         margin: 0;
                         padding: 0;
-                       
+
                     }
                     #breadcrumbs li.support {
                         margin: 0;
@@ -230,7 +230,7 @@ class Installer
                         width: 48%;
                         padding-left: 0 !important;
                     }
-                              
+
                     #content {
                         position: relative;
                         background: #fff;
@@ -284,35 +284,35 @@ class Installer
                         list-style: disc;
                     }
                     #content strong {
-                        font-weight: bold; 
+                        font-weight: bold;
                     }
-                    
+
                     #content li {
                         margin: 3px 0;
                         padding: 3px 4px;
                     }
-                    
+
                     #content a {
-                        font-weight: bold; 
+                        font-weight: bold;
                     }
-                    
+
                     #content label {
-                        font-weight: bold; 
+                        font-weight: bold;
                     }
-                    
+
                     #content button {
-                        padding: 2px 7px 2px 0; 
+                        padding: 2px 7px 2px 0;
                         font-size: 1em;
                     }
-                    
+
                     #content .ui-state-error {
-                        font-weight: bold; 
+                        font-weight: bold;
                     }
-                    
+
                     #content h2 {
-                        margin-top: 1.5em; 
+                        margin-top: 1.5em;
                     }
-                    
+
                     #content form h2:first-child {
                             margin-top: 0;
                     }
@@ -328,10 +328,10 @@ class Installer
 
 
 
-                </style> 
+                </style>
             </head>
             <body>
-            
+
             <div id='masthead' class='pw-masthead ui-helper-clearfix'>
                 <div class='pw-container'>
                     <a id='logo' target='_blank' href='https://processwire.com'><img src='http://i.imgur.com/QZJCXwy.png'></a>
@@ -361,13 +361,13 @@ class Installer
                 </form>
             </div><!--/container-->
         </div><!--/content-->
-        
+
         <div id="footer" class="footer">
             <div class="container">
                 <p>ProcessWire &copy; '. date('Y', time()) .' - Duplicator Installer by <a href="https://processwire.com/talk/profile/4048-flydev/">flydev</a></p>
             </div>
         </div>
-       
+
         </body>
         </html>
         ';
@@ -594,14 +594,14 @@ class Installer
     }
 
     protected function makeTempHtaccess() {
-            $txt = "<IfModule mod_rewrite.c>\n
+        $txt = "<IfModule mod_rewrite.c>\n
                       RewriteEngine On\n
                       AddDefaultCharset UTF-8\n
                       <IfModule mod_env.c>\n
                         SetEnv HTTP_MOD_REWRITE On\n
                       </IfModule>\n
                     </IfModule>";
-            file_put_contents('.htaccess', $txt);
+        file_put_contents('.htaccess', $txt);
 
     }
 
@@ -918,36 +918,35 @@ class Installer
 
         $this->rootPath = $_SESSION['rootpath'];
 
-        $configphp = $this->rootPath . DIRECTORY_SEPARATOR . 'site/config.php';
+        $configphp = $this->rootPath . DIRECTORY_SEPARATOR . 'site'. DIRECTORY_SEPARATOR . 'config.php';
         if(!file_exists($configphp)) {
             $this->err("Couldn't find \"config.php\" in {$configphp}.");
             $this->btn("Check Again", 4, 'refresh', false, true);
         } else {
-            $this->ok("File found: \"config.php\" in $configphp, adjusting database settings...");
-            $filecontent = file_get_contents($configphp);
-            $lines =  explode(PHP_EOL, $filecontent);
+            $lines = file($configphp, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
             $content = '';
             foreach($lines as $line) {
-                if(strstr($line, '$config->dbHost')) {
+                if(strpos($line, '$config->dbHost') === 0) {
                     $value = preg_replace("/'[^']*'/", "'{$values['dbHost']}'", $line);
                     $content .= $value . "\n";
-                } elseif(strstr($line, '$config->dbName')) {
+                } elseif(strpos($line, '$config->dbName') === 0) {
                     //preg_match("/'[^']*'/", $line, $output_array);
                     $value = preg_replace("/'[^']*'/", "'{$values['dbName']}'", $line);
                     $content .= $value . "\n";
-                } elseif(strstr($line, '$config->dbUser')) {
+                } elseif(strpos($line, '$config->dbUser') === 0) {
                     //preg_match("/'[^']*'/", $line, $output_array);
                     $value = preg_replace("/'[^']*'/", "'{$values['dbUser']}'", $line);
                     $content .= $value . "\n";
-                } elseif(strstr($line, '$config->dbPass')) {
+                } elseif(strpos($line, '$config->dbPass') === 0) {
                     //preg_match("/'[^']*'/", $line, $output_array);
                     $value = preg_replace("/'[^']*'/", "'{$values['dbPass']}'", $line);
                     $content .= $value . "\n";
-                } elseif(strstr($line, '$config->dbPort')) {
+                } elseif(strpos($line, '$config->dbPort') === 0) {
                     //preg_match("/'[^']*'/", $line, $output_array);
                     $value = preg_replace("/'[^']*'/", "'{$values['dbPort']}'", $line);
                     $content .= $value . "\n";
-                } elseif(strstr($line, '$config->httpHosts')) {
+                } elseif(strpos($line, '$config->httpHosts') === 0) {
                     //preg_match("/'[^']*'/", $line, $output_array);
                     $value = preg_replace("/'[^']*'/", "'{$_SERVER['HTTP_HOST']}'", $line);
                     $content .= $value . "\n";
@@ -964,7 +963,11 @@ class Installer
             $this->btn("Go to Admin Page", 1, 'globe', false, true, $backendUrl);
         }
     }
-    
+
+    function isWinOS() {
+        return (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
+    }
+
 
     /**
      * Create database
@@ -1131,24 +1134,24 @@ class WireDatabaseBackup {
         'exec' => false,
 
         // exec command to use for mysqldump (when in use)
-        'execCommand' => '[dbPath]mysqldump 
-			--complete-insert=TRUE 
-			--add-locks=FALSE 
-			--disable-keys=FALSE 
-			--extended-insert=FALSE 
-			--default-character-set=utf8 
-			--comments=FALSE 
-			--compact 
-			--skip-disable-keys 
-			--skip-add-locks 
-			--add-drop-table=TRUE 
-			--result-file=[dbFile]
-			--port=[dbPort] 
-			-u[dbUser] 
-			-p[dbPass] 
-			-h[dbHost] 
-			[dbName]
-			[tables]'
+        'execCommand' => '[dbPath]mysqldump
+            --complete-insert=TRUE
+            --add-locks=FALSE
+            --disable-keys=FALSE
+            --extended-insert=FALSE
+            --default-character-set=utf8
+            --comments=FALSE
+            --compact
+            --skip-disable-keys
+            --skip-add-locks
+            --add-drop-table=TRUE
+            --result-file=[dbFile]
+            --port=[dbPort]
+            -u[dbUser]
+            -p[dbPass]
+            -h[dbHost]
+            [dbName]
+            [tables]'
     );
     /**
      * Options available for the $options argument to restore() method
@@ -1184,12 +1187,12 @@ class WireDatabaseBackup {
         'exec' => false,
 
         // command to use for mysql exec
-        'execCommand' => '[dbPath]mysql 
-			--port=[dbPort] 
-			-u[dbUser] 
-			-p[dbPass] 
-			-h[dbHost] 
-			[dbName] < [dbFile]',
+        'execCommand' => '[dbPath]mysql
+            --port=[dbPort]
+            -u[dbUser]
+            -p[dbPass]
+            -h[dbHost]
+            [dbName] < [dbFile]',
     );
 
     /**
@@ -1238,8 +1241,8 @@ class WireDatabaseBackup {
      *
      * You should follow-up the construct call with one or both of the following:
      *
-     * 	- $backups->setDatabase(PDO|WireDatabasePDO);
-     * 	- $backups->setDatabaseConfig(array|object);
+     *  - $backups->setDatabase(PDO|WireDatabasePDO);
+     *  - $backups->setDatabaseConfig(array|object);
      *
      * @param string $path Path where database files are stored
      * @throws Exception
@@ -1252,7 +1255,7 @@ class WireDatabaseBackup {
      * Set the database configuration information
      *
      * @param array|object $config Containing these properties: dbUser, dbHost, dbPort, dbName,
-     * 	and optionally: dbPass, dbPath, dbCharset
+     *  and optionally: dbPass, dbPath, dbCharset
      * @return $this
      * @throws Exception if missing required config settings
      *
@@ -2030,7 +2033,7 @@ class WireDatabaseBackup {
      *
      * @param string $filename to extract all CREATE TABLE statements from
      * @return array of arrays of INSERT statements. Base array is associative indexed by table name.
-     * 	Inside arrays are numerically indexed by order of appearance.
+     *  Inside arrays are numerically indexed by order of appearance.
      *
      */
     public function findInserts($filename) {
@@ -2127,7 +2130,7 @@ class WireDatabaseBackup {
         }
         if($type == 'mysqldump') {
             // these options are not supported by mysqldump via exec
-            if(	!empty($options['excludeCreateTables']) ||
+            if( !empty($options['excludeCreateTables']) ||
                 !empty($options['excludeExportTables']) ||
                 !empty($options['findReplace']) ||
                 !empty($options['findReplaceCreateTable']) ||
@@ -2138,7 +2141,7 @@ class WireDatabaseBackup {
 
         } else if($type == 'mysql') {
             // these options are not supported by mysql via exec
-            if(	!empty($options['tables']) ||
+            if( !empty($options['tables']) ||
                 !empty($options['allowDrop']) ||
                 !empty($options['findReplace']) ||
                 !empty($options['findReplaceCreateTable'])) {

@@ -9,7 +9,6 @@ require_once (__DIR__ . DIRECTORY_SEPARATOR . 'Classes/BackupDatabase.php');
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
     const DUP_APPLICATION_NAME          = 'Duplicator';
-    const DUP_VERSION                   = '1.0.1';
     const DUP_MIN_VERSION               = '2.7.3';
     const DUP_LOG_FILENAME              = 'duplicator';
     const DUP_SITE_FOLDER               = 'site';
@@ -31,7 +30,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         return array(
             'title'     => 'Duplicator',
-            'version'   => self::DUP_VERSION,
+            'version'   => '1.0.2',
             'summary'   => 'Duplicate, backup and transfer an entire site from one location to another.',
             'author'    => 'flydev',
             'href'      => 'https://processwire.com',
@@ -65,7 +64,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             'useLocalFolder' => 1,
             'useFTP'         => 0,
             'useGoogleDrive' => 0,
-            'useDropbox'     => 0,
             'useAmazonS3'    => 0,
             // FTP
             'ftpHostname'    => '',
@@ -79,8 +77,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             // Google
             'googleKeyFile'  => '',
             'shareWithEmail' => '',
-            // Dropbox
-            'dropboxAccessToken' => '',
             // Amazon
             'awsAccessKey'   => '',
             'awsSecretKey'   => '',
@@ -132,15 +128,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         }
         elseif (class_exists('\Google_Client')) {
             require_once(__DIR__ . '/Classes/ClientGoogleDrive.php');
-        }
-
-        $file = __DIR__ . '/SDKs/dropbox/autoload.php';
-        if(file_exists($file)) {
-            require_once(/*NoCompile*/ $file);
-            require_once(__DIR__ . '/Classes/ClientDropbox.php');
-        }
-        elseif(class_exists('\Dropbox\Client')) {
-            require_once(__DIR__ . '/Classes/ClientDropbox.php');
         }
 
         $file = __DIR__ . '/SDKs/aws/aws-autoloader.php';
@@ -423,7 +410,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
      */
     public function cronJob($event)
     {
-        if (!$this->useLocalFolder && !$this->useGoogleDrive && !$this->useDropbox && !$this->useAmazonS3 && !$this->useFTP) {
+        if (!$this->useLocalFolder && !$this->useGoogleDrive && !$this->useAmazonS3 && !$this->useFTP) {
             return false;
         }
 
@@ -490,30 +477,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                     //bd(DUP_Util::human_filesize($quota));
                 } catch (\GoogleClientException $ex) {
                     DUP_Logs::log("[GoogleDrive] error: " . $ex->getMessage(), 'error');
-                }
-            }
-
-            if ($this->useDropbox) {
-                try {
-                    if (!class_exists('\Dropbox\Client')) {
-                        throw new WireException("Dropbox SDK not installed.");
-                    }
-
-                    $dropbox = new \DropboxClient();
-                    $dropbox->setAccessToken($this->dropboxAccessToken);
-                    $dropbox->setIdentifier("Duplicator/".self::DUP_VERSION);
-                    $dropbox->setFolder(self::DUP_APPLICATION_NAME);
-                    $dropbox->setQuery(self::DUP_PACKAGE_EXTENSION);
-                    $dropbox->setMimeType(self::DUP_PACKAGE_MIME_TYPE);
-                    $dropbox->setMaxPackages($this->maxPackages);
-                    if ($dropbox->upload($package['zipfile'])) {
-                        DUP_Logs::log("[Dropbox] package uploaded successfully: $packageName");
-                    } else {
-                        throw new \DropBoxClientException("An error occured while uploading the package: {$packageName}");
-                    }
-                    $dropbox->deleteOldBackups($this->maxPackages, $this->deadline);
-                } catch (\Exception $ex) {
-                    DUP_Logs::log("[Dropbox] error: " . $ex->getMessage(), 'error');
                 }
             }
 
@@ -1084,35 +1047,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $field->value = $data['shareWithEmail'];
         $fsgd->append($field);
         $fs->append($fsgd);
-
-        // DROPBOX
-        if(!class_exists('DropboxClient')) {
-            $skip = true;
-        }
-        $description = ($skip == false) ? $disabled = '' : __("The required SDK is not installed. You can download it [here](https://github.com/flydev-fr/duplicator-dropbox) or install it with [Composer](https://getcomposer.org/doc/00-intro.md). Run **composer require dropbox/dropbox-sdk**");
-        $field = $modules->get('InputfieldCheckbox');
-        $field->attr('name', 'useDropbox');
-        $field->label = 'Dropbox';
-        $field->description = $description;
-        $field->attr('checked', ($data['useDropbox'] == '1' && empty($disabled)) ? 'checked' : '');
-        $field->attr('disabled', $disabled);
-        $fs->append($field);
-        $disabled = 'disabled';
-        $skip = false;
-
-        $fsdb = $modules->get("InputfieldFieldset");
-        $fsdb->label = "Dropbox settings";
-        $fsdb->description = "Save packages to Dropbox.";
-        $fsdb->icon = 'dropbox';
-        $fsdb->showIf = "useDropbox=1";
-
-        $field = $modules->get('InputfieldText');
-        $field->attr('name', 'dropboxAccessToken');
-        $field->label = __("Generated access token");
-        $field->description = "Obtain an Access Token [here](https://www.dropbox.com/developers/apps).";
-        $field->value = $data['dropboxAccessToken'];
-        $fsdb->append($field);
-        $fs->append($fsdb);
 
         // AMAZON
         if(!class_exists('AmazonS3Client')) {

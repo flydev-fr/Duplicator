@@ -3,6 +3,11 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.0.2] - 2017-12-03
+### Fixed
+- fix the module's version number for the ProcessWire modules directory
+### Removed
+- removed Dropbox support due to the deprecation of the API v1 since september 2017 - [link](https://blogs.dropbox.com/developers/2017/06/updated-api-v1-deprecation-timeline/)
 
 ## [1.0.1] - 2017-12-01
 ### Fixed

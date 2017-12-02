@@ -1,19 +1,29 @@
 ![Duplicator](https://processwire.com/talk/uploads/monthly_2017_11/Duplicator-logo-v2-Dlong.png.891733350c03c3eb44ad77544a07a4c6.png)
 
-# Install
-Download the module and [install it](https://modules.processwire.com/install-uninstall/)
+### Instructions
+
+1. Download the module from the [directory](https://modules.processwire.com/modules/duplicator/) or [Github]()
+2. Drop the module files in /site/modules/Duplicator/
+3. In your admin, click Modules > Refresh
+4. Click "install" for "Duplicator"
+5. Optional. Click "install" for "Duplicator - Packages Manager"
+6. Go to Setup > Duplicator and build your package!
 
 ### SDK Installation (optional)
 You can skip these instructions if you plan to only use the built-in features `Local Folder` or `FTP/FTPS`.
 
-If you want to use `GoogleDrive`, `Dropbox` or `AmazonS3`, you have two choices of type of installation. Using Composer or downloading directly a ZIP archive from the repository.
+If you want to use `GoogleDrive` or `AmazonS3`, you have two choices of type of installation. Using Composer or downloading directly a ZIP archive from the repository.
 
 Installing all SDK are not required, you can choose the one you need.
+
+###### Note:
+- `Dropbox` dropped support for the version 1 of the API since september 2017 - [api-v1-deprecation-timeline](https://blogs.dropbox.com/developers/2017/06/updated-api-v1-deprecation-timeline/) - so I removed it from Duplicator until I got the time to code an interface for the API v2
+- `GoogleDrive` tested the 2017-12-03 `successfully`
+- `AmazonS3` tested the 2017-12-03 `successfully`
 
 #### Using Composer
 In the root directory of your ProcessWire installation, just type in a terminal :
 * `composer require google/apiclient`
-* `composer require dropbox/dropbox-sdk`
 * `composer require aws/aws-sdk-php`
 
 #### ZIP Archive
@@ -64,11 +74,8 @@ Obtain credentials there: [https://console.developers.google.com/apis/credential
 
 A tutorial is available on the forum :  [Duplicator Dev Thread](https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/?page=2#comment-139376)
 
-## Dropbox
-Obtain credentials there:  [https://www.dropbox.com/developers/apps](https://www.dropbox.com/developers/apps)
-
 ## AmazonS3
-Obtain credentials there: [https://console.aws.amazon.com/iam/home](https://console.aws.amazon.com/iam/home).
+Obtain credentials there: [https://console.aws.amazon.com/iam/home](https://console.aws.amazon.com/iam/home)
 
 #### Note:
 A **bucket name** should conform with **DNS requirements**:

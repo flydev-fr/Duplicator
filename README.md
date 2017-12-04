@@ -39,20 +39,35 @@ Now you can refresh the Duplicator's settings page, the corresponding checkbox w
 
 
 # Installing a CRON job
-First of all, you must install PWCron:[http://modules.processwire.com/modules/pwcron/](http://modules.processwire.com/modules/pwcron/)
+Actually you have 3 choices to setup a cron job.
+
+## System CRON
+###### The standard way
+To edit a crontab through the command line, type: `cronjob -e` then add for example the following line to build a package once a day :
+> `4 0 * * * php /www/mysite/wwwroot/site/modules/Duplicator/cron.php >/dev/null 2>&1`
 
 
-To edit a crontab through the command line, type: `cronjob -e` then add for example the following line:
-> `*/1 * * * * /usr/bin/php /www/mysite/wwwroot/site/modules/PWCron/cron.php >/dev/null 2>&1`
+## PwCron
+###### modules
+You can rely on [PwCron](https://modules.processwire.com/modules/pwcron/) to setup the job.
+> `4 0 * * * php /www/mysite/wwwroot/site/modules/Duplicator/cron.php >/dev/null 2>&1`
 
+## LazyCron
+###### modules
+Because it's triggered by a pageview, this choice can slowdown your site - [LazyCron documentation](https://modules.processwire.com/modules/lazy-cron/)
 
+#### Notes :
+###### For Windows
+Please look at this answer on stackoverflow to set up it: http://stackoverflow.com/questions/7195503/setting-up-a-cron-job-in-windows
+
+###### Using a control panel ?
 If you are running CRON via a panel, please rely on the documentation of your hosting provider. Do not hesitate to ping on the support forum thread.
 
-#### Some hosting companies don’t allow access to cron
+###### Some hosting companies don’t allow access to cron
 If this the case, you can rely on [LazyCron](https://processwire.com/api/modules/lazy-cron/) module.
 
 
-#### Example CRON delay table:
+##### Example CRON delay table:
 
 | When | Settings |
 | -------- | -------- |
@@ -119,7 +134,7 @@ Yes, simply click on the "Initiate Backup Process" button from the Package Manag
 ##### Can I backup my site from scheduled cron job ?
 Yes, in order to get it working, you are required to install `PwCron`, then read our doc about setting up a cron job.
 
-##### I'm on windows. Will PWcron run ?
+##### I'm on windows. Will "CRON" job works ?
 Without any problem. *(Look at this answer to set up it: http://stackoverflow.com/questions/7195503/setting-up-a-cron-job-in-windows)*
 
 ##### Can I exclude files or folders from a package ?

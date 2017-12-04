@@ -30,7 +30,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         return array(
             'title'     => 'Duplicator',
-            'version'   => '1.0.2',
+            'version'   => '1.1.2',
             'summary'   => 'Duplicate, backup and transfer an entire site from one location to another.',
             'author'    => 'flydev',
             'href'      => 'https://processwire.com',
@@ -408,13 +408,13 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     /*
      * call this function from a cron tool to launch the backup task
      */
-    public function cronJob($event)
+    public function cronJob(HookEvent $event)
     {
         if (!$this->useLocalFolder && !$this->useGoogleDrive && !$this->useAmazonS3 && !$this->useFTP) {
             return false;
         }
 
-        ignore_user_abort(true);
+        //ignore_user_abort(true);
         DUP_Util::setMemoryLimit(self::DUP_PHP_MAX_MEMORY);
         DUP_Util::setMaxExecutionTime(self::DUP_PHP_EXECUTION_TIME);
 
@@ -841,6 +841,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $field->addOption('PWCron', __("PWCron - Cron or equivalent system required {$mod}"));
         $field->addOption('none', 'None');
         $field->attr('value', is_null($data['cronMode']) ? 'none' : $data['cronMode']);
+        $field->notes = __("To use the built-in cron feature, call \"**/webroot/yourwebsite/site/modules/Duplicator/cron.php**\" from your system cron.");
         $fs->append($field);
 
         $field = $modules->get("InputfieldSelect");

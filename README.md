@@ -50,7 +50,7 @@ To edit a crontab through the command line, type: `cronjob -e` then add for exam
 ## PwCron
 ###### modules
 You can rely on [PwCron](https://modules.processwire.com/modules/pwcron/) to setup the job.
-> `4 0 * * * php /www/mysite/wwwroot/site/modules/Duplicator/cron.php >/dev/null 2>&1`
+> `4 0 * * * php /www/mysite/wwwroot/site/modules/PwCron/cron.php >/dev/null 2>&1`
 
 ## LazyCron
 ###### modules

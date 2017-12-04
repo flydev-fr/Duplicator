@@ -3,6 +3,10 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.1.2] - 2017-12-04
+### Added
+- added support for running cron jobs wihtout external module
+
 ## [1.0.2] - 2017-12-03
 ### Fixed
 - fix the module's version number for the ProcessWire modules directory

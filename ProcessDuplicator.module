@@ -11,7 +11,7 @@ class ProcessDuplicator extends Process
 		return array(
 			'title' 	  => 'Duplicator - Packages Manager',
 			'summary' 	  => 'Manage your backups/packages built with Duplicator inside ProcessWire.',
-			'version' 	  => '1.1.4',
+			'version' 	  => '1.1.5',
 			'author' 	  => 'flydev',
 			'icon' 		  => 'clone',
 			'href' 		  => 'http://modules.processwire.com/',
@@ -238,6 +238,14 @@ class ProcessDuplicator extends Process
 		$datas = $this->getPackagesDetails($this->dupmod->path, Duplicator::DUP_PACKAGE_EXTENSION);
 		$numFiles = 0;
 		if(count($datas)) {
+			// sort the array by timestamps
+			usort($datas, function($a, $b) {
+				return $a['time'] < $b['time'];
+			});
+			// remove the column 'time' before its being rendered
+			array_walk($datas, function (&$value) {
+				unset($value['time']);
+			});
 			foreach ($datas as $data) {
 				$table->row($data);
 				$numFiles++;
@@ -247,12 +255,7 @@ class ProcessDuplicator extends Process
 		if(!$numFiles) $out .= "<h2>" . __('No package found.') . "</h2>";
 		$out .= $table->render();
 
-		if (in_array('mod_userdir', apache_get_modules())) {
-			$href = $this->config->urls->admin . 'setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME);
-		}
-		else {
-			$href = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME);
-		}
+		$href = $this->config->urls->httpAdmin . 'setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME);
 
 		$f = $this->modules->get('InputfieldButton');
 		$f->attr('id+name', 'newPackage');
@@ -312,6 +315,7 @@ class ProcessDuplicator extends Process
 				$href3 = '<a href="?action=delete&file='.$originalFilename .'" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
 				$data = array(
+					'time' => $ts->getTimestamp(),
 					"<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/localfolder-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
 					$createdOn,
 					DUP_Util::human_filesize(filesize($path . DS . $originalFilename)),
@@ -347,6 +351,7 @@ class ProcessDuplicator extends Process
 						$href3 = '<a href="?action=delete&file='. $file['id'] .'&service=googledrive" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
 						$data = array(
+							'time' => $ts->getTimestamp(),
 							"<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/google_drive-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
 							$createdOn,
 							DUP_Util::human_filesize($file['size']),
@@ -387,6 +392,7 @@ class ProcessDuplicator extends Process
 						$href3 = '<a href="?action=delete&file='. $file['Key'] . '&service=amazon" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
 						$data = array(
+							'time' => $ts->getTimestamp(),
 							"<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/amazon-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
 							$createdOn,
 							DUP_Util::human_filesize($file['Size']),
@@ -401,7 +407,6 @@ class ProcessDuplicator extends Process
 			}
 
 		}
-
 
 		return array_reverse($rows);
 	}

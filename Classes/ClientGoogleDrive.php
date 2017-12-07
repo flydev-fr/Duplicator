@@ -96,12 +96,12 @@ class GoogleDriveClient
         $result = null;
 
         $defaults = array(
-            //"orderBy" => "modifiedTime", // get our result sorted by oldest
+            "orderBy" => "modifiedTime", // get our result sorted by oldest
             'q' => "",
             'spaces' => 'drive',
             'pageSize' => 100,
             //'fields'   => self::queryfields // TESTING WITHOUT FIELD - v0.0.29
-            'fields'   => 'nextPageToken, files(id,name,size)' // VOLOUNTARY EXCEPTION
+            'fields'   => 'nextPageToken, files(id,name,size)'
         );
 
         $parameters = array_merge($defaults, $parameters);

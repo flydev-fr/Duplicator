@@ -9,7 +9,7 @@ require_once (__DIR__ . DIRECTORY_SEPARATOR . 'Classes/BackupDatabase.php');
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
     const DUP_APPLICATION_NAME          = 'Duplicator';
-    const DUP_MIN_VERSION               = '2.7.3';
+    const DUP_MIN_VERSION               = '2.7.2'; // tested - if you have a lower version please test it and report back your result! thanks
     const DUP_LOG_FILENAME              = 'duplicator';
     const DUP_SITE_FOLDER               = 'site';
     const DUP_DEFAULT_LOCAL_FOLDER      = 'backups';
@@ -30,7 +30,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         return array(
             'title'     => 'Duplicator',
-            'version'   => '1.1.4',
+            'version'   => '1.1.5',
             'summary'   => 'Duplicate, backup and transfer an entire site from one location to another.',
             'author'    => 'flydev',
             'href'      => 'https://processwire.com',

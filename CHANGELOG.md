@@ -3,7 +3,14 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+
+## [1.1.5] - 2017-12-07
+### Fixed
+- fix ProcessDuplicator: checking for mod_userdir is not needed anymore
+- fix: packages are retrieved, blended and re-ordered by timestamp
+
 ## [1.1.4] - 2017-12-07
+### Fixed
 - fix ProcessDuplicator: now it work with Apache mod_userdir
 
 ## [1.1.3] - 2017-12-07

@@ -194,7 +194,7 @@ $(document).ready(function() {
 
         switch (type) {
             case 'none':
-                href = $(btn).data('action');//.replace('?action=backup_now', '');
+                href = $(btn).data('action').replace('?action=backup_now', '');
                 break;
 
             case 'packageCreated':
@@ -227,40 +227,40 @@ $(document).ready(function() {
     }
 
 
-/*
-    function step1() {
+    /*
+     function step1() {
 
-        var out = '';
-        $.ajax({
-                url: $('#deploy_step1').data('action'),
-                context: document.body
-            })
-            .fail(function (xhr, status, error) {
-                $job = false;
-                var err = eval("(" + xhr.responseText + ")");
-                out += err;
-                return out;
-                //redirectToDuplicator('An error occured: ' + err.Message, 'error');
-            })
-            .done(function (ret) {
-                //redirectToDuplicator('', 'none');
-                //var err = eval("(" + xhr.responseText + ")");
-                $('#content').html(ret);
-                $(function() {
-                    $( "#accordion_server" ).accordion({
-                        collapsible: true,
-                        active: false
-                    });
+     var out = '';
+     $.ajax({
+     url: $('#deploy_step1').data('action'),
+     context: document.body
+     })
+     .fail(function (xhr, status, error) {
+     $job = false;
+     var err = eval("(" + xhr.responseText + ")");
+     out += err;
+     return out;
+     //redirectToDuplicator('An error occured: ' + err.Message, 'error');
+     })
+     .done(function (ret) {
+     //redirectToDuplicator('', 'none');
+     //var err = eval("(" + xhr.responseText + ")");
+     $('#content').html(ret);
+     $(function() {
+     $( "#accordion_server" ).accordion({
+     collapsible: true,
+     active: false
+     });
 
-                    $( "#accordion_package" ).accordion({
-                        collapsible: true,
-                        active: false
-                    });
-                });
-                return ret;
-            });
-    }
-*/
+     $( "#accordion_package" ).accordion({
+     collapsible: true,
+     active: false
+     });
+     });
+     return ret;
+     });
+     }
+     */
 
 });
 

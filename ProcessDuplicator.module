@@ -11,7 +11,7 @@ class ProcessDuplicator extends Process
 		return array(
 			'title' 	  => 'Duplicator - Packages Manager',
 			'summary' 	  => 'Manage your backups/packages built with Duplicator inside ProcessWire.',
-			'version' 	  => '1.0.2',
+			'version' 	  => '1.1.4',
 			'author' 	  => 'flydev',
 			'icon' 		  => 'clone',
 			'href' 		  => 'http://modules.processwire.com/',
@@ -127,14 +127,14 @@ class ProcessDuplicator extends Process
 				break;
 
 			case 'deleteAll':
-					DUP_Util::clean(Duplicator::getPath(), 0);
+				DUP_Util::clean(Duplicator::getPath(), 0);
 
-					$out .= $this->renderGetPackages();
+				$out .= $this->renderGetPackages();
 				break;
 
 			default:
 				$out .= $this->renderGetPackages();
-			break;
+				break;
 		}
 
 
@@ -143,7 +143,7 @@ class ProcessDuplicator extends Process
 
 	/**
 	 * @param $filename
-     */
+	 */
 	protected function generateInstaller($filename) {
 		/**
 		 * TODO: {}
@@ -153,17 +153,17 @@ class ProcessDuplicator extends Process
 
 	/**
 	 * @param $filename
-     */
+	 */
 	protected function getInstaller($filename) {
 		//$packages = DUP_Util::getPackages(wire('config')->paths->assets . Duplicator::DUP_DEFAULT_LOCAL_FOLDER, Duplicator::DUP_PACKAGE_EXTENSION);
 		//if(in_array($filename, $packages)) {
-			wireSendFile(wire('config')->paths->siteModules . Duplicator::DUP_APPLICATION_NAME . DS . 'Deploy' . DS .'installer.php');
+		wireSendFile(wire('config')->paths->siteModules . Duplicator::DUP_APPLICATION_NAME . DS . 'Deploy' . DS .'installer.php');
 		//}
 	}
 
 	/**
 	 * @return string
-     */
+	 */
 	protected function renderHead() {
 		$out = "<div id='head'>";
 		$out .= "	<img id='duplogo' src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/Duplicator-logo-v2.png'>";
@@ -181,7 +181,7 @@ class ProcessDuplicator extends Process
 
 	/**
 	 * @return string
-     */
+	 */
 	protected function renderLog()
 	{
 		$out = '';
@@ -223,7 +223,7 @@ class ProcessDuplicator extends Process
 
 	/**
 	 * @return string
-     */
+	 */
 	protected function renderGetPackages()
 	{
 		$out = '';
@@ -247,22 +247,27 @@ class ProcessDuplicator extends Process
 		if(!$numFiles) $out .= "<h2>" . __('No package found.') . "</h2>";
 		$out .= $table->render();
 
-		$href = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=backup_now';
+		if (in_array('mod_userdir', apache_get_modules())) {
+			$href = $this->config->urls->admin . 'setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME);
+		}
+		else {
+			$href = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME);
+		}
+
 		$f = $this->modules->get('InputfieldButton');
 		$f->attr('id+name', 'newPackage');
 		$f->value = __('Initiate Backup Process');
 		$f->icon = 'clone';
-		$f->attr('data-action', $href);
+		$f->attr('data-action', $href . '/?action=backup_now');
 		$f->attr('target', '_SELF');
 		//$f->addClass('head_button_clone');
 		$out .= $f->render();
 
-		$href = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=deleteAll';
 		$f = $this->modules->get('InputfieldButton');
 		$f->attr('id+name', 'deletePackages');
 		$f->value = __('Delete All');
 		$f->icon = 'trash';
-		$f->attr('data-action', $href);
+		$f->attr('data-action', $href . '/?action=deleteAll');
 		$out .= $f->render();
 		$out .= "<div id='out'></div>";
 
@@ -404,7 +409,7 @@ class ProcessDuplicator extends Process
 
 	/**
 	 * @return string
-     */
+	 */
 	protected function renderFilters () {
 
 		$out = "
@@ -425,7 +430,7 @@ class ProcessDuplicator extends Process
 	 * @param $icon
 	 * @param $body
 	 * @return string
-     */
+	 */
 	protected function dialogBoxModal($id, $title, $icon, $body) {
 		$out = "<div id='$id' class='modal-confirm' title='$title'>
 				  <p><span class='ui-icon ui-icon-$icon' style='float:left; margin:12px 12px 20px 0;'></span>$body</p>

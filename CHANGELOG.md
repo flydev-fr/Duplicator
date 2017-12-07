@@ -3,6 +3,17 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.1.4] - 2017-12-07
+- fix ProcessDuplicator: now it work with Apache mod_userdir
+
+## [1.1.3] - 2017-12-07
+### Added
+- ___cronJob() is now hookable.
+### Fixed
+- fix FTP class were DEFINE() was replaced by Constants in earlier version
+- fix HookEvent in cronJob()
+
+
 ## [1.1.2] - 2017-12-04
 ### Added
 - added support for running cron jobs wihtout external module

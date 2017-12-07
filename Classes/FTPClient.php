@@ -192,7 +192,7 @@ class FTPClient
 
         $parts = explode(DIRECTORY_SEPARATOR, $localfile);
 
-        if(!strpos(array_reverse($parts)[0], DUP_PACKAGE_EXTENSION))
+        if(!strpos(array_reverse($parts)[0], Duplicator::DUP_PACKAGE_EXTENSION))
         {
             throw new FTPClientException("invalid file {$remotefile}, bad extension");
         }
@@ -237,7 +237,7 @@ class FTPClient
             $parts = explode('-', $tsstr);
             array_pop($parts);
             $tsstr = implode('-', $parts);
-            $ts    = date_create_from_format(DUP_TIMESTAMP_FORMAT, $tsstr);
+            $ts    = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);
             if($ts == false) continue;
             $shouldDelete = ($retaincount > 0 && $n > $retaincount) || $ts->getTimestamp() < (strtotime("-{$deadline}")) ;
             if ($shouldDelete)

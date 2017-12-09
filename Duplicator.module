@@ -30,7 +30,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         return array(
             'title'     => 'Duplicator',
-            'version'   => '1.1.5',
+            'version'   => '1.1.6',
             'summary'   => 'Duplicate, backup and transfer an entire site from one location to another.',
             'author'    => 'flydev',
             'href'      => 'https://processwire.com',
@@ -299,7 +299,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         }
 
         if (!is_dir($options['folder']) || !is_writable($options['folder'])) {
-            DUP_Logs::log('Could not create temporary directory: ' . $options['folder']);
+            DUP_Logs::log('- could not create temporary directory: ' . $options['folder']);
             return false;
         }
 
@@ -310,7 +310,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $fileinfo['structure'] = $zipinfo;
 
         if (!file_exists($fileinfo['zipfile'])) {
-            DUP_Logs::log("An error occured while building the ProcessWire structure.");
+            DUP_Logs::log("- an error occured while building the ProcessWire structure.");
             return false;
         }
 
@@ -352,6 +352,8 @@ class Duplicator extends WireData implements Module, ConfigurableModule
      */
     protected function buildPackage(array $options = array())
     {
+        DUP_Util::timer('build');
+
         $defaultOptions = array(
             'filename' => DUP_Util::formatFilename(str_replace('-', '_', $this->packageName), 'package.zip'),
             'path' => $this->path
@@ -362,14 +364,14 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         try {
             $dbbackup = $this->buildDatabaseBackup();
             if ($dbbackup == false) {
-                DUP_Logs::log("An error occured during database backup.");
+                DUP_Logs::log("- an error occured during database backup.");
                 return false;
             }
             $packageInfos['db'] = $dbbackup;
 
             $pwbackup = $this->buildProcessWireBackup();
             if ($pwbackup == false) {
-                DUP_Logs::log("An error occured during package build.");
+                DUP_Logs::log("- an error occured during package build.");
                 return false;
             }
             $packageInfos['pw'] = $pwbackup;
@@ -395,8 +397,12 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                 //$fp = fopen($options['path'] . DS . $options['filename'] . '.json', 'w');
                 //fwrite($fp, json_encode($package));
                 //fclose($fp);
+                DUP_Logs::log("- package built successfully in " . DUP_Util::timer('build') . "sec");
                 return $package;
-                //return $zipfile;
+            }
+            else {
+                DUP_Logs::log("- package build failed, {$zipfile} doesn't exist");
+                return false;
             }
         } catch (\Exception $ex) {
             DUP_Logs::log($ex->getMessage());
@@ -408,26 +414,23 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     /*
      * call this function from a cron tool to launch the backup task
      */
-    public function ___cronJob(/*HookEvent $event*/)
+    public function ___cronJob()
     {
         if (!$this->useLocalFolder && !$this->useGoogleDrive && !$this->useAmazonS3 && !$this->useFTP) {
             return false;
         }
 
+        DUP_Util::timer('job');
         //ignore_user_abort(true);
         DUP_Util::setMemoryLimit(self::DUP_PHP_MAX_MEMORY);
         DUP_Util::setMaxExecutionTime(self::DUP_PHP_EXECUTION_TIME);
 
         $package = $this->buildPackage();
         if ($package['zipfile'] !== null) {
-            // TODO: WinOS compatibility - was working on v0.0.28
-            //if (DUP_Util::isWinOS()) {
-                //$package = DUP_Util::safePath($package);
-            //}
             $packageName = basename($package['zipfile']);
             if ($this->useLocalFolder) {
                 if (file_exists($package['zipfile'])) {
-                    DUP_Logs::log("Package saved in local folder: $packageName.", 'message');
+                    DUP_Logs::log("- package saved in local folder: $packageName", 'message');
                 } else {
                     DUP_Logs::log("An error occured.");
                 }
@@ -448,7 +451,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                     $ftp->upload(basename($package['zipfile']), $package['zipfile'], $this->ftpDirectory);
                     $ftp->deleteOldBackups($this->maxPackages, $this->deadline);
                     $ftp->disconnect();
-                    DUP_Logs::log("[FTP] package uploaded successfuly: $packageName", 'message');
+                    DUP_Logs::log("- [FTP] package uploaded successfuly: $packageName", 'message');
                 } catch (\FTPClientException $ex) {
                     if (@is_resource($ftp)) $ftp->disconnect();
                     DUP_Logs::log("[FTP] error: " . $ex->getMessage(), 'error');
@@ -476,7 +479,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                     //$quota = $google->getStorageQuota();
                     //bd(DUP_Util::human_filesize($quota));
                 } catch (\GoogleClientException $ex) {
-                    DUP_Logs::log("[GoogleDrive] error: " . $ex->getMessage(), 'error');
+                    DUP_Logs::log("- [GoogleDrive] error: " . $ex->getMessage(), 'error');
                 }
             }
 
@@ -510,7 +513,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
             if (!empty($this->deadline) || $this->maxPackages <= DUP_Util::getTotalPackages(self::$_data->path, self::DUP_PACKAGE_EXTENSION) && DUP_Util::getTotalPackages(self::$_data->path, self::DUP_PACKAGE_EXTENSION) != 0) {
                 $removed = count(DUP_Util::clean(self::$_data->path, $this->maxPackages, strtotime("-{$this->deadline}")));
-                if ($removed > 0) DUP_Logs::log(sprintf("Deleted %d local package%s", $removed, ($removed > 1) ? 's' : ''));
+                if ($removed > 0) DUP_Logs::log(sprintf("- deleted %d local package%s", $removed, ($removed > 1) ? 's' : ''));
             }
 
             if($this->removeBackups && !$this->useLocalFolder) {
@@ -521,11 +524,13 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                 }
                 DUP_Util::deleteFile($package['zipfile']);
             }
+
         } else {
-            DUP_Logs::log("Package build failed.");
+            DUP_Logs::log("- package build failed.");
             return null;
         }
 
+        DUP_Logs::log("- job finished in " . DUP_Util::timer('job') ."sec");
         return true;
     }
 
@@ -535,6 +540,12 @@ class Duplicator extends WireData implements Module, ConfigurableModule
      */
     public function zipData($source, $destination, $excluded = array())
     {
+        DUP_Util::timer('zip');
+
+        if($this->archiveFlush == true) {
+            DUP_Logs::log('- advanced option activated: ArchiveFlush');
+        }
+
         if (extension_loaded('zip')) {
 
             $filecount = 0;
@@ -547,25 +558,8 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                 if ($zip->open($destination, \ZIPARCHIVE::CREATE)) {
                     $source = realpath($source);
 
-                    $filter = function ($file, $key, $iterator) use ($excluded) {
-                        $includeEmptyDir = true;
-                        if ($includeEmptyDir && $iterator->isDir() && !in_array($file->getPathname(), $excluded['exclude'])) {
-                            return true;
-                        }
-                        if ($iterator->hasChildren() && !in_array($file->getPathname(), $excluded['exclude'])) {
-                            return true;
-                        } elseif ($file->isFile() && in_array($file->getPathname(), $excluded['exclude'])) {
-                            return false;
-                        } elseif ($file->isFile() && in_array($file->getExtension(), $excluded['extension'])) {
-                            return false;
-                        }
-                        return $file->isFile();
-                    };
-
                     $innerIterator = new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS);
-                    $iterator = new RecursiveIteratorIterator(
-                        new RecursiveCallbackFilterIterator($innerIterator, $filter)
-                    );
+                    $iterator = new RecursiveIteratorIterator(new DUP_DataFilter($innerIterator, $excluded));
 
                     foreach ($iterator as $pathname => $fileInfo) {
                         $file = realpath($pathname);
@@ -590,15 +584,25 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                     }
                 }
 
-                $zip->close();
+                $result = $zip->close();
+                if($result == false) {
+                    DUP_Logs::log('- could not finish creating the (zip) structure, an error occured');
+                }
 
                 $infos['files'] = $filecount;
                 $infos['dirs'] = $dircount;
                 $infos['size'] = $size;
 
+                DUP_Logs::log("- structure zipped successfully in " . DUP_Util::timer('zip') ."sec");
+
                 return $infos;
-                //return $zip->close();
             }
+            else {
+                DUP_Logs::log("- the file '{$source}' doesn't exist");
+            }
+        }
+        else {
+            DUP_Logs::log("- could not load php zip extension");
         }
         return false;
     }
@@ -611,9 +615,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         $pkgs = DUP_Util::getTotalPackages(self::$_data->path, self::DUP_PACKAGE_EXTENSION);
         $path = strlen(self::$_data->path) > 0 ? self::$_data->path : self::$_data->defaultPath;
-        $infos['markupText'] = 'Invalid directory';
+        $infos['markupText'] = "Local folder: invalid directory - the destination path doesn't exist or is not writable";
         //$infos['notes'] = sprintf(__(" » %d package(s) found"), $pkgs);
-        if (!empty($path)) {
+        if (!empty($path) && is_dir($path)) {
             wire('modules')->get('JqueryUI')->use('modal');
             //$href = wire('config')->urls->admin . "module/edit?name=" . DUP_APPLICATION_NAME . "&action=view_listing";
             $href = wire('config')->urls->admin . "setup/". self::DUP_APPLICATION_NAME ."/?action=packages";

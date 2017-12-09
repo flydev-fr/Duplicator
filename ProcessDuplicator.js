@@ -1,3 +1,7 @@
+/************************************************/
+var $debug = false; // set to TRUE for debug mode
+/************************************************/
+
 $(document).ready(function() {
 
     var $job = false;
@@ -190,7 +194,8 @@ $(document).ready(function() {
     function redirectToDuplicator(str, type, btn) {
 
         var href = '';
-        var encoded = encodeURI(str);
+
+        if($debug === true) return;
 
         switch (type) {
             case 'none':

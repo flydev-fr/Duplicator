@@ -1,7 +1,10 @@
+/************************************************/
+var $debug = false; // set to TRUE for debug mode (not used here)
+/************************************************/
 if (typeof jQuery != 'undefined') {
 
     $(document).ready(function () {
-
+        
         var $backupNowBtn = $('#backupNow'),
             $pruneBackupsBtn = $('#pruneBackups'),
             $job = false,

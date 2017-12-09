@@ -108,7 +108,7 @@ class DUP_Util
     public static function getTotalPackages($path, $extension)
     {
         //$ext = '.' . $extension;
-        if (!empty($path)) {
+        if (!empty($path) && is_dir($path)) {
             $files = scandir($path);
             if (!count($files)) return 0;
             $n = 0;
@@ -126,7 +126,7 @@ class DUP_Util
     public static function getPackages($path, $extension)
     {
         //$ext = '.' . $extension;
-        if (!empty($path)) {
+        if (!empty($path) && is_dir($path)) {
             $files = scandir($path);
             if (!count($files)) return 0;
             $n = 0;
@@ -147,7 +147,7 @@ class DUP_Util
         $data = null;
         $rows = array();
         $modal = isset(wire('input')->get->modal) ? '&modal=1' : '';
-        if (!empty($path)) {
+        if (!empty($path) && is_dir($path)) {
             $files = scandir($path);
             if (!count($files)) return $data;
             $n = 0;
@@ -222,8 +222,46 @@ class DUP_Util
         @session_write_close();
         @ob_end_flush();
         @flush();
-        //ob_start();
-        //sleep(50);
-        //ob_end_clean();
+    }
+
+    static function timer($name = 'default', $unset_timer = TRUE)  {
+        static $timers = array();
+
+        if (isset($timers[$name]))  {
+            list($s_sec, $s_mic) = explode(' ', $timers[$name]);
+            list($e_sec, $e_mic) = explode(' ', microtime());
+
+            if ($unset_timer)
+                unset($timers[$name]);
+
+            return $e_sec - $s_sec + ( $e_mic - $s_mic );
+        }
+
+        $timers[$name] = microtime();
+
+        return $timers;
+    }
+}
+
+
+class DUP_DataFilter extends RecursiveFilterIterator {
+
+    protected $excluded;
+    protected $excludedList = array();
+
+    public function __construct(RecursiveIterator $iterator, $excluded) {
+        $this->excluded = $excluded;
+        parent::__construct($iterator);
+    }
+
+    public function accept() {
+        return ($this->current()->isReadable() &&
+                !in_array($this->current(), $this->excluded['exclude']) &&
+                !in_array($this->getExtension(), $this->excluded['extension'])
+        );
+    }
+
+    public function getChildren() {
+        return new self($this->getInnerIterator()->getChildren(), $this->excluded);
     }
 }

@@ -153,7 +153,6 @@ class GoogleDriveClient
                     }
                     $i++;
                 }
-
                 return $files;
             }
         }
@@ -208,17 +207,15 @@ class GoogleDriveClient
             $n = 0;
 
             foreach ($files as $key => $value) {
-                foreach ($value as $key2 => $value2 ) {
-                    $this->service->files->delete($value2);
-                    DUP_Logs::log("GoogleDrive: deleted <{$key2}> ");
-                    $n++;
-                }
+                $this->service->files->delete($value['id']);
+                DUP_Logs::log("GoogleDrive: deleted {$value['name']}");
+                $n++;
             }
             DUP_Logs::log("GoogleDrive: deleted {$n} old packages");
         }
         catch (\Exception $e)
         {
-            DUP_Logs::log("GoogleDrive error: " . $e->getMessage());
+            DUP_Logs::log("GoogleDrive error: deleteFiles() - " . $e->getMessage());
         }
     }
 
@@ -227,11 +224,11 @@ class GoogleDriveClient
         try
         {
             $this->service->files->delete($file);
-            DUP_Logs::log("GoogleDrive: deleted $file> ");
+            DUP_Logs::log("GoogleDrive: deleted $file ");
         }
         catch (\Exception $e)
         {
-            DUP_Logs::log("GoogleDrive error: " . $e->getMessage());
+            DUP_Logs::log("- GoogleDrive error: deleteFile() - " . $e->getMessage());
         }
     }    
     
@@ -290,7 +287,7 @@ class GoogleDriveClient
                 )
             );
 
-            DUP_Logs::log($perm->getId() ? "GoogleDrive: successfully uploaded file." : "GoogleDrive: upload failed.", 'message');
+            DUP_Logs::log($perm->getId() ? "- GoogleDrive: successfully uploaded file." : "GoogleDrive: upload failed.", 'message');
 
             return $perm;
         }

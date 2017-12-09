@@ -11,7 +11,7 @@ class ProcessDuplicator extends Process
 		return array(
 			'title' 	  => 'Duplicator - Packages Manager',
 			'summary' 	  => 'Manage your backups/packages built with Duplicator inside ProcessWire.',
-			'version' 	  => '1.1.5',
+			'version' 	  => '1.1.6',
 			'author' 	  => 'flydev',
 			'icon' 		  => 'clone',
 			'href' 		  => 'http://modules.processwire.com/',
@@ -297,34 +297,34 @@ class ProcessDuplicator extends Process
 		$data = null;
 		$rows = array();
 
-		if (!empty($path)) {
+		if (!empty($path) && is_readable($path) && $this->dupmod->useLocalFolder) {
 			$files = glob($path . DS . "*." . Duplicator::DUP_PACKAGE_EXTENSION);
-			if (!count($files)) return $data;
-			foreach ($files as $file) {
-				if ((strrpos($file, $extension) == false) || (strrpos($file, 'json'))) continue;
-				$originalFilename = basename($file);
-				$parts = explode('-', $originalFilename);
-				array_pop($parts);
-				$tsstr = implode('-', $parts);
-				$ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);
-				$createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
+			if (count($files)) {
+				foreach ($files as $file) {
+					if ((strrpos($file, $extension) == false) || (strrpos($file, 'json'))) continue;
+					$originalFilename = basename($file);
+					$parts = explode('-', $originalFilename);
+					array_pop($parts);
+					$tsstr = implode('-', $parts);
+					$ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);
+					$createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
 
-				$dataAction = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
-				$href1 = '<a href="?action=packages&installer='. $originalFilename .'" class="btnlink" title="Download and run this php file to install the package."><i class="fa fa-bolt"></i> Installer</a>';
-				$href2 = '<a href="?action=packages&file='. $originalFilename .'" class="btnlink" title="Download and put it in the webroot alongside installer.php"><i class="fa fa-download"></i> Package</a>';
-				$href3 = '<a href="?action=delete&file='.$originalFilename .'" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
+					$dataAction = $this->config->urls->httpAdmin . 'setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
+					$href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink" title="Download and run this php file to install the package."><i class="fa fa-bolt"></i> Installer</a>';
+					$href2 = '<a href="?action=packages&file=' . $originalFilename . '" class="btnlink" title="Download and put it in the webroot alongside installer.php"><i class="fa fa-download"></i> Package</a>';
+					$href3 = '<a href="?action=delete&file=' . $originalFilename . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
-				$data = array(
-					'time' => $ts->getTimestamp(),
-					"<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/localfolder-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
-					$createdOn,
-					DUP_Util::human_filesize(filesize($path . DS . $originalFilename)),
-					$href1 . ' ' . $href2 . ' ',
-					$href3
-				);
-				array_push($rows, $data);
+					$data = array(
+						'time' => $ts->getTimestamp(),
+						"<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/localfolder-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
+						$createdOn,
+						DUP_Util::human_filesize(filesize($path . DS . $originalFilename)),
+						$href1 . ' ' . $href2 . ' ',
+						$href3
+					);
+					array_push($rows, $data);
+				}
 			}
-			//return array_reverse($rows);
 		}
 
 		// GoogleDrive
@@ -336,6 +336,7 @@ class ProcessDuplicator extends Process
 				$google->setGoogleKeyFile($this->dupmod->googleKeyFile);
 				$google->connect();
 				$files = $google->getFiles();
+				DUP_Logs::log("GoogleDrive: found " . count($files) . " packages");
 				if(count($files)) {
 					foreach ($files as $file) {
 						if (strrpos($file['name'], $extension) == false) continue;

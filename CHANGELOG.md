@@ -3,6 +3,17 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.1.6] - 2017-12-09
+### Added
+- added js debug mode
+
+### Fixed
+- fix Duplicator: zipData() RecursiveFilterIterator check for unreadable dir
+- fix Duplicator: getLocalFolderInfo() check if the destination path exist
+- fix ProcessDuplicator: corrected the trash-icon action link
+- fix ProcessDuplicator: packages stored on the cloud are shown in the table even if LocalFodler is not used
+- various fix in DUP_Util class
+
 
 ## [1.1.5] - 2017-12-07
 ### Fixed

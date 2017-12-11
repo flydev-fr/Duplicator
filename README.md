@@ -27,12 +27,9 @@ In the root directory of your ProcessWire installation, just type in a terminal 
 * `composer require aws/aws-sdk-php`
 
 #### ZIP Archive
-After downloading an archive, open it, you will find a folder called **`SDKs`**. Extract or Upload this folder in the **`Duplicator module folder`**. If the folder already exist, merge it. Example: `/www/mysite/wwwroot/site/modules/Duplicator/SDKs`
+After downloading the archive, open it, you will find a folder called **`SDKs`** under each provider named directory. Extract or Upload this folder in the **`Duplicator module folder`**. If the folder already exist, merge it. Example: `/www/public_html/site/modules/Duplicator/SDKs`
 
-Download Links:
-* [GoogleDrive SDK (not uploaded yet)]()
-* [Dropbox SDK (not uploaded yet)]()
-* [AmazonS3 SDK (not uploaded yet)]()
+Download it from the [**Duplicator-SDKs**](https://github.com/flydev-fr/Duplicator-SDKs/archive/master.zip) repository.
 
 
 Now you can refresh the Duplicator's settings page, the corresponding checkbox will be enabled.

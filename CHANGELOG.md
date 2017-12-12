@@ -3,6 +3,11 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.1.7] - 2017-12-12
+### Changed
+- changed check for cron triggers from ready() to init()
+- changed support links in both modules
+
 ## [1.1.6] - 2017-12-09
 ### Added
 - added js debug mode

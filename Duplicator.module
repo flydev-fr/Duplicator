@@ -30,10 +30,10 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         return array(
             'title'     => 'Duplicator',
-            'version'   => '1.1.6',
+            'version'   => '1.1.7',
             'summary'   => 'Duplicate, backup and transfer an entire site from one location to another.',
             'author'    => 'flydev',
-            'href'      => 'https://processwire.com',
+            'href'      => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
             'singular'  => true,
             'autoload'  => function () {
                 return ((wire('input')->get->name == __CLASS__) !== false && wire('page')->template == 'admin');
@@ -185,13 +185,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             default:
                 break;
         }
-    }
 
-    /*
-     * module ready
-     */
-    public function ready()
-    {
         switch($this->cronMode) {
             case 'LazyCron':
                 if (!$this->modules->isInstalled('LazyCron')) {
@@ -227,6 +221,14 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             default:
                 break;
         }
+    }
+
+    /*
+     * module ready
+     */
+    public function ready()
+    {
+
     }
 
     /*

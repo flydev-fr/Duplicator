@@ -1,9 +1,14 @@
 <?php
 
+use \Kunnu\Dropbox\DropboxApp;
+use Kunnu\Dropbox\Dropbox;
 
 class DropboxClient
 {
     protected $accessToken;
+    protected $appKey;
+    protected $appSecret;
+    protected $dropboxService;
     protected $identifier;
     protected $folder;
     protected $query;
@@ -11,9 +16,11 @@ class DropboxClient
     protected $mime_type;
 
 
-    public function __construct($token = null, $identifier = null, $folder = null, $query = null, $maxPackages = 0, $mime_type = null)
+    public function __construct($token = null, $appKey = null, $appSecret = null, $identifier = null, $folder = null, $query = null, $maxPackages = 0, $mime_type = null)
     {
         $this->accessToken = $token;
+        $this->appKey = $appKey;
+        $this->appSecret = $appSecret;
         $this->identifier = $identifier;
         $this->folder = $folder;
         $this->query = $query;
@@ -53,99 +60,72 @@ class DropboxClient
 
     protected function connect()
     {
-        $client = null;
+        $app = null;
         DUP_Logs::log("Dropbox: connecting...");
         try {
-            $client = new \Dropbox\Client($this->accessToken, $this->identifier);
+            $app = new DropboxApp($this->appKey, $this->appSecret, $this->accessToken);
+            $dropboxService = new Dropbox($app);
         } catch (\Exception $ex) {
             DUP_Logs::log("Dropbox error: cannot create client, invalid AccessToken.", 'error');
         }
 
-        return $client;
+        return $dropboxService;
     }
 
-    public function download($dropboxPath, $path)
+    public function download($file, $destination)
     {
-        $client = $this->connect();
-        $pathError = \Dropbox\Path::findErrorNonRoot($dropboxPath);
-        if ($pathError !== null) {
-            DUP_Logs::log("Invalid <dropbox-path>: $pathError\n");
+        $this->dropboxService = $this->connect();
+        $searchQuery = $file;
+        $searchResults = $this->dropboxService->search("/", $searchQuery, ['start' => 0, 'max_results' => 1]);
+        $items = $searchResults->getItems();
+        if ($items === null) {
+            DUP_Logs::log("Dropbox error: File not found on Dropbox.\n");
         }
-        $metadata = $client->getFile($dropboxPath, fopen($path, "w+"));
-        if ($metadata === null) {
-            DUP_Logs::log("File not found on Dropbox.\n");
-        }
-        return $metadata;
+        $item = $items->first();
+        $filename = $item->metadata['name'];
+        DUP_Logs::log("Dropbox: downloading $filename\n");
+        $file = $this->dropboxService->download("/". $filename, $destination . "/". $filename);
+        return file_exists($destination . "/". $filename);
     }
 
     public function upload($package)
     {
-        $client = $this->connect();
-        $f = @fopen($package, "rb");
-        DUP_Logs::log("Dropbox: uploading {$package}...");
-        $client->uploadFile('/' . basename($package), \Dropbox\WriteMode::add(), $f);
-        fclose($f);
-        /*
-                if(strlen($this->query) > 0 && strlen($this->mime_type) > 0)
-                {
-                    $files = $this->getFiles();
-                    $this->deleteFile($files);
-                }
-        */
-
-        DUP_Logs::log("Dropbox: $package uploaded successfully.", 'message');
+        $this->dropboxService = $this->connect();
+        DUP_Logs::log("Dropbox: uploading ". basename($package) ."...");
+        $this->dropboxService->upload($package, '/'. basename($package), ['autorename' => false]);
+        DUP_Logs::log("Dropbox: ". basename($package) ." uploaded successfully.", 'message');
 
         return true;
     }
 
     public function getFiles()
     {
-        $client = $this->connect();
+        $this->dropboxService = $this->connect();
         DUP_Logs::log("Dropbox: getting files...");
-        $folderMetadata = $client->getMetadataWithChildren("/");
+        $folderMetadata = $this->dropboxService->listFolder("/");
         $children = null;
-        $files = array();
+        $data = $folderMetadata->getData();
 
-        if ($folderMetadata['is_dir']) {
-            $children = $folderMetadata['contents'];
-            unset($folderMetadata['contents']);
-        }
-        if ($children != null && count($children) > 0) {
-            foreach ($children as $child) {
-                $name = \Dropbox\Path::getName($child['path']);
-                if ($child['is_dir']) continue;
-                if (strchr($name, $this->query) && $child['mime_type'] == $this->mime_type) {
-                    //$files[] = $name;
-                    $info = array(
-                        'name' => $name,
-                        'size' => $child['size'],
-                    );
-                    array_push($files, $info);
-                }
-            }
-        }
-        return $files;
+        return $data['entries'];
     }
 
     public function deleteFiles(array $files) {
-        $client = $this->connect();
-        foreach ($files as $file)
-        {
-            $client->delete('/' . $file['Key']);
+        $this->dropboxService = $this->connect();
+        foreach ($files as $file) {
+            $this->dropboxService->delete('/' . $file['Key']);
             DUP_Logs::log("Dropbox: deleted {$file['Key']}");
         }
     }
 
     public function deleteFile($file) {
-        $client = $this->connect();
-        $client->delete('/' . $file);
+        $this->dropboxService = $this->connect();
+        $this->dropboxService->delete('/'. $file);
         DUP_Logs::log("Dropbox: deleted {$file}");
     }
 
     public function deleteOldBackups($retaincount, $deadline)
     {
         if ($retaincount < 1 && empty($deadline)) return; // cleanup disabled.
-
         $toDelete = array();
         $n = 0;
         $objects = $this->getFiles();
@@ -168,6 +148,8 @@ class DropboxClient
         if (count($toDelete)) {
             $this->deleteFiles($toDelete);
         }
+
+        DUP_Logs::log("Dropbox: end");
     }
 }
 

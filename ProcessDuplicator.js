@@ -33,7 +33,7 @@ $(document).ready(function() {
 
     });
 
-    $('#newPackage').on('click', function (ev) {
+    $('#newPackage,#newPackage_copy').on('click', function (ev) {
         ev.preventDefault();
         backupNow();
     });
@@ -78,7 +78,8 @@ $(document).ready(function() {
 
     function backupNow() {
         if ($job == true) {
-            $( "#job-running" ).dialog({
+            // alert dialog
+            /*$( "#job-running" ).dialog({
                 resizable: false,
                 height: "auto",
                 width: 400,
@@ -88,31 +89,31 @@ $(document).ready(function() {
                         $( this ).dialog( "close" );
                     }
                 }
-            });
+            });*/
             return;
         }
 
-        var url = $('#newPackage').data('action');
+        var url = $('#newPackage,#newPackage_copy').data('action');
         $.ajax({
                 url: url,
                 context: document.body,
                 beforeSend: function () {
                     $job = true;
-                    $('#newPackage').addClass("ui-state-active").text('').append($("<i class='fa fa-spinner fa-spin'></i>")).append(' Processing ...');
+                    $('#newPackage,#newPackage_copy').addClass("ui-state-active").text('').append($("<i class='fa fa-spinner fa-spin'></i>")).append(' Processing ...');
                 }
             })
             .fail(function (xhr, status, error) {
                 $job = false;
-                $('#newPackage').removeClass("ui-state-active").text("Create Backup Package");
+                $('#newPackage,#newPackage_copy').removeClass("ui-state-active").text("Backup Now");
                 var err = eval("(" + xhr.responseText + ")");
                 redirectToDuplicator('An error occured: ' + err.Message, 'error');
             })
             .complete(function (html) {
                 $job = false;
-                $('#newPackage').text("Create Backup Package").removeClass("ui-state-active");
+                $('#newPackage,#newPackage_copy').text("Backup Now").removeClass("ui-state-active");
                 //redirectToDuplicator('', 'none');
                 //$('.modal #content').html(html.responseText).css({"padding-left": "1em", "padding-right": "1em"});
-                redirectToDuplicator('', 'packageCreated', '#newPackage');
+                redirectToDuplicator('', 'packageCreated', '#newPackage,#newPackage_copy');
             });
     }
 
@@ -139,6 +140,7 @@ $(document).ready(function() {
                 beforeSend: function () {
                     $job = true;
                     $('#deletePackages').addClass("ui-state-active").text('').append($("<i class='fa fa-spinner fa-spin'></i>")).append(' Deleting ...');
+                    $('button.ui-button:nth-child(1)').addClass("ui-state-active").text('').append($("<i class='fa fa-spinner fa-spin'></i>")).append(' Deleting ...');
                 }
             })
             .fail(function (xhr, status, error) {
@@ -150,7 +152,7 @@ $(document).ready(function() {
             .done(function () {
                 $job = false;
                 $('#deletePackages').text("Delete All").removeClass("ui-state-active");
-                redirectToDuplicator('', 'none', '#deletePackages');
+                redirectToDuplicator('', 'deleteAll', '#deletePackages');
             });
 
     }
@@ -177,6 +179,8 @@ $(document).ready(function() {
                 context: document.body,
                 beforeSend: function () {
                     $job = true;
+                    $('#deletePackages').addClass("ui-state-active").text('').append($("<i class='fa fa-spinner fa-spin'></i>")).append(' Deleting ...');
+                    $('.ui-dialog-buttonset button.ui-button:nth-child(1)').addClass("ui-state-active").text('').append($("<i class='fa fa-spinner fa-spin'></i>")).append(' Deleting ...');
                 }
             })
             .fail(function (xhr, status, error) {
@@ -204,6 +208,10 @@ $(document).ready(function() {
 
             case 'packageCreated':
                 href = $(btn).data('action').replace('?action=backup_now', '?action=none');
+                break;
+
+            case 'deleteAll':
+                href = $(btn).data('action').replace('?action=deleteAll', '?action=none');
                 break;
 
             default:

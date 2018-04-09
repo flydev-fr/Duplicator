@@ -30,7 +30,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         return array(
             'title'     => 'Duplicator',
-            'version'   => '1.1.9',
+            'version'   => '1.2.9',
             'summary'   => 'Duplicate, backup and transfer an entire site from one location to another.',
             'author'    => 'flydev',
             'href'      => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -63,6 +63,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             // storage mode
             'useLocalFolder' => 1,
             'useFTP'         => 0,
+            'useDropbox'     => 0,
             'useGoogleDrive' => 0,
             'useAmazonS3'    => 0,
             // FTP
@@ -74,6 +75,10 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             'ftpTimeout'     => '',
             'ftpSSL'         => 0,
             'ftpPassive'     => 1,
+            // Dropbox
+            'dropboxAccessToken' => '',
+            'dropboxAppKey'   => '',
+            'dropboxAppSecret' => '',
             // Google
             'googleKeyFile'  => '',
             'shareWithEmail' => '',
@@ -109,8 +114,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     /*
      * module init
      */
-    public function init()
-    {
+    public function init() {
+        $this->addHookAfter('Page::render', $this, 'styles');
+
         if (wire('input') && wire('input')->get('name') == __CLASS__) {
             $root = $this->config->urls->siteModules . __CLASS__;
             $this->config->styles->prepend($root . '/' . __CLASS__ .'.css');
@@ -119,6 +125,15 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
         if($this->useFTP) {
             require_once(__DIR__ . '/Classes/FTPClient.php');
+        }
+
+        $file = __DIR__ . '/SDKs/dropbox/autoload.php';
+        if(file_exists($file)) {
+            require_once(/*NoCompile*/ $file);
+            require_once(__DIR__ . '/Classes/ClientDropbox.php');
+        }
+        elseif(class_exists('\Kunnu\Dropbox\DropboxApp')) {
+            require_once(__DIR__ . '/Classes/ClientDropbox.php');
         }
 
         $file = __DIR__ . '/SDKs/google-api-php-client-2.2.0/src/Google/autoload.php';
@@ -417,7 +432,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
      */
     public function ___cronJob()
     {
-        if (!$this->useLocalFolder && !$this->useGoogleDrive && !$this->useAmazonS3 && !$this->useFTP) {
+        if (!$this->useLocalFolder && !$this->useDropbox && !$this->useGoogleDrive && !$this->useAmazonS3 && !$this->useFTP) {
             return false;
         }
 
@@ -456,6 +471,30 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                 } catch (\FTPClientException $ex) {
                     if (@is_resource($ftp)) $ftp->disconnect();
                     DUP_Logs::log("[FTP] error: " . $ex->getMessage(), 'error');
+                }
+            }
+
+            if ($this->useDropbox) {
+                try {
+                    if (!class_exists('\Kunnu\Dropbox\DropboxClient')) {
+                        throw new WireException("Dropbox SDK not installed.");
+                    }
+
+                    $dropbox = new \DropboxClient();
+                    $dropbox->setAccessToken($this->dropboxAccessToken);
+                    $dropbox->setIdentifier("Duplicator/1");
+                    $dropbox->setFolder(self::DUP_APPLICATION_NAME);
+                    $dropbox->setQuery(self::DUP_PACKAGE_EXTENSION);
+                    $dropbox->setMimeType(self::DUP_PACKAGE_MIME_TYPE);
+                    $dropbox->setMaxPackages($this->maxPackages);
+                    if ($dropbox->upload($package['zipfile'])) {
+                        DUP_Logs::log("[Dropbox] package uploaded successfully: $packageName");
+                    } else {
+                        throw new \DropBoxClientException("An error occured while uploading the package: {$packageName}");
+                    }
+                    $dropbox->deleteOldBackups($this->maxPackages, $this->deadline);
+                } catch (\Exception $ex) {
+                    DUP_Logs::log("[Dropbox] error: " . $ex->getMessage(), 'error');
                 }
             }
 
@@ -693,53 +732,50 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
         $fields = new InputfieldWrapper();
 
+        // propaganda
+        $modinfo = self::getModuleInfo();
+        $out = "<div id='head'>";
+        $out .= "    <div class='master-head'>";
+        $out .= "	    <img id='duplogo' src='". wire('config')->urls->siteModules . self::DUP_APPLICATION_NAME ."/Assets/Duplicator-logo-v2.png'>";
+        $out .= "	";
+        $out .= "	    <ul>";
+        $out .=		"	    <li><a title='Goto Package Manager' href='". wire('config')->urls->httpAdmin. "setup/". strtolower(self::DUP_APPLICATION_NAME) ."' target='_self'><img src='". wire('config')->urls->siteModules . self::DUP_APPLICATION_NAME ."/Assets/package-ico.png' class='icon'></a></li>";
+        $out .=		"	    <li><a title='Goto Support Thread' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank'><img src='". wire('config')->urls->siteModules . self::DUP_APPLICATION_NAME ."/Assets/support-ico.png' class='icon'></a></li>";
+        $out .=	"	    </ul>";
+        $out .= "    </div>";
+        $out .= "    <div class='sub-head'>";
+        $out .= "        <span>Duplicator version {$modinfo['version']}</span>";
+        $out .= "        <a class='github-button' href='https://github.com/flydev-fr/Duplicator' data-icon='octicon-star' data-show-count='false' aria-label='Star Duplicator on GitHub' data-size='large'>Star</a>";
+        $out .= "        <a class='large btn' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank' title='Like Duplicator on ProcessWire'><i class='fa fa-heart social'></i> Like </a>";
+        $out .= "    </div>";
+        $out .= "</div>";
+
+        $fs = $modules->get("InputfieldFieldset");
+        $fs->label = " ";
+        $fs->collapsed = false;
+
+        $field = $modules->get("InputfieldMarkup");
+        $markup = $out;
+        $field->markupText = $markup;
+        //$field->notes = $markup['notes'];
+        $fs->append($field);
+        $fields->add($field);
+
         // Local info
+        $fs = $modules->get("InputfieldFieldset");
+        $fs->label = "Info";
+        $fs->icon = "info";
+        $fs->collapsed = false;
+
         $field = $modules->get("InputfieldMarkup");
         $markup = self::getLocalFolderInfo();
         $field->markupText = $markup['markupText'];
         //$field->notes = $markup['notes'];
         //$field->showIf = "useLocalFolder=1";
-        $fields->add($field);
+        $fs->add($field);
 
-        // Google info ALPHA
-        /*
-        $field = $modules->get("InputfieldMarkup");
-        $markup = self::getGoogleDriveInfo();
-        $field->markupText = $markup['markupText'];
-        //$field->notes = $markup['notes'];
-        $field->showIf = "useGoogleDrive=1";
-        $fields->add($field);
-        */
+        $fields->add($fs);
 
-        /*
-         * removed in v0.0.41
-         *
-        $fsa = $modules->get("InputfieldFieldset");
-        $fsa->label = __("Actions");
-        $fsa->icon = 'bolt';
-        //$fsa->collapsed = Inputfield::collapsedHidden;
-
-        $href = $config->urls->admin . 'module/edit?name=' . self::$_data->className . '&collapse_info=1&action=backup_now';
-        $field = $modules->get('InputfieldButton');
-        $field->attr('id+name', 'backupNow');
-        $field->attr('value', 'Initiate Backup Process');
-        $field->attr('data-action', $href);
-        $field->icon = 'clone';
-        $fsa->append($field);
-
-        if(DUP_Util::getTotalPackages(self::$_data->path, self::DUP_PACKAGE_EXTENSION)) {
-            $href = $config->urls->admin . 'module/edit?name=' . self::$_data->className . '&collapse_info=1&action=clean_packages';
-            $field = $modules->get('InputfieldButton');
-            $field->attr('id+name', 'pruneBackups');
-            $field->attr('value', 'Delete All Packages');
-            $field->attr('data-action', $href);
-            $field->attr('enabled', 'disabled');
-            $field->icon = 'trash';
-            $fsa->append($field);
-        }
-
-        $fields->append($fsa);
-        */
 
         $fs = $modules->get("InputfieldFieldset");
         $fs->label = __("Package settings");
@@ -1037,6 +1073,48 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
         $fs->append($fsftp);
 
+        // DROPBOX
+        if(!class_exists('DropboxClient')) {
+            $skip = true;
+        }
+        $description = ($skip == false) ? $disabled = '' : __("The required SDK is not installed. Supported installation only: [Composer](https://getcomposer.org/doc/00-intro.md). Run **composer require kunalvarma05/dropbox-php-sdk**");
+        $field = $modules->get('InputfieldCheckbox');
+        $field->attr('name', 'useDropbox');
+        $field->label = 'Dropbox';
+        $field->description = $description;
+        $field->attr('checked', ($data['useDropbox'] == '1' && empty($disabled)) ? 'checked' : '');
+        $field->attr('disabled', $disabled);
+        $fs->append($field);
+        $disabled = 'disabled';
+        $skip = false;
+
+        $fsdb = $modules->get("InputfieldFieldset");
+        $fsdb->label = "Dropbox settings";
+        $fsdb->description = "Save packages to Dropbox.";
+        $fsdb->icon = 'dropbox';
+        $fsdb->showIf = "useDropbox=1";
+
+        $field = $modules->get('InputfieldText');
+        $field->attr('name', 'dropboxAccessToken');
+        $field->label = __("Generated access token");
+        $field->description = "Obtain an Access Token [here](https://www.dropbox.com/developers/apps).";
+        $field->value = $data['dropboxAccessToken'];
+        $fsdb->append($field);
+        /*
+        $field = $modules->get('InputfieldText');
+        $field->attr('name', 'dropboxAppKey');
+        $field->label = __("App Key");
+        $field->value = $data['dropboxAppKey'];
+        $fsdb->append($field);
+
+        $field = $modules->get('InputfieldText');
+        $field->attr('name', 'dropboxAppSecret');
+        $field->label = __("App Secret");
+        $field->value = $data['dropboxAppSecret'];
+        $fsdb->append($field);
+        */
+        $fs->append($fsdb);
+
         // GOOGLE DRIVE
         if(!class_exists('GoogleDriveClient')) {
             $skip = true;
@@ -1159,5 +1237,13 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
 
         return $fields;
+    }
+
+    protected function styles(HookEvent $event) {
+        $page = $event->object;
+        if(!($page->process == 'ProcessModule')) return;
+        $github = '<script async defer src="https://buttons.github.io/buttons.js"></script>';
+
+        $event->return = str_replace("</head>", "\r\n$github</head>", $event->return);
     }
 }

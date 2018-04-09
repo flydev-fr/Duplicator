@@ -1,5 +1,5 @@
 /************************************************/
-var $debug = true; // set to TRUE for debug mode
+var $debug = false; // set to TRUE for debug mode
 /************************************************/
 
 $(document).ready(function() {

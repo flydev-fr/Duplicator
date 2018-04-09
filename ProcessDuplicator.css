@@ -1,9 +1,35 @@
 div#head {
     width: 100%;
     display: table;
-
     height: 100px;
+    border: 1px solid #d9e1ea;
+    padding: 5px 10px;
+    margin-bottom: 5px;
+    background-color: #ffffff;
 }
+
+div .master-head {
+    display: table;
+    width: 100%;
+}
+
+div .sub-head {
+    display: table;
+    width: 100%;
+}
+div.sub-head .btn, div.sub-head iframe {
+    float: right !important;
+}
+div.sub-head .btn {
+    margin-right: 10px;
+}
+div.sub-head span {
+    display: inline-block;
+    font-size: 10px;
+    font-style: italic;
+    vertical-align: middle;
+}
+
 div#head #duplogo {
     float: left;
     max-width: 80px;
@@ -16,10 +42,12 @@ div#head h2 {
     color: #DB1174;
     font-weight: 900;
     float: left;
-    margin: 2em 1em 1em 0;
     display: table-cell;
     vertical-align: middle;
     text-align: center;
+}
+.AdminThemeDefault div#head h2 {
+    margin: 2em 1em 1em 0;
 }
 
 div#head ul {
@@ -35,8 +63,9 @@ div#head ul li {
     border: 1px solid #d7e2e6;
 }
 div#head ul li:hover {
-    background-color: #DB1174;
+    background-color: #f0f0f0;
     color: #fff;
+    cursor: pointer;
 }
 div#head ul li:hover a {
     color: #fff;
@@ -102,8 +131,10 @@ div#head ul li:hover a {
 }
 
 #deletePackages {
-    position: absolute;
+    position: relative;
     right: 0;
+    float: right;
+    margin: 0;
 }
 
 .modal #deletePackages {
@@ -111,10 +142,31 @@ div#head ul li:hover a {
     right: 1em;
 }
 
-#packagesDataTable {
-    color: #555555;
+.adminDataTableMenu {
+    background-color: #fff;
+    border: 1px solid #d9e1ea;
+    padding: 10px 13px !important;
+}
+.adminDataTableMenu ul {
+    list-style-type: none;
+    padding: 0;
+    margin: auto;
 }
 
+#packagesDataTable {
+    color: #555555;
+    background-color: #ffffff;
+    border: 1px solid #d9e1ea;
+}
+#packagesDataTable td, #packagesDataTable th {
+    padding: 10px 13px !important;
+}
+#packagesDataTable tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+#packagesDataTable tr:nth-child(even) {
+    background-color: rgb(249, 253, 255);
+}
 #packagesDataTable img {
     max-width: 16px;
     display: inline;
@@ -130,3 +182,51 @@ div#head ul li:hover a {
     padding: 20px !important;
 }
 
+.icon {
+    max-width: 50px;
+}
+
+.btn {
+    background-color: #eff3f6;
+    background-image: -webkit-linear-gradient(top, #fafbfc, #e4ebf0);
+    background-image: -moz-linear-gradient(top, #fafbfc, #e4ebf0);
+    background-image: linear-gradient(to bottom, #fafbfc, #e4ebf0);
+    background-repeat: repeat-x;
+    background-size: 110% 110%;
+    -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFFAFBFC', endColorstr='#FFE4EBF0')";
+}
+.btn {
+    display: inline-block;
+    font-weight: 600;
+    vertical-align: middle;
+    cursor: pointer;
+    border: 1px solid #d1d2d3;
+    border-radius: 0.25em;
+    color: #24292e;
+    font-size: 14px;
+    padding: 2px 8px 2px 2px !important;
+}
+.btn:hover {
+    background-color: #e6ebf1;
+    background-image: -webkit-linear-gradient(top, #f0f3f6, #dce3ec);
+    background-image: -moz-linear-gradient(top, #f0f3f6, #dce3ec);
+    background-image: linear-gradient(to bottom, #f0f3f6, #dce3ec);
+    border-color: #afb1b2;
+    -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFF0F3F6', endColorstr='#FFDCE3EC')";
+}
+
+.large a {
+}
+.large .fa {
+    height: 16px;
+    top: 4px;
+    font-size: 14px;
+    padding: 0 4px;
+}
+a.btn:hover {
+    text-decoration: none;
+    color: #24292e;
+}
+a.btn:hover .fa, a.btn:hover .octicon-star {
+    color: #DB1174;
+}

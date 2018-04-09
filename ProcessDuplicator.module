@@ -11,7 +11,7 @@ class ProcessDuplicator extends Process
 		return array(
 			'title' 	  => 'Duplicator - Packages Manager',
 			'summary' 	  => 'Manage your backups/packages built with Duplicator inside ProcessWire.',
-			'version' 	  => '1.1.7',
+			'version' 	  => '1.1.8',
 			'author' 	  => 'flydev',
 			'icon' 		  => 'clone',
 			'href' 		  => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -26,8 +26,7 @@ class ProcessDuplicator extends Process
 			),
 			'require' 	  => 'Duplicator',
 			'autoload'    => function() {
-				if(wire('page')->process == 'ProcessDuplicator') return true;
-				else return false;
+				return (wire('page')->process == 'ProcessDuplicator');
 			}
 		);
 	}
@@ -36,12 +35,22 @@ class ProcessDuplicator extends Process
 	{
 		parent::init();
 
-		if ($this->permissions->get('duplicator')->id && !$this->user->hasPermission('duplicator'))
-			throw new WirePermissionException(__('Duplicator: You have no permission to use this module.'));
+		if ($this->permissions->get('duplicator')->id && !$this->user->hasPermission('duplicator')) {
+            throw new WirePermissionException(__('Duplicator: You have no permission to use this module.'));
+        }
 
 		$this->dupmod = $this->modules->get(Duplicator::DUP_APPLICATION_NAME);
+
+        $this->addHookAfter('Page::render', $this, 'styles');
 	}
 
+    protected function styles(HookEvent $event) {
+        $page = $event->object;
+        if(!($page->process == 'ProcessDuplicator')) return;
+        $github = '<script async defer src="https://buttons.github.io/buttons.js"></script>';
+
+        $event->return = str_replace("</head>", "\r\n$github</head>", $event->return);
+    }
 
 	public function ___execute()
 	{
@@ -155,25 +164,31 @@ class ProcessDuplicator extends Process
 	 * @param $filename
 	 */
 	protected function getInstaller($filename) {
-		//$packages = DUP_Util::getPackages(wire('config')->paths->assets . Duplicator::DUP_DEFAULT_LOCAL_FOLDER, Duplicator::DUP_PACKAGE_EXTENSION);
-		//if(in_array($filename, $packages)) {
 		wireSendFile(wire('config')->paths->siteModules . Duplicator::DUP_APPLICATION_NAME . DS . 'Deploy' . DS .'installer.php');
-		//}
 	}
 
 	/**
 	 * @return string
 	 */
 	protected function renderHead() {
+        $modinfo = $this->modules->getModuleInfo('Duplicator');
+        
 		$out = "<div id='head'>";
-		$out .= "	<img id='duplogo' src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/Duplicator-logo-v2.png'>";
-		$out .= "	<h2> Package Manager</h2>";
-		$out .= "	<ul>";
+		$out .= "    <div class='master-head'>";
+		$out .= "	    <img id='duplogo' src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/Duplicator-logo-v2.png'>";
+		$out .= "	";
+		$out .= "	    <ul>";
 		if(wire('user')->hasRole('superuser')) {
-			$out .= "	<li><a href='" . $this->config->urls->admin . "module/edit?name=" . Duplicator::DUP_APPLICATION_NAME . "&collapse_info=1'><i class='fa fa-cog'></i> Settings</a></li>";
+			$out .= "	<li><a title='Got to settings' href='" . $this->config->urls->admin . "module/edit?name=" . Duplicator::DUP_APPLICATION_NAME . "&collapse_info=1'><img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/settings-ico.png' class='icon'></a></li>";
 		}
-		$out .=		"	<li><a href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank'><i class='fa fa-comments'></i> Support</a></li>";
-		$out .=	"	</ul>";
+		$out .=		"	<li><a title='Go to support thread' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank'><img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/support-ico.png' class='icon'></a></li>";
+		$out .=	"	    </ul>";
+		$out .= "    </div>";
+		$out .= "    <div class='sub-head'>";
+        $out .= "        <span>Duplicator version {$modinfo['version']}</span>";
+        $out .= "        <a class='github-button' href='https://github.com/flydev-fr/Duplicator' data-icon='octicon-star' data-show-count='false' title='Star Duplicator on GitHub' data-size='large'>Star</a>";
+        $out .= "        <a class='large btn' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank' title='Star Duplicator on GitHub'><i class='fa fa-heart social'></i> Like </a>";
+        $out .= "    </div>";
 		$out .= "</div>";
 
 		return $out;
@@ -259,7 +274,7 @@ class ProcessDuplicator extends Process
 
 		$f = $this->modules->get('InputfieldButton');
 		$f->attr('id+name', 'newPackage');
-		$f->value = __('Initiate Backup Process');
+		$f->value = __('Backup Now');
 		$f->icon = 'clone';
 		$f->attr('data-action', $href . '/?action=backup_now');
 		$f->attr('target', '_SELF');
@@ -307,22 +322,24 @@ class ProcessDuplicator extends Process
 					array_pop($parts);
 					$tsstr = implode('-', $parts);
 					$ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);
-					$createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
+					if($ts) {
+						$createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
 
-					$dataAction = $this->config->urls->httpAdmin . 'setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
-					$href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink" title="Download and run this php file to install the package."><i class="fa fa-bolt"></i> Installer</a>';
-					$href2 = '<a href="?action=packages&file=' . $originalFilename . '" class="btnlink" title="Download and put it in the webroot alongside installer.php"><i class="fa fa-download"></i> Package</a>';
-					$href3 = '<a href="?action=delete&file=' . $originalFilename . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
+						$dataAction = $this->config->urls->httpAdmin . 'setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
+						$href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink" title="Download and run this php file to install the package."><i class="fa fa-bolt"></i> Installer</a>';
+						$href2 = '<a href="?action=packages&file=' . $originalFilename . '" class="btnlink" title="Download and put it in the webroot alongside installer.php"><i class="fa fa-download"></i> Package</a>';
+						$href3 = '<a href="?action=delete&file=' . $originalFilename . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
-					$data = array(
-						'time' => $ts->getTimestamp(),
-						"<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/localfolder-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
-						$createdOn,
-						DUP_Util::human_filesize(filesize($path . DS . $originalFilename)),
-						$href1 . ' ' . $href2 . ' ',
-						$href3
-					);
-					array_push($rows, $data);
+						$data = array(
+							'time' => $ts->getTimestamp(),
+							"<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/localfolder-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
+							$createdOn,
+							DUP_Util::human_filesize(filesize($path . DS . $originalFilename)),
+							$href1 . ' ' . $href2 . ' ',
+							$href3
+						);
+						array_push($rows, $data);
+					}
 				}
 			}
 		}
@@ -421,7 +438,7 @@ class ProcessDuplicator extends Process
 		$out = "
 			<div class='adminDataTableMenu'>
 				<ul>
-					<li><button id='btnSortByName' class='dsc'>". __("Sort by Name") . "</button></li>
+					<li><button id='btnSortByName' class='dsc btn large'>". __("Sort by Name") . "</button></li>
 				</ul>
 			</div>
 		";

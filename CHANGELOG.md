@@ -3,6 +3,13 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.1.8] - 2018-04-09
+### Changed
+- ProcessDuplicator UI
+
+### Fixed
+- fix Duplicator: ZIP file (zipData) work properly on Windows and Unix
+
 ## [1.1.7] - 2017-12-12
 ### Changed
 - changed check for cron triggers from ready() to init()

@@ -208,7 +208,7 @@ class ProcessDuplicator extends Process
 		$field->icon = 'history';
 		$field->collapsed = Inputfield::collapsedYes;
 		$field->attr('id', 'InputfieldLoglines');
-        if(!file_exists(Duplicator::DUP_LOG_FILENAME)) return '';
+        if(!file_exists($this->config->paths->logs . Duplicator::DUP_LOG_FILENAME . '.txt')) return '';
 		$loglines = '';
 		$key   = $this->dupmod->lastPackageName;
 		$datelog = basename($key, Duplicator::DUP_PACKAGE_EXTENSION);

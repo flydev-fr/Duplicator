@@ -136,7 +136,6 @@ class GoogleDriveClient
                     $key   = $file['name'];
                     $tsstr = basename($key, '.package.zip');
                     $parts = explode('-', $tsstr);
-                    bd($parts);
                     array_pop($parts);
                     $tsstr = implode('-', $parts);
                     $ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);

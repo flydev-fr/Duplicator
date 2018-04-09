@@ -3,6 +3,10 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.1.9] - 2018-04-09
+### Fixed
+- fix ProcessDuplicator: log file existence check on initialization
+
 ## [1.1.8] - 2018-04-09
 ### Changed
 - ProcessDuplicator UI

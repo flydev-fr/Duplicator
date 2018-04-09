@@ -251,17 +251,20 @@ class DUP_DataFilter extends RecursiveFilterIterator {
 
     public function __construct(RecursiveIterator $iterator, $excluded) {
         $this->excluded = $excluded;
+		ini_set('max_execution_time', 300);
         parent::__construct($iterator);
     }
 
     public function accept() {
         return ($this->current()->isReadable() &&
+				($this->current()->isDir() || $this->current()->isFile()) &&
                 !in_array($this->current(), $this->excluded['exclude']) &&
-                !in_array($this->getExtension(), $this->excluded['extension'])
+                !in_array($this->current()->getExtension(), $this->excluded['extension'])
         );
     }
 
     public function getChildren() {
+		ini_set('max_execution_time', 300);
         return new self($this->getInnerIterator()->getChildren(), $this->excluded);
     }
 }

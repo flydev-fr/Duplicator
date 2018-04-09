@@ -3,6 +3,11 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.2.9] - 2018-04-09
+### Added
+- added Dropbox v2 support (composer support only)
+- added Package Manager shortcut to Duplicator
+
 ## [1.1.9] - 2018-04-09
 ### Fixed
 - fix ProcessDuplicator: log file existence check on initialization

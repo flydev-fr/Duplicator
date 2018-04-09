@@ -30,7 +30,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         return array(
             'title'     => 'Duplicator',
-            'version'   => '1.1.7',
+            'version'   => '1.1.8',
             'summary'   => 'Duplicate, backup and transfer an entire site from one location to another.',
             'author'    => 'flydev',
             'href'      => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -262,16 +262,16 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         $defaultOptions = array(
             'filename' => DUP_Util::formatFilename(wire('config')->httpHost, 'pw' . strrchr(self::DUP_PACKAGE_EXTENSION, '.')),
-            'folder' => wireTempDir(self::DUP_TEMP_FOLDER),
+            'folder' => wireTempDir(self::DUP_TEMP_FOLDER, array('maxAge' => 300)),
             'exclude' => array(),
-            'extension' => array()
-            //'allowHidden'   => true
+            'extension' => array(),
+            'allowHidden'   => true
         );
         $options = array_merge($options, $defaultOptions);
-        $root = str_replace('/', DS, wire('config')->paths->root);
-        $path = str_replace('/', DS, wire('config')->paths->root . self::DUP_SITE_FOLDER . DS . basename(wire('config')->paths->assets) . DS);
+        $root = wire('config')->paths->root;
+        $path = wire('config')->paths->root . self::DUP_SITE_FOLDER . '/' . basename(wire('config')->paths->assets) . '/';
 
-        array_push($options['exclude'], $path . 'cache' . DS . 'WireTempDir');
+        array_push($options['exclude'], $path . 'cache' . '/' . 'WireTempDir');
         if ($this->backupWire) array_push($options['exclude'], $root . 'wire');
         if ($this->backups) array_push($options['exclude'], $path . 'backups');
         if ($this->backupLogs) array_push($options['exclude'], $path . 'logs');
@@ -304,19 +304,18 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             DUP_Logs::log('- could not create temporary directory: ' . $options['folder']);
             return false;
         }
-
+	
         $fileinfo['zipfile'] = $options['folder'] . $options['filename'];
         $fileinfo['zipname'] = basename($fileinfo['zipfile']);
+		$zipinfo = $this->zipData($fileinfo['zipfile'], $root, $options);
+		$fileinfo['structure'] = $zipinfo['zipfile'];
 
-        $zipinfo = $this->zipData(wire('config')->paths->root, $fileinfo['zipfile'], $options);
-        $fileinfo['structure'] = $zipinfo;
-
-        if (!file_exists($fileinfo['zipfile'])) {
+        if (!file_exists($fileinfo['structure'])) {
             DUP_Logs::log("- an error occured while building the ProcessWire structure.");
             return false;
         }
-
-        return $fileinfo;
+		
+        return $zipinfo;
     }
 
     /*
@@ -536,78 +535,97 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         return true;
     }
 
-    /**
-     * Build a ZIP file
-     * @return array
-     */
-    public function zipData($source, $destination, $excluded = array())
-    {
-        DUP_Util::timer('zip');
+	
+	function zipData($zipfile, $files, array $options = array()) {
+	
+		static $depth = 0;
+		$defaults = array(
+			'allowHidden' => true,
+			'allowEmptyDirs' => true,
+			'overwrite' => false,
+			'maxDepth' => 0, 
+			'exclude' => array(), // files or dirs to exclude
+			'dir' => '',
+			'zip' => null, // internal use: holds ZipArchive instance for recursive use
+		);
+		$return = array(
+			'files' => array(),
+			'errors' => array(),
+		);
 
-        if($this->archiveFlush == true) {
-            DUP_Logs::log('- advanced option activated: ArchiveFlush');
-        }
-
-        if (extension_loaded('zip')) {
-
-            $filecount = 0;
-            $dircount = 0;
-            $size = 0;
-            $limitItems = 0;
-
-            if (file_exists($source)) {
-                $zip = new \ZipArchive();
-                if ($zip->open($destination, \ZIPARCHIVE::CREATE)) {
-                    $source = realpath($source);
-
-                    $innerIterator = new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS);
-                    $iterator = new RecursiveIteratorIterator(new DUP_DataFilter($innerIterator, $excluded));
-
-                    foreach ($iterator as $pathname => $fileInfo) {
-                        $file = realpath($pathname);
-                        $size += filesize($file);
-                        if (is_dir($file)) {
-                            $dircount++;
-                            $zip->addEmptyDir(str_replace($source . '', '', $file . ''));
-                        } elseif (is_file($file)) {
-                            $filecount++;
-                            $zip->addFile($file, str_replace($source . '', '', $file));
-                            $limitItems++;
-
-                            if($limitItems > Duplicator::DUP_ZIP_FLUSH_TRIGGER && $this->archiveFlush == true) {
-
-                                $zip->close();
-                                DUP_Util::FcgiFlush();
-                                $zip->open($destination);
-                                //DUP_Logs::log("Items archived [". $limitItems ."] flushing response.");
-                                $limitItems = 0;
-                            }
-                        }
-                    }
-                }
-
-                $result = $zip->close();
-                if($result == false) {
-                    DUP_Logs::log('- could not finish creating the (zip) structure, an error occured');
-                }
-
-                $infos['files'] = $filecount;
-                $infos['dirs'] = $dircount;
-                $infos['size'] = $size;
-
-                DUP_Logs::log("- structure zipped successfully in " . DUP_Util::timer('zip') ."sec");
-
-                return $infos;
-            }
-            else {
-                DUP_Logs::log("- the file '{$source}' doesn't exist");
-            }
-        }
-        else {
-            DUP_Logs::log("- could not load php zip extension");
-        }
-        return false;
-    }
+		if(!empty($options['zip']) && !empty($options['dir']) && $options['zip'] instanceof \ZipArchive) {
+			// internal recursive call
+			$recursive = true;
+			$zip = $options['zip']; // ZipArchive instance
+		} else if(is_string($zipfile)) {
+			if(!class_exists('\ZipArchive')) throw new WireException("PHP's ZipArchive class does not exist");
+			$options = array_merge($defaults, $options);
+			$zippath = dirname($zipfile);
+			if(!is_dir($zippath)) throw new WireException("Path for ZIP file ($zippath) does not exist");
+			if(!is_writable($zippath)) throw new WireException("Path for ZIP file ($zippath) is not writable");
+			if(empty($files)) throw new WireException("Nothing to add to ZIP file $zipfile");
+			if(is_file($zipfile) && $options['overwrite'] && !unlink($zipfile)) throw new WireException("Unable to overwrite $zipfile");
+			if(!is_array($files)) $files = array($files);
+			if(!is_array($options['exclude'])) $options['exclude'] = array($options['exclude']);
+			$recursive = false;
+			$zip = new \ZipArchive();
+			if($zip->open($zipfile, \ZipArchive::CREATE) !== true) throw new WireException("Unable to create ZIP: $zipfile");
+		} else {
+			throw new WireException("Invalid zipfile argument");
+		}
+		$dir = strlen($options['dir']) ? rtrim($options['dir'], '/') . '/' : '';
+		foreach($files as $file) {
+			$basename = basename($file);
+			$name = $dir . $basename;
+			$name = str_replace(DS, '/', $name);
+			if($basename[0] == '.' && $recursive) {
+				if(!$options['allowHidden']) continue;
+				if(is_array($options['allowHidden']) && !in_array($basename, $options['allowHidden'])) continue;
+			}
+			if(count($options['exclude'])) {
+				if(!is_readable($name) && in_array($name, $options['exclude'])) { continue; }
+				if(in_array($name, $options['exclude']) || in_array("$name/", $options['exclude'])) { continue; }
+			}
+			$file = str_replace(DS, '/', $file);
+			if(count($options['exclude'])) {
+				if(!is_readable($file) ||
+               in_array($file, $options['exclude']) ||
+               in_array(pathinfo($file, PATHINFO_EXTENSION), $options['extension'])) { continue; }
+				if(in_array($name, $options['exclude']) || in_array("$name/", $options['exclude'])) { continue; }
+			}
+			if(is_dir($file)) {
+				if($options['maxDepth'] > 0 && $depth >= $options['maxDepth']) continue;
+				$_files = array();
+				foreach(new \DirectoryIterator($file) as $f) {
+					if($f->isDot()) continue; 
+					if(!$f->isReadable() || !$f->isWritable()) { continue; }
+					if($options['maxDepth'] > 0 && $f->isDir() && ($depth+1) >= $options['maxDepth']) continue;
+					$_files[] = str_replace(DS, '/', $f->getPathname());
+				}
+				if(count($_files)) {
+					$zip->addEmptyDir($name);
+					$options['dir'] = "$name/";
+					$options['zip'] = $zip;
+					$depth++;
+					$_return = $this->zipData($zipfile, $_files, $options);
+					$depth--;
+					foreach($_return['files'] as $s) $return['files'][] = $s;
+					foreach($_return['errors'] as $s) $return['errors'][] = $s;
+				} else if($options['allowEmptyDirs']) {
+					$zip->addEmptyDir($name);
+				}
+			} else if(file_exists($file)) {
+				if($zip->addFile($file, $name)) {
+					$return['files'][] = $name;
+				} else {
+					$return['errors'][] = $name;
+				}
+			}
+		}
+		if(!$recursive) $zip->close();
+        $return['zipfile'] = $zipfile;
+		return $return;
+	}
 
 
     /*

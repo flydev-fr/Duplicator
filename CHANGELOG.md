@@ -3,6 +3,20 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.3.10-ATO] - 2019-03-18 
+**`ATO DEVELOPMENT version`**
+### Added
+- Added regexp exclusion feature
+- Added checkbox for ProcessWire image variations exclusion (checked by default)
+
+### Fixed
+- fix installer.php  
+
+### Changed
+- zipData revised
+- package structure: SQL dump included in site structure zip
+- exclusion feature: extensions are now case-insensitive
+
 ## [1.2.9] - 2018-04-09
 ### Added
 - added Dropbox v2 support (composer support only)

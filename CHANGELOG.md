@@ -3,6 +3,11 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.3.11-ATO] - 2019-05-14 
+**`ATO DEVELOPMENT version`**
+### Fixed
+- ProcessDuplicator: support dash char in domain name
+
 ## [1.3.10-ATO] - 2019-03-18 
 **`ATO DEVELOPMENT version`**
 ### Added

@@ -115,7 +115,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     const DUP_PACKAGE_MIME_TYPE         = 'application/zip';
     const DUP_TIMESTAMP_FORMAT          = 'Y-m-d_H-i-s';
 	const DUP_WIRETEMP_MAX_TIME			= 10*60;	//ATO: Increased to 10min
-	const DUP_ZIP_FLUSH_MBYTES			= 200;		//ATO: Flush ZIP after quantity of MBytes
+    // const DUP_ZIP_FLUSH_MBYTES			= 200;		//ATO: Flush ZIP after quantity of MBytes
 	const DUP_ZIP_LOGLEVEL				= 2;		//ATO: 0:No Logging, otherwise write logfile into output directory 1:Only errors, 2:Verbose info
     const DUP_MAX_PACKAGES              = 100;
     const DUP_PHP_MAX_MEMORY            = 512;
@@ -129,7 +129,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         return array(
             'title'     => 'Duplicator',
-            'version'   => '1.3.11',
+            'version'   => '1.3.12',
             'summary'   => 'Duplicate, backup and transfer an entire site from one location to another.',
             'author'    => 'flydev',
             'href'      => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -157,7 +157,8 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             'maxPackages'    => self::DUP_MAX_PACKAGES,
             'removeBackups'  => 1,
             // Advanced options
-            'archiveFlush'       => 0,
+            'archiveFlush'   => 0,
+            'zip_flush_mbytes'=> 0, 
             // CRON mode
             'cronMode'       => 'none',
             // storage mode
@@ -718,7 +719,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 	 * after some 100MBytes.
 	 * 
 	 */
-	function zipData2($zipfile, $rootDirectory, array $options = array()) {
+    function zipData2($zipfile, $rootDirectory, array $options = array()) {
 		wire('log')->message($zipfile);
 		if(!is_string($zipfile)) throw new WireException("Invalid zipfile argument");
 		if(!class_exists('\ZipArchive')) throw new WireException("PHP's ZipArchive class does not exist");
@@ -745,10 +746,10 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 		$zipLog = new DupZipLog($this->getPath() . '/' . basename($zipfile) . '.log', self::DUP_ZIP_LOGLEVEL);
 
 		if(isset($options['allowHidden']))
-			{
+		{
 			$allowHidden = $options['allowHidden'];
 			if(!is_array($allowHidden)) $allowHidden = [ $allowHidden ];
-			}
+		}
 		else
 			$allowHidden = [];
 		
@@ -825,26 +826,26 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 					{
 					$zip->addEmptyDir($relPath);
 					foreach($dirFiles as $file)
-						{
+                    {
 						$filePath = $fullPath . $file;
 						if(file_exists($filePath)
 						&& $zip->addFile($filePath, $relPath.$file))
-							{
+						{
 							$ret['files'][] = $filePath;
 							$fileSize = filesize($filePath);
 							$totalFiles += 1;
 							$totalBytes += $fileSize;
 							
 							if($ext = pathinfo($file, PATHINFO_EXTENSION))
-								{
-								if(!isset($extSizes[$ext])) $extSizes[$ext] = 0;
-								$extSizes[$ext] += $fileSize;
-								}
+                            {
+                                if(!isset($extSizes[$ext])) $extSizes[$ext] = 0;
+                                $extSizes[$ext] += $fileSize;
+                            }
 							$zipLog->verbose("ZIP: {$thisDir}{$file}");
 							
 							$fragmentBytes += $fileSize;
-							if($fragmentBytes >= self::DUP_ZIP_FLUSH_MBYTES*1024*1024)
-								{
+							if(($this->zip_flush_mbytes > 0) && ($fragmentBytes >= /* self::DUP_ZIP_FLUSH_MBYTES */ $this->zip_flush_mbytes *1024*1024))
+							{
 								$zipLog->verbose("CLOSING ZIP: {$zipfile}");
 								$zip->close();
 								$zipLog->verbose("OPENING ZIP: {$zipfile}");
@@ -852,37 +853,37 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 								$zipLog->verbose("OPENED ZIP: {$zipfile}");
 								$fragmentBytes = 0;
 								set_time_limit(300);
-								}
-							}
-						else
-							{
-							$ret['errors'][] = $filePath;
-							$zipLog->log("NOTEXIST: {$filePath}");
 							}
 						}
-					}
+						else
+                        {
+							$ret['errors'][] = $filePath;
+							$zipLog->log("NOTEXIST: {$filePath}");
+                        }
+                    }
+                }
 				else
-					{
+				{
 					// Empty directory
 					$zipLog->verbose("EMPTY: {$fullPath}");
 					if($options['allowEmptyDirs'])
 						$zip->addEmptyDir($relPath);
-					}
-				}
-			else
-				{
-				$zipLog->log("NODIR: {$fullPath}");
-				// ERROR
 				}
 			}
+			else
+			{
+				$zipLog->log("NODIR: {$fullPath}");
+				// ERROR
+			}
+		}
 		
 		$zipLog->log("{$totalFiles} Files in {$totalDirectories} Directories: ".sprintf("%.2fMB", $totalBytes/(1024*1024)));
 		if($zipLog->logLevel >= 2)
-			{
+		{
 			arsort($extSizes);
 			foreach($extSizes as $ext => $siz)
 				$zipLog->verbose(sprintf("%s: %.2fMB", $ext, $siz/(1024*1024)));
-			}
+		}
 	
 		$zipLog->log("CLOSING ZIP: {$zipfile}");
 		$zip->close();
@@ -1286,6 +1287,14 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $field->label = 'Archive Flush: Attempt Network Keep Alive';
         $field->description = 'This will attempt to keep a network connection established for large archives.';
         $field->attr('checked', $data['archiveFlush'] == '1' ? 'checked' : '');
+        $fs->append($field);
+
+        $field = $modules->get('InputfieldInteger');
+        $field->attr('name', 'zip_flush_mbytes');
+        $field->label = 'Flush ZIP after quantity of MBytes';
+        $field->description = 'Use this option for large archives.';
+        $field->value = $data['zip_flush_mbytes'];
+        $field->notes = 'This option is disabled when empty or equal to 0.';
         $fs->append($field);
 
         $fields->append($fs);

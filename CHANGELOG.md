@@ -3,6 +3,11 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+# [1.3.12-ATO] - 2019-05-15 
+**`ATO DEVELOPMENT version`**
+### Added
+- Duplicator: added a config option to set the quantity of megabytes saved before an archive flush
+
 ## [1.3.11-ATO] - 2019-05-14 
 **`ATO DEVELOPMENT version`**
 ### Fixed

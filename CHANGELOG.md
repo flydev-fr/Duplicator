@@ -3,7 +3,17 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
-# [1.3.12-ATO] - 2019-05-15 
+## [1.3.13-ATO] - 2020-01-06
+**`ATO DEVELOPMENT version`**
+### Added
+- Supporting ~ in local path to prefix input with current webroot ($config->paths->root)
+
+### Fixed
+- Fix: Removing colon from default package name (port in URL)
+- Fix: Custom filename not used
+- Fix: Archive function not returning ZIP (lead to fail of FTP etc.)
+
+## [1.3.12-ATO] - 2019-05-15 
 **`ATO DEVELOPMENT version`**
 ### Added
 - Duplicator: added a config option to set the quantity of megabytes saved before an archive flush

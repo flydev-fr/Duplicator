@@ -1,10 +1,106 @@
 <?php
-
+/*
+ * Based on Duplicator 1.2.9, modified by A. Tofahrn (autofahrn) for enhanced processing of larger installs.
+ *
+ * 3.1.13: Supporting ~ in local path to prefix input with current webroot ($config->paths->root)
+ * 3.1.13: Fix: Removing colon from default package name (port in URL)
+ * 3.1.13: Fix: Custom filename not used
+ * 3.1.13: Fix: Archive function not returning ZIP (lead to fail of FTP etc.)
+ */
 
 require_once (__DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupUtil.php');
 require_once (__DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupLogs.php');
 require_once (__DIR__ . DIRECTORY_SEPARATOR . 'Classes/BackupDatabase.php');
 
+class DupZipLog {	//ATO: Utility class to implement some logging into a file per ZIP
+	public $fLog = null;
+	public $startTime = 0;
+	public $logLevel = 0;
+
+	public $excludeNames = [];
+	public $excludeRegEx = [];
+	public $excludeExtension = [];
+
+	public function log($str)
+		{
+		if($this->fLog)
+			fwrite($this->fLog, sprintf("%.1fs: %s\n", microtime(true) - $this->startTime, $str));
+		}
+	public function verbose($str)
+		{
+		if($this->logLevel > 1)
+			$this->log($str);
+		}
+
+	function __construct($logFilename, $logLevel=1)
+		{
+		$this->logLevel = $logLevel;
+		$logName = $logFilename; // $this->getPath() . basename($zipFilename) . '.log';
+
+		if($this->logLevel > 0)
+			{
+			$this->fLog = fopen($logName, 'w');
+			$this->startTime = microtime(true);
+			$this->log("Logging {$zipFilename}\n");
+			}
+		}
+	function __destruct()
+		{
+		if($this->fLog)
+			{
+			fwrite($this->fLog, sprintf("Done in %.2fs\n", microtime(true) - $this->startTime));
+			fclose($this->fLog);
+			}
+		}
+	public function setExcludes($Excludes, $Extensions)
+		{
+		$exts = array();
+		foreach($Excludes as $excl)
+			{
+			$excl = trim($excl);
+			if(preg_match('/(\%[^%]+\%)\s*(#\s*(.*))?$/', $excl, $m) === 1)
+				$this->excludeRegEx[] = $m[1];	// $m[3] would be comment...
+			else if(strpos($excl, '*.') === 0)
+				$exts[] = substr($excl, 2);
+			else
+				$this->excludeNames[] = rtrim($excl, '/');
+			}
+		foreach($Extensions as $ext)
+			$exts[] = $ext;
+		$this->excludeExtension = array_map("strtolower", $exts);
+		if($this->logLevel > 1)
+			{
+			$this->log("Exclude Names: ".print_r($this->excludeNames, TRUE));
+			$this->log("Exclude Extension: ".print_r($this->excludeExtension, TRUE));
+			$this->log("Exclude RegExp: ".print_r($this->excludeRegEx, TRUE));
+			}
+		}
+	public function isExcluded($name)
+		{
+		if(($ext = pathinfo($name, PATHINFO_EXTENSION))	&& in_array(strtolower($ext), $this->excludeExtension))
+			{
+			$this->verbose("Exclude Extension: {$name}");
+			return(true);
+			}
+		if(in_array($name, $this->excludeNames)
+//		|| in_array(rtrim($name, '/'), $this->excludeNames)
+			)
+			{
+			$this->verbose("Exclude Name: {$name}");
+			return(true);
+			}
+		$bRegMatch = false;
+		foreach($this->excludeRegEx as $rx)
+			{
+			if(preg_match($rx, $name, $m) === 1)
+				{
+				$this->verbose("Exclude: {$name} matches {$rx}");
+				return(true);
+				}
+			}
+		return(false);
+		}
+}
 
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
@@ -14,10 +110,13 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     const DUP_SITE_FOLDER               = 'site';
     const DUP_DEFAULT_LOCAL_FOLDER      = 'backups';
     const DUP_TEMP_FOLDER               = 'duplicator-temp';
-    const DUP_PACKAGE_EXTENSION         = 'package.zip';
-    const DUP_PACKAGE_EXTENSION_SHORT   = 'package';
+    const DUP_PACKAGE_EXTENSION         = 'package2.zip';
+    const DUP_PACKAGE_EXTENSION_SHORT   = 'package2';
     const DUP_PACKAGE_MIME_TYPE         = 'application/zip';
     const DUP_TIMESTAMP_FORMAT          = 'Y-m-d_H-i-s';
+	const DUP_WIRETEMP_MAX_TIME			= 10*60;	//ATO: Increased to 10min
+    // const DUP_ZIP_FLUSH_MBYTES			= 200;		//ATO: Flush ZIP after quantity of MBytes
+	const DUP_ZIP_LOGLEVEL				= 2;		//ATO: 0:No Logging, otherwise write logfile into output directory 1:Only errors, 2:Verbose info
     const DUP_MAX_PACKAGES              = 100;
     const DUP_PHP_MAX_MEMORY            = 512;
     const DUP_DB_MAX_TIME               = 5000;
@@ -30,7 +129,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         return array(
             'title'     => 'Duplicator',
-            'version'   => '1.2.9',
+            'version'   => '1.3.13',
             'summary'   => 'Duplicate, backup and transfer an entire site from one location to another.',
             'author'    => 'flydev',
             'href'      => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -50,6 +149,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             'ignoredPath'    => '',
             'backups'        => 1,
             'backupSessions' => 1,
+			'backupVariants' => 1,	//ATO: Image Variants
             'packageName'    => '',
             'cycle'          => 'everyHour',
             'deadline'       => 'never',
@@ -57,7 +157,8 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             'maxPackages'    => self::DUP_MAX_PACKAGES,
             'removeBackups'  => 1,
             // Advanced options
-            'archiveFlush'       => 0,
+            'archiveFlush'   => 0,
+            'zip_flush_mbytes'=> 0, 
             // CRON mode
             'cronMode'       => 'none',
             // storage mode
@@ -157,13 +258,16 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         if (empty($this->path)) {
             $this->path = $this->defaultPath;
         }
+		else if(substr($this->path, 0, 2) == '~/') {	//ATO: Expand leading ~/ to $config->paths->root
+			$this->path = wire('config')->paths->root . substr($this->path, 2);
+		}
 
         if (!is_dir($this->path) && !empty($this->path)) {
             wireMkdir($this->path);
         }
 
         if (empty($this->packageName)) {
-            $this->packageName = str_replace('-', '_', $this->config->httpHost);
+            $this->packageName = str_replace(['-',':'], '_', $this->config->httpHost);
         }
 
         $action = $this->sanitizer->text($this->input->get->action, array('maxLength' => 20));
@@ -276,39 +380,58 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     protected function buildProcessWireBackup($options = array())
     {
         $defaultOptions = array(
-            'filename' => DUP_Util::formatFilename(wire('config')->httpHost, 'pw' . strrchr(self::DUP_PACKAGE_EXTENSION, '.')),
-            'folder' => wireTempDir(self::DUP_TEMP_FOLDER, array('maxAge' => 300)),
+//ATO: Generate ZIP in final folder and name it package2.zip
+//ATO:            'filename' => DUP_Util::formatFilename(wire('config')->httpHost, 'pw' . strrchr(self::DUP_PACKAGE_EXTENSION, '.')),
+//ATO:            'folder' => wireTempDir(self::DUP_TEMP_FOLDER, array('maxAge' => self::DUP_WIRETEMP_MAX_TIME)),
+//            'filename' => DUP_Util::formatFilename(wire('config')->httpHost, 'package2.zip'),
+            'filename' => DUP_Util::formatFilename($this->packageName, 'package2.zip'),	//ATO:Fix for Custom Package name
+            'folder' => $this->path . '/',
             'exclude' => array(),
             'extension' => array(),
             'allowHidden'   => true
         );
         $options = array_merge($options, $defaultOptions);
+
         $root = wire('config')->paths->root;
-        $path = wire('config')->paths->root . self::DUP_SITE_FOLDER . '/' . basename(wire('config')->paths->assets) . '/';
 
-        array_push($options['exclude'], $path . 'cache' . '/' . 'WireTempDir');
-        if ($this->backupWire) array_push($options['exclude'], $root . 'wire');
-        if ($this->backups) array_push($options['exclude'], $path . 'backups');
-        if ($this->backupLogs) array_push($options['exclude'], $path . 'logs');
-        if ($this->backupCache) array_push($options['exclude'], $path . 'cache');
-        if ($this->backupSessions) array_push($options['exclude'], $path . 'sessions');
-        if ($this->backupFiles) array_push($options['exclude'], $path . 'files');
+//ATO: all paths are site-relative
+//ATO:        $path = wire('config')->paths->root . self::DUP_SITE_FOLDER . '/' . basename(wire('config')->paths->assets) . '/';
+//ATO:        array_push($options['exclude'], $path . 'cache' . '/' . 'WireTempDir');
+//ATO:        if ($this->backupWire) array_push($options['exclude'], $root . 'wire');
+//ATO:        if ($this->backups) array_push($options['exclude'], $path . 'backups');
+//ATO:        if ($this->backupLogs) array_push($options['exclude'], $path . 'logs');
+//ATO:        if ($this->backupCache) array_push($options['exclude'], $path . 'cache');
+//ATO:        if ($this->backupSessions) array_push($options['exclude'], $path . 'sessions');
+//ATO:        if ($this->backupFiles) array_push($options['exclude'], $path . 'files');
 
-        $excluded = preg_split('/\r\n|[\r\n]/', $this->ignoredPath);
-        $options['exclude'] = array_merge($options['exclude'], $excluded);
+		$excludeRoot = '/';
+        $assetsPath = $excludeRoot . self::DUP_SITE_FOLDER . '/' . basename(wire('config')->paths->assets) . '/';
+		array_push($options['exclude'], $assetsPath . 'cache' . '/' . 'WireTempDir');
+		if ($this->backupWire) array_push($options['exclude'], '/wire');	
+		if ($this->backups) array_push($options['exclude'], $assetsPath . 'backups');	
+		if ($this->backupLogs) array_push($options['exclude'], $assetsPath . 'logs');	
+		if ($this->backupCache) array_push($options['exclude'], $assetsPath . 'cache');	
+		if ($this->backupSessions) array_push($options['exclude'], $assetsPath . 'sessions');	
+		if ($this->backupVariants) array_push($options['exclude'], '%\.\d+x\d+\.[^/]+$%');	//ATO: Image Variants created by PW
+		if ($this->backupFiles) array_push($options['exclude'], $assetsPath . 'files');
+		$excluded = preg_split('/\r\n|[\r\n]/', $this->ignoredPath);
+		$options['exclude'] = array_merge($options['exclude'], $excluded);
 
+/*ATO: not required, handled in Zap2
         foreach ($options['exclude'] as $option) {
             if(!empty($option)) {
                 $validExt = ($option[0] === '*' && $option[1] === '.') ? $option : '';
                 $ext = substr(strchr($validExt, '.'), 1);
                 if (!empty($ext)) array_push($options['extension'], $ext);
+
                 if(is_dir($root . $option)) {
-                    array_push($options['exclude'], $root . $option);
+                    array_push($options['exclude'], $excludeRoot . $option);
                 } elseif(is_file($root . $option)) {
-                    array_push($options['exclude'], $root . $option);
+                    array_push($options['exclude'], $excludeRoot . $option);
                 }
             }
         }
+*/
 
         foreach ($this->ignoredExtensions as $ignoredExtension) {
             $validExt = substr(strchr($ignoredExtension, '.'), 1);
@@ -322,11 +445,11 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 	
         $fileinfo['zipfile'] = $options['folder'] . $options['filename'];
         $fileinfo['zipname'] = basename($fileinfo['zipfile']);
-		$zipinfo = $this->zipData($fileinfo['zipfile'], $root, $options);
+		$zipinfo = $this->zipData2($fileinfo['zipfile'], $root, $options);	//ATO: Use reworked implementation
 		$fileinfo['structure'] = $zipinfo['zipfile'];
 
         if (!file_exists($fileinfo['structure'])) {
-            DUP_Logs::log("- an error occured while building the ProcessWire structure.");
+            DUP_Logs::log("- an error occured while building the ProcessWire structure: ".$fileinfo['zipfile']." root: ".$root." ".print_r($options, true));
             return false;
         }
 		
@@ -344,7 +467,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             'backup' => array(
                 'filename' => DUP_Util::formatFilename(wire('config')->dbName, 'sql'),
                 'description' => '', //$this->backupFileinfo(),
-                'maxSeconds' => 120
+                'maxSeconds' => self::DUP_WIRETEMP_MAX_TIME
             )
         );
         $options = array_merge($options, $defaultOptions);
@@ -392,6 +515,18 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             }
             $packageInfos['pw'] = $pwbackup;
 
+			if(true)	//ATO: Add SQL ZIP to archive
+				{
+				$zip = new \ZipArchive();
+				if($zip->open($pwbackup['zipfile']) !== true)
+					throw new WireException("Unable to open ZIP: {$pwbackup['zipfile']}"); 
+				$zip->addFile($dbbackup['zipfile'], basename($dbbackup['zipfile']));
+				$zip->close();
+				$zipfile = $pwbackup['zipfile'];	//ATO: Fix to properly return new archive
+				DUP_Util::deleteFile($dbbackup['zipfile']);
+				}
+			else
+				{
             $files = array(
                 $packageInfos['db']['zipfile'],
                 $packageInfos['pw']['zipfile']
@@ -401,10 +536,11 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             foreach ($files as $file) {
                 DUP_Util::deleteFile($file);
             }
-
             foreach ($result['errors'] as $error) {
                 DUP_Logs::log("ZIP add failed: $error");
             }
+				}
+
 
             if (file_exists($zipfile)) {
                 $package['zipfile'] = $zipfile;
@@ -574,6 +710,193 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         return true;
     }
 
+	//ATO: Optimized, non-recursive archiver
+	/*
+	 * zipData2 - Archive directory tree into a ZIP
+	 * This implementation starts from a root directory and operates on an
+	 * array of pending directories.
+	 * Per iteration the first entry is shifted out of the array and processes
+	 * its directory. Each entry is checked against the exclusion lists and
+	 * either unshifted into the array, in case it is a directory, or archived
+	 * into the ZIP.
+	 * Iteration ends when the array is empty.
+	 * To avoid lengthy operation on ZipArchive::close, the archive is flushed
+	 * after some 100MBytes.
+	 * 
+	 */
+    function zipData2($zipfile, $rootDirectory, array $options = array()) {
+		wire('log')->message($zipfile);
+		if(!is_string($zipfile)) throw new WireException("Invalid zipfile argument");
+		if(!class_exists('\ZipArchive')) throw new WireException("PHP's ZipArchive class does not exist");
+		$zippath = dirname($zipfile);
+		if(!is_dir($zippath)) throw new WireException("Path for ZIP file ($zippath) does not exist");
+		if(!is_writable($zippath)) throw new WireException("Path for ZIP file ($zippath) is not writable");
+		if(!is_dir($rootDirectory)) throw new WireException("Invalid Root Directory {$rootDirectory} to add to ZIP file $zipfile");
+		if(is_file($zipfile) && $options['overwrite'] && !unlink($zipfile)) throw new WireException("Unable to overwrite $zipfile");
+		if(!is_array($options['exclude'])) $options['exclude'] = array($options['exclude']);
+
+		$options = array_merge([
+			'allowHidden' => true,
+			'allowEmptyDirs' => true,
+			'overwrite' => false,
+			'maxDepth' => 0, 
+//			'exclude' => array(), // files or dirs to exclude
+//			'dir' => '',
+//			'zip' => null, // internal use: holds ZipArchive instance for recursive use
+			], $options);
+
+		$zip = new \ZipArchive();
+		if($zip->open($zipfile, \ZipArchive::CREATE) !== true) throw new WireException("Unable to create ZIP: $zipfile");
+
+		$zipLog = new DupZipLog($this->getPath() . '/' . basename($zipfile) . '.log', self::DUP_ZIP_LOGLEVEL);
+
+		if(isset($options['allowHidden']))
+		{
+			$allowHidden = $options['allowHidden'];
+			if(!is_array($allowHidden)) $allowHidden = [ $allowHidden ];
+		}
+		else
+			$allowHidden = [];
+		
+		$zipLog->setExcludes($options['exclude'], $options['extension']);
+	
+		$ret = [ 'files' => [], 'errors' => [] ];
+
+		$totalFiles = 0;
+		$totalDirectories = 0;
+		$totalBytes = 0;
+		
+		$fragmentBytes = 0;
+		
+		$extSizes = [];
+		$rootDirectory = rtrim($rootDirectory, '/');	// Ensure its NOT terminated
+
+		$dirsToProcess = [ '/' ];	// Start at root
+		
+		set_time_limit(300);	// Try to allow longer execution time
+		while($thisDir = array_shift($dirsToProcess))
+			{	// Process first entry in array
+			$fullPath = $rootDirectory . $thisDir;
+
+			if(!is_dir($fullPath))
+				{	// Something went badly wrong!
+				$zipLog->log("NOT A DIRECTORY: {$fullPath}");
+				continue;
+				}
+
+			$totalDirectories += 1;
+			$zipLog->verbose("DIR: {$fullPath}");
+
+			$dirFiles = [];	// Collect files from this directory
+
+			if(($dh = opendir($fullPath)) !==  FALSE)
+				{
+				while (($de = readdir($dh)) !== false)
+					{
+					if($de[0] == '.')	// Something special?
+						{
+						// Check for allowed hidden files
+						if(($de == '.') || ($de == '..')) // NEVER!
+							continue;
+						if(!in_array($de, $allowHidden))
+							{
+							$zipLog->verbose("HIDDEN: {$thisDir}{$de}");
+							continue;
+							}
+						}
+
+					$filePath = $fullPath . $de;
+					if($zipLog->isExcluded($thisDir . $de))
+						continue;
+					if(is_dir($filePath))
+						{
+//						$zipLog->log("PUSH: ".$thisDir . $de . '/');
+						array_unshift($dirsToProcess, $thisDir . $de . '/');		// Insert new directories at the head
+						}
+					else if(file_exists($filePath))
+						{
+//						$zipLog->log("PREP: {$de}");
+						$dirFiles[] = $de;
+						}
+					else
+						{
+						// ERROR
+						$zipLog->log("MISSING: {$filePath}");
+						}
+					}
+				closedir($dh);
+				
+				$relPath = substr($thisDir, 1);
+				if(count($dirFiles) > 0)
+					{
+					$zip->addEmptyDir($relPath);
+					foreach($dirFiles as $file)
+                    {
+						$filePath = $fullPath . $file;
+						if(file_exists($filePath)
+						&& $zip->addFile($filePath, $relPath.$file))
+						{
+							$ret['files'][] = $filePath;
+							$fileSize = filesize($filePath);
+							$totalFiles += 1;
+							$totalBytes += $fileSize;
+							
+							if($ext = pathinfo($file, PATHINFO_EXTENSION))
+                            {
+                                if(!isset($extSizes[$ext])) $extSizes[$ext] = 0;
+                                $extSizes[$ext] += $fileSize;
+                            }
+							$zipLog->verbose("ZIP: {$thisDir}{$file}");
+							
+							$fragmentBytes += $fileSize;
+							if(($this->zip_flush_mbytes > 0) && ($fragmentBytes >= /* self::DUP_ZIP_FLUSH_MBYTES */ $this->zip_flush_mbytes *1024*1024))
+							{
+								$zipLog->verbose("CLOSING ZIP: {$zipfile}");
+								$zip->close();
+								$zipLog->verbose("OPENING ZIP: {$zipfile}");
+								if($zip->open($zipfile) !== true) throw new WireException("Unable to re-open ZIP: $zipfile");
+								$zipLog->verbose("OPENED ZIP: {$zipfile}");
+								$fragmentBytes = 0;
+								set_time_limit(300);
+							}
+						}
+						else
+                        {
+							$ret['errors'][] = $filePath;
+							$zipLog->log("NOTEXIST: {$filePath}");
+                        }
+                    }
+                }
+				else
+				{
+					// Empty directory
+					$zipLog->verbose("EMPTY: {$fullPath}");
+					if($options['allowEmptyDirs'])
+						$zip->addEmptyDir($relPath);
+				}
+			}
+			else
+			{
+				$zipLog->log("NODIR: {$fullPath}");
+				// ERROR
+			}
+		}
+		
+		$zipLog->log("{$totalFiles} Files in {$totalDirectories} Directories: ".sprintf("%.2fMB", $totalBytes/(1024*1024)));
+		if($zipLog->logLevel >= 2)
+		{
+			arsort($extSizes);
+			foreach($extSizes as $ext => $siz)
+				$zipLog->verbose(sprintf("%s: %.2fMB", $ext, $siz/(1024*1024)));
+		}
+	
+		$zipLog->log("CLOSING ZIP: {$zipfile}");
+		$zip->close();
+        $ret['zipfile'] = $zipfile;
+		$zipLog = null;	// Clean up instance
+		
+		return($ret);
+	}
 	
 	function zipData($zipfile, $files, array $options = array()) {
 	
@@ -674,7 +997,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         $pkgs = DUP_Util::getTotalPackages(self::$_data->path, self::DUP_PACKAGE_EXTENSION);
         $path = strlen(self::$_data->path) > 0 ? self::$_data->path : self::$_data->defaultPath;
-        $infos['markupText'] = "Local folder: invalid directory - the destination path doesn't exist or is not writable";
         //$infos['notes'] = sprintf(__(" » %d package(s) found"), $pkgs);
         if (!empty($path) && is_dir($path)) {
             wire('modules')->get('JqueryUI')->use('modal');
@@ -690,6 +1012,11 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                 DUP_Util::getTotalPackages(self::$_data->path, self::DUP_PACKAGE_EXTENSION)
             );
         }
+		else {
+			//ATO: Extended info on invalid path
+			$rootPath = wire('config')->paths->root;
+			$infos['markupText'] = "Local folder ({$path}): invalid directory - the destination path doesn't exist or is not writable<br/>Server Root: {$rootPath}";
+		}
         return $infos;
     }
 
@@ -813,13 +1140,15 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             ['name' => 'backupLogs', 'label' => 'Logs', 'checked' => (isset($data['backupLogs']) && $data['backupLogs']) == '1' ? '1' : '0'],
             ['name' => 'backupSessions', 'label' => 'Sessions', 'checked' => (isset($data['backupSessions']) && $data['backupSessions']) == '1' ? '1' : '0'],
             ['name' => 'backupCache', 'label' => 'Cache', 'checked' => (isset($data['backupCache']) && $data['backupCache']) == '1' ? '1' : '0'],
-            ['name' => 'backupFiles', 'label' => 'Files', 'checked' => (isset($data['backupFiles']) && $data['backupFiles']) == '1' ? '1' : '0']
+            ['name' => 'backupFiles', 'label' => 'Files', 'checked' => (isset($data['backupFiles']) && $data['backupFiles']) == '1' ? '1' : '0'],
+            ['name' => 'backupVariants', 'label' => 'Image Variants', 'checked' => (isset($data['backupVariants']) && $data['backupVariants']) == '1' ? '1' : '0'],	//ATO: Image Variants
         ];
         foreach ($checkboxes as $checkbox) {
             $cb = $modules->get('InputfieldCheckbox');
             $cb->attr('name', $checkbox['name']);
             $cb->label = $checkbox['label'];
-            $cb->columnWidth = 16;
+//            $cb->columnWidth = 16;
+            $cb->columnWidth = 20;	//ATO: 16 does not work well with UiKit theme
             $cb->attr('checked', $checkbox['checked'] == '1' ? 'checked' : '');
             $field->append($cb);
         }
@@ -834,7 +1163,12 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $ta->label = "Custom excluded files and paths";
         $ta->value = $data['ignoredPath'];
         $ta->collapsed = false;
-        $ta->notes = 'Enter absolute or relative path. One (1) extension, filename or path per line. To exclude extension: *.foo';
+//        $ta->notes = 'Enter absolute or relative path. One (1) extension, filename or path per line. To exclude extension: *.foo';
+        $ta->notes = "Items to exclude one per line, this may be path, a filename, an extension or RegExp.\n".
+		             "Paths need to begin and end with a slash, for example /site/js/\n".
+					 "To exclude an extension use *.foo\n".
+					 "RexEx pattern need to be specified in % chars like %\.\d+x\d+\.[^/]+$%  # Image variants created by PW"
+					 ;
         $ta->columnWidth = 50;
         $field->append($ta);
 
@@ -964,6 +1298,14 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $field->attr('checked', $data['archiveFlush'] == '1' ? 'checked' : '');
         $fs->append($field);
 
+        $field = $modules->get('InputfieldInteger');
+        $field->attr('name', 'zip_flush_mbytes');
+        $field->label = 'Flush ZIP after quantity of MBytes';
+        $field->description = 'Use this option for large archives.';
+        $field->value = $data['zip_flush_mbytes'];
+        $field->notes = 'This option is disabled when empty or equal to 0.';
+        $fs->append($field);
+
         $fields->append($fs);
 
         $fs = $modules->get("InputfieldFieldset");
@@ -988,7 +1330,8 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $field = $modules->get("InputfieldText");
         $field->attr('name', 'path');
         $field->label = __("Path");
-        $field->description = __('Absolute path of the directory where packages are saved.');
+//ATO: Modified description        $field->description = __('Absolute path of the directory where packages are saved.');
+        $field->description = __('Path of the directory where packages are saved. Path must either be an absolute path (anywhere in filesystem) or prefixed with ~/ to specify a path within webroot.');
         $field->value = $data['path'];
         $field->notes = 'Default path: ' . self::$_data->defaultPath;
         $fslocalfolder->append($field);

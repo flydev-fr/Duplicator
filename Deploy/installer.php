@@ -29,6 +29,7 @@ class Installer
      *
      */
     const DUP_PACKAGE_EXTENSION = 'package.zip';
+    const DUP_PACKAGE2_EXTENSION = 'package2.zip';	//ATO:
     /**
      *
      */
@@ -612,6 +613,7 @@ class Installer
     protected function scanDir()
     {
         $ext = self::DUP_PACKAGE_EXTENSION;
+		$ext2 = self::DUP_PACKAGE2_EXTENSION;	//ATO:
         $package = false;
         $warn = false;
         $nfiles = 0;
@@ -636,7 +638,9 @@ class Installer
                         $this->warn("ProcessWire structure file detected.");
                         continue;
                     }
-                    elseif (strrpos($entry, $ext) !== false) {
+                    elseif ((strrpos($entry, $ext) !== false)
+					     || (strrpos($entry, $ext2) !== false))	//ATO:
+					{
                         $pi = pathinfo($entry);
                         if($pi['extension'] === 'zip') $package = $entry;
                     }
@@ -677,20 +681,28 @@ class Installer
      * @return bool
      */
     protected function extractPackage() {
+		$isV2 = strrpos($this->package, self::DUP_PACKAGE2_EXTENSION) == FALSE;
         $this->h("Step #3 - Package Extraction");
 
         $this->package = $_SESSION['package'];
         if(is_null($this->package)) {
-            $this->err("Something went wrong into the installer.");
+            $this->err("Something went wrong in the installer.");	//ATO: Typo
             return false;
         }
         $path = pathinfo(realpath($this->package), PATHINFO_DIRNAME);
         $this->rootPath = $path;
         $_SESSION['rootpath'] = $path;
-        $path .= '/' . self::DUP_TEMP_FOLDER;
-        if(!is_dir($path)) {
-            $this->mkdir(self::DUP_TEMP_FOLDER);
-        }
+		
+		//ATO: Always generate temp path
+        $tempfolder = $this->rootPath . DIRECTORY_SEPARATOR . self::DUP_TEMP_FOLDER;
+		if(!is_dir($tempfolder)) {
+			$this->mkdir($tempfolder); // self::DUP_TEMP_FOLDER);
+		}
+			
+		if(!$isV2) {	//ATO: Unpack into subdirectory only for V1 files
+			$path .= '/' . self::DUP_TEMP_FOLDER;
+		}
+		
         $zip = new ZipArchive();
         $res = $zip->open($this->package);
         if ($res == true) {
@@ -709,7 +721,16 @@ class Installer
             $this->err("An error occured! Duplicator couldn't open {$this->package}.");
         }
 
-        $tempfolder = $this->rootPath . DIRECTORY_SEPARATOR . self::DUP_TEMP_FOLDER;
+	if($isV2) {	//ATO: Unpack into subdirectory only for V1 files
+        if ($handle = opendir($this->rootPath)) {
+            while (false !== ($entry = readdir($handle))) {
+                if (strrpos($entry, self::DUP_SQL_EXTENSION) !== false) {
+                    $pi = pathinfo($entry);
+                    if($pi['extension'] === 'zip') $sqlzip = $entry;
+                }
+            }
+        }
+	} else {
         if ($handle = opendir($tempfolder)) {
             while (false !== ($entry = readdir($handle))) {
                 if (strrpos($entry, self::DUP_PW_EXTENSION) !== false) {
@@ -743,6 +764,7 @@ class Installer
                 return false;
             }
         }
+	}
 
 
         if(!isset($sqlzip) || !$sqlzip) {
@@ -763,7 +785,7 @@ class Installer
                         if($pi['extension'] === 'sql') $sqlfile = $file;
                     }
                 }
-                $_SESSION['sqlfile'] = $path . DIRECTORY_SEPARATOR . $sqlfile;
+                $_SESSION['sqlfile'] = $tempfolder . DIRECTORY_SEPARATOR . $sqlfile;	//ATO: $tempfolder not $path
                 $this->ok("The MySQL database has been extracted.");
                 $this->btn('Continue to Next Step', 3);
                 return true;

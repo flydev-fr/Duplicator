@@ -3,6 +3,11 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.3.14-ATO] - 2020-01-06
+**`ATO DEVELOPMENT version`**
+### Fixed
+- Fix: undefined variable ($zipFilename)
+
 ## [1.3.13-ATO] - 2020-01-06
 **`ATO DEVELOPMENT version`**
 ### Added

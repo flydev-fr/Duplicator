@@ -41,7 +41,7 @@ class DupZipLog {	//ATO: Utility class to implement some logging into a file per
 			{
 			$this->fLog = fopen($logName, 'w');
 			$this->startTime = microtime(true);
-			$this->log("Logging {$zipFilename}\n");
+			$this->log("Logging {$logName}\n");
 			}
 		}
 	function __destruct()
@@ -129,7 +129,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         return array(
             'title'     => 'Duplicator',
-            'version'   => '1.3.13',
+            'version'   => '1.3.14',
             'summary'   => 'Duplicate, backup and transfer an entire site from one location to another.',
             'author'    => 'flydev',
             'href'      => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',

@@ -1,5 +1,5 @@
 /************************************************/
-var $debug = false; // set to TRUE for debug mode (not used here)
+var $debug = true; // set to TRUE for debug mode (not used here)
 /************************************************/
 if (typeof jQuery != 'undefined') {
 
@@ -21,7 +21,7 @@ if (typeof jQuery != 'undefined') {
                 return;
             }
             if (!$('input[name=useLocalFolder]').is(':checked') && !$('input[name=useGoogleDrive]').is(':checked') && !$('input[name=useDropbox]').is(':checked') && !$('input[name=useFTP]').is(':checked') && !$('input[name=useAmazonS3]').is(':checked')) {
-                redirectToDuplicator('You must choose one or more option where to save packages and save the module.', 'warning');
+                //redirectToDuplicator('You must choose one or more option where to save packages and save the module.', 'warning');
             }
             $.ajax({
                     url: $(this).data('action'),
@@ -35,7 +35,7 @@ if (typeof jQuery != 'undefined') {
                     $job = false;
                     $backupNowBtn.removeClass("ui-state-active").text('Backup now');
                     var err = eval("(" + xhr.responseText + ")");
-                    redirectToDuplicator('An error occured: ' + err.Message, 'error');
+                    //redirectToDuplicator('An error occured: ' + err.Message, 'error');
                 })
                 .done(function () {
                     $job = false;
@@ -60,7 +60,7 @@ if (typeof jQuery != 'undefined') {
                     $job = false;
                     $pruneBackupsBtn.removeClass("ui-state-active").text('Clean packages');
                     var err = eval("(" + xhr.responseText + ")");
-                    redirectToDuplicator('An error occured: ' + err.Message, 'error');
+                    //redirectToDuplicator('An error occured: ' + err.Message, 'error');
                 })
                 .done(function () {
                     $job = false;
@@ -96,8 +96,10 @@ if (typeof jQuery != 'undefined') {
                     href = $backupNowBtn.data('action').replace('&action=backup_now', '&action=' + type + '&msg=' + encoded);
                     break;
             }
-
-            window.location.replace(href);
+               
+            if($debug == false) {
+                // window.location.replace(href);
+            }
         }
 
         $("input, select, textarea").live("click", function() {

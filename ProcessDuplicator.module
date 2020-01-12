@@ -1,4 +1,4 @@
-<?php
+<?php namespace ProcessWire;
 
 require_once (__DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupUtil.php');
 
@@ -495,9 +495,10 @@ class ProcessDuplicator extends Process
 
 		$out = "
 			<div class='adminDataTableMenu'>
-				<ul>
-					<li><button id='btnSortByName' class='dsc btn large'>". __("Sort by Name") . "</button></li>
-				</ul>
+				
+					<button id='btnSortByName' class='ui-button ui-widget ui-corner-all ui-state-default' style='background: #e83561;'><i class='fa fa-bolt'></i> ".  __("Download Installer") . "</button>
+					<button id='' class='ui-button ui-widget ui-corner-all ui-state-default ui-priority-secondary'>". __("Sort by Name") . "</button>
+				
 			</div>
 		";
 

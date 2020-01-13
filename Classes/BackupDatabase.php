@@ -7,6 +7,7 @@ class BackupDatabase
     protected $options;
     protected $mode;
     protected $size;
+    protected $OS;
 
     public function __construct(array $options = array())
     {
@@ -20,6 +21,12 @@ class BackupDatabase
         );
 
         $this->options = array_merge($this->options, $options);
+
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $this->OS = 'WINDOWS';
+        } else {
+            $this->OS = 'UNIX';
+        }
     }
 
     public function setDatabase($database)
@@ -81,9 +88,17 @@ class BackupDatabase
         else if($this->mode === 'MODE_NATIVE') {
             $return = null;
             $output = array();
-            exec('zip '. $zipfile . ' '. $sqlfile, $output, $return);
-            exec('rm '. $sqlfile);
-            exec('rm '. wire('config')->paths->cache .'duplicator.sh');
+			
+			if($this->OS === 'UNIX') {
+				exec('zip '. $zipfile . ' '. $sqlfile, $output, $return);
+				unlink($sqlfile);
+				unlink(wire('config')->paths->cache .'duplicator.sh');
+			}
+			else {
+				exec(str_replace('\\', '/', wire('config')->paths->Duplicator) .'Bin/7z.exe a '. $zipfile . ' '. str_replace('\\', '/', $sqlfile), $output, $return);
+				unlink($sqlfile);
+				unlink(str_replace('\\', '/', wire('config')->paths->cache) . 'duplicator.bat');
+			}
             if($return !== 0) {
                 if(count($output)) {
                     foreach ($output as $error) {
@@ -120,9 +135,7 @@ class BackupDatabase
      */
     protected function fromNativeTools()
     {
-        $OS = 'UNIX';
-
-        switch($OS) {
+        switch($this->OS) {
             case 'UNIX':
                 return $this->UnixNative();
 
@@ -156,7 +169,7 @@ class BackupDatabase
         # for a database server on a separate host:
         # mysqldump --opt --protocol=TCP --user=${USER} --password=${PASS} --host=${DBSERVER} ${DATABASE} > '. wire('config')->paths->cache . '${FILE}
         # use this command for a database server on localhost. add other options if need be.
-        (mysqldump --hex-blob --routines --skip-lock-tables --log-error=mysqldump_error.log --opt --user=${USER} --password=${PASS} ${DATABASE} >  '. wire('config')->paths->cache . '${FILE})  2>&1
+        (mysqldump --routines --single-transaction --skip-lock-tables --log-error=mysqldump_error.log --opt --user=${USER} --password=${PASS} ${DATABASE} >  '. wire('config')->paths->cache . '${FILE})  2>&1
         ';
 
         file_put_contents(wire('config')->paths->cache . 'duplicator.sh', $data);
@@ -177,20 +190,19 @@ class BackupDatabase
         set MYSQLDATABASE='. wire('config')->dbName .'
         set MYSQLUSER='. wire('config')->dbUser .'
         set MYSQLPASS='. wire('config')->dbPass .'
-        set DUMPPATH="'. wire('config')->paths->cache . '"
             
-        mysqldump -u%MYSQLUSER% -p%MYSQLPASS% --routines --triggers %MYSQLDATABASE% > '. $this->options['backup']['filename'];  
+        "mysqldump.exe" -u%MYSQLUSER% -p%MYSQLPASS% --single-transaction --skip-lock-tables --routines --triggers %MYSQLDATABASE% > '. str_replace('\\', '/', wire('config')->paths->cache) . $this->options['backup']['filename'];
         
-        file_put_contents('./'. wire('config')->paths->cache . 'duplicator.bat', $data);
+        file_put_contents(str_replace('\\', '/', wire('config')->paths->cache) . 'duplicator.bat', $data);
 
         $return = null;
         $output = array();
-        exec(wire('config')->paths->cache . 'duplicator.bat', $output, $return);
+        exec(str_replace('\\', '/', wire('config')->paths->cache) . 'duplicator.bat', $output, $return);
         if($return !== 0) {
             bd($return); // (int) The exit status of the command (0 for success, > 0 for errors)
             bd($output);
         }
 
-        return wire('config')->paths->cache . $this->options['backup']['filename'];
+        return str_replace('\\', '/', wire('config')->paths->cache) . $this->options['backup']['filename'];
     }
 }

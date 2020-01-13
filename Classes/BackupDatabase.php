@@ -8,6 +8,7 @@ class BackupDatabase
     protected $mode;
     protected $size;
     protected $OS;
+    protected $cachePath;
 
     public function __construct(array $options = array())
     {
@@ -17,7 +18,8 @@ class BackupDatabase
                 'filename' => '',
                 'description' => '',
                 'maxSeconds' => 120
-            )
+            ),
+            'cachePath' => str_replace('\\', '/', wire('config')->paths->cache)
         );
 
         $this->options = array_merge($this->options, $options);
@@ -73,6 +75,7 @@ class BackupDatabase
      */
     public function getZip()
     {
+        $cachePath = $this->options['cachePath'];
         $sqlfile = $this->backup();
         $this->size = filesize($sqlfile);
         $zipfile = $this->options['path'] . $this->options['backup']['filename'] . '.zip';
@@ -92,12 +95,12 @@ class BackupDatabase
 			if($this->OS === 'UNIX') {
 				exec('zip '. $zipfile . ' '. $sqlfile, $output, $return);
 				unlink($sqlfile);
-				unlink(wire('config')->paths->cache .'duplicator.sh');
+				unlink($cachePath .'duplicator.sh');
 			}
 			else {
 				exec(str_replace('\\', '/', wire('config')->paths->Duplicator) .'Bin/7z.exe a '. $zipfile . ' '. str_replace('\\', '/', $sqlfile), $output, $return);
 				unlink($sqlfile);
-				unlink(str_replace('\\', '/', wire('config')->paths->cache) . 'duplicator.bat');
+				unlink(str_replace('\\', '/', $cachePath) . 'duplicator.bat');
 			}
             if($return !== 0) {
                 if(count($output)) {
@@ -151,7 +154,7 @@ class BackupDatabase
     }
 
     protected function UnixNative() {
-
+        $cachePath = $this->options['cachePath'];
         $data = '
         # (1) set up all the mysqldump variables
         FILE='. $this->options['backup']['filename'] .'
@@ -167,42 +170,44 @@ class BackupDatabase
 
         # (3) do the mysql database backup (dump)
         # for a database server on a separate host:
-        # mysqldump --opt --protocol=TCP --user=${USER} --password=${PASS} --host=${DBSERVER} ${DATABASE} > '. wire('config')->paths->cache . '${FILE}
+        # mysqldump --opt --protocol=TCP --user=${USER} --password=${PASS} --host=${DBSERVER} ${DATABASE} > '. $cachePath . '${FILE}
         # use this command for a database server on localhost. add other options if need be.
-        (mysqldump --routines --single-transaction --skip-lock-tables --log-error=mysqldump_error.log --opt --user=${USER} --password=${PASS} ${DATABASE} >  '. wire('config')->paths->cache . '${FILE})  2>&1
+        (/Applications/MAMP/Library/bin/mysqldump --routines --single-transaction --skip-lock-tables --log-error=mysqldump_error.log --opt --user=${USER} --password=${PASS} ${DATABASE} >  '. $cachePath . '${FILE})  2>&1
         ';
-
-        file_put_contents(wire('config')->paths->cache . 'duplicator.sh', $data);
 
         $return = null;
         $output = array();
-        exec('sh '. wire('config')->paths->cache . 'duplicator.sh', $output, $return);
+        file_put_contents($cachePath . 'duplicator.sh', $data);
+        wireChmod($cachePath . 'duplicator.sh', false, "0744");
+        chdir($cachePath);
+        exec('./duplicator.sh', $output, $return);
         if($return !== 0) {
             bd($return); // (int) The exit status of the command (0 for success, > 0 for errors)
             bd($output);
         }
 
-        return wire('config')->paths->cache . $this->options['backup']['filename'];
+        return $cachePath . $this->options['backup']['filename'];
     }
 
     protected function WindowsNative() {
+        $cachePath = $this->options['cachePath'];
         $data = '@echo off
         set MYSQLDATABASE='. wire('config')->dbName .'
         set MYSQLUSER='. wire('config')->dbUser .'
         set MYSQLPASS='. wire('config')->dbPass .'
-            
-        "mysqldump.exe" -u%MYSQLUSER% -p%MYSQLPASS% --single-transaction --skip-lock-tables --routines --triggers %MYSQLDATABASE% > '. str_replace('\\', '/', wire('config')->paths->cache) . $this->options['backup']['filename'];
+        "mysqldump.exe" -u%MYSQLUSER% -p%MYSQLPASS% --single-transaction --skip-lock-tables --routines --triggers %MYSQLDATABASE% > '. $cachePath . $this->options['backup']['filename'];
         
-        file_put_contents(str_replace('\\', '/', wire('config')->paths->cache) . 'duplicator.bat', $data);
+        file_put_contents($cachePath . 'duplicator.bat', $data);
 
         $return = null;
         $output = array();
-        exec(str_replace('\\', '/', wire('config')->paths->cache) . 'duplicator.bat', $output, $return);
+        chdir($cachePath);
+        exec('duplicator.bat', $output, $return);
         if($return !== 0) {
             bd($return); // (int) The exit status of the command (0 for success, > 0 for errors)
             bd($output);
         }
 
-        return str_replace('\\', '/', wire('config')->paths->cache) . $this->options['backup']['filename'];
+        return $cachePath . $this->options['backup']['filename'];
     }
 }

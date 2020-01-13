@@ -3,8 +3,20 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
-## [1.3.14-ATO] - 2020-01-06
-**`ATO DEVELOPMENT version`**
+## [1.4.16] - 2020-01-013
+### Fixed
+- Fix: chmod duplicator.sh to 0744 on unix
+
+## [1.4.15] - 2020-01-013
+### Added
+- Added: backup can be done with native tools (windows version)
+
+## [1.4.14] - 2020-01-013
+### Added
+- Added: backup can be done with native tools (unix version)
+
+## [1.3.14] - 2020-01-06
+**`ATO MASTER version`**
 ### Fixed
 - Fix: undefined variable ($zipFilename)
 
@@ -12,7 +24,6 @@
 **`ATO DEVELOPMENT version`**
 ### Added
 - Supporting ~ in local path to prefix input with current webroot ($config->paths->root)
-
 ### Fixed
 - Fix: Removing colon from default package name (port in URL)
 - Fix: Custom filename not used
@@ -33,7 +44,6 @@
 ### Added
 - Added regexp exclusion feature
 - Added checkbox for ProcessWire image variations exclusion (checked by default)
-
 ### Fixed
 - fix installer.php  
 

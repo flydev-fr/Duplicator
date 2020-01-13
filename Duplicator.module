@@ -129,7 +129,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     {
         return array(
             'title'     => 'Duplicator',
-            'version'   => '1.4.15',
+            'version'   => '1.4.16',
             'summary'   => 'Duplicate, backup and transfer an entire site from one location to another.',
             'author'    => 'flydev',
             'href'      => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -1050,6 +1050,15 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         return $infos;
     }
 
+    protected static function isExtensionLoaded($ext) {
+
+        if(extension_loaded('zip')) {
+            return true;
+        }
+
+        return false;
+    }
+
     public static function getModuleConfigInputfields(array $data)
     {
         $data = array_merge(self::getDefaultData(), $data);
@@ -1299,6 +1308,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $f->name = 'backup_mode';
         $f->label = __("Mode");
         $f->description = __("Backup mode.");
+        $f->notes = !self::isExtensionLoaded('zip') ? __("ZIP Extension required") : 'ZIP extension [OK]';
         $f->addOptions($options);
         if($data['backup_mode']) $f->attr('value', $data['backup_mode']);
         $f->columnWidth = 100;

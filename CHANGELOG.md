@@ -3,6 +3,11 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.3.15-ATO] - 2020-01-15
+**`ATO DEVELOPMENT version`**
+### Fixed
+- Fix: fixed invalid timestamp that was returning a boolean type
+
 ## [1.3.14-ATO] - 2020-01-06
 **`ATO DEVELOPMENT version`**
 ### Fixed

@@ -1,4 +1,4 @@
-![Duplicator](https://processwire.com/talk/uploads/monthly_2017_11/Duplicator-logo-v2-Dlong.png.891733350c03c3eb44ad77544a07a4c6.png)
+![Duplicator](https://s3.us-west-2.amazonaws.com/processwire-forums/monthly_2017_11/Duplicator-logo-v2-Dlong.png.891733350c03c3eb44ad77544a07a4c6.png)
 
 ## Version 1.4.0
 

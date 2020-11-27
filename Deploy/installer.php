@@ -875,7 +875,7 @@ class Installer
         $fields = array('dbUser', 'dbName', 'dbPass', 'dbHost', 'dbPort', 'dbEngine', 'dbCharset');
 
         foreach($fields as $field) {
-            $value = get_magic_quotes_gpc() ? stripslashes($_POST[$field]) : $_POST[$field];
+            $value = addslashes($_POST[$field]);
             $value = substr($value, 0, 255);
             if(strpos($value, "'") !== false) $value = str_replace("'", "\\" . "'", $value); // allow for single quotes (i.e. dbPass)
             $values[$field] = trim($value);

@@ -1,5 +1,7 @@
 ![Duplicator](https://processwire.com/talk/uploads/monthly_2017_11/Duplicator-logo-v2-Dlong.png.891733350c03c3eb44ad77544a07a4c6.png)
 
+## Version 1.4.0
+
 ### Instructions
 
 1. Download the module from the [directory](https://modules.processwire.com/modules/duplicator/) or [Github]()

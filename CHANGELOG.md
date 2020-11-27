@@ -3,6 +3,10 @@
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
+## [1.4.0] - 2020-11-27
+### Fixed
+- Fix: PHP-8 compatibility, removed `get_magic_quotes_gpc()` call
+
 ## [1.3.15-ATO] - 2020-01-15
 **`ATO DEVELOPMENT version`**
 ### Fixed

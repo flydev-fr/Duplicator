@@ -606,7 +606,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                     $ftp->upload(basename($package['zipfile']), $package['zipfile'], $this->ftpDirectory);
                     $ftp->deleteOldBackups($this->maxPackages, $this->deadline);
                     $ftp->disconnect();
-                    DUP_Logs::log("- [FTP] package uploaded successfuly: $packageName", 'message');
+                    DUP_Logs::log("- [FTP] package uploaded successfully: $packageName", 'message');
                 } catch (\FTPClientException $ex) {
                     if (@is_resource($ftp)) $ftp->disconnect();
                     DUP_Logs::log("[FTP] error: " . $ex->getMessage(), 'error');

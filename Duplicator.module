@@ -188,7 +188,8 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             'awsAccessKey'   => '',
             'awsSecretKey'   => '',
             'awsBucketName'  => '',
-            'awsRegion'      => ''
+            'awsSubDir'      => '',
+            'awsRegion'      => '',
         );
     }
 
@@ -682,7 +683,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
                         }
                     }
                     if (!$bucketExist) $amazonaws->createBucket($this->awsBucketName);
-                    $amazonaws->upload($package['zipfile'], $packageName);
+                    $amazonaws->upload($package['zipfile'], $packageName, $this->awsSubDir);
                     //if($url === null) throw new AmazonS3ClientException("AmazonS3: An error occured while uploading package <{$packageName}>");
                     $amazonaws->deleteOldBackups($this->maxPackages, $this->deadline);
                 } catch(AmazonS3ClientException $ex) {
@@ -1560,7 +1561,16 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         $field->description = __("The bucket where the packages will be stored.");
         $field->notes = __("The bucket will be created automatically if not found.");
         $field->value = $data['awsBucketName'];
-        $field->columnWidth = 70;
+        $field->columnWidth = 40;
+        $fsaws->append($field);
+
+        $field = $modules->get('InputfieldText');
+        $field->attr('name', 'awsSubDir');
+        $field->label = __("Bucket Sub Directory");
+        $field->description = __("The sub path where the packages will be stored.");
+        // $field->notes = __("The bucket will be created automatically if not found.");
+        $field->value = $data['awsSubDir'];
+        $field->columnWidth = 30;
         $fsaws->append($field);
 
         // http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region

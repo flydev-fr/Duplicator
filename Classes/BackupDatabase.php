@@ -53,6 +53,7 @@ class BackupDatabase
      */
     public function backup()
     {
+        DUP_Logs::log("Backup Up Database");
         switch ($this->mode) {
             case 'MODE_PWAPI':
                 DUP_Logs::log("- Backup using standard mode");
@@ -91,7 +92,7 @@ class BackupDatabase
         else if($this->mode === 'MODE_NATIVE') {
             $return = null;
             $output = array();
-			
+
 			if($this->OS === 'UNIX') {
 				exec('zip '. $zipfile . ' '. $sqlfile, $output, $return);
 				unlink($sqlfile);
@@ -129,7 +130,7 @@ class BackupDatabase
         $backup->setDatabase($this->database);
         $backup->setDatabaseConfig(wire('config'));
         $sqlfile = $backup->backup($this->options);
-        
+
         return $sqlfile;
     }
 
@@ -149,7 +150,7 @@ class BackupDatabase
                 // not supported platform
                 return false;
         }
-        
+
         return false;
     }
 
@@ -196,7 +197,7 @@ class BackupDatabase
         set MYSQLUSER='. wire('config')->dbUser .'
         set MYSQLPASS='. wire('config')->dbPass .'
         "mysqldump.exe" -u%MYSQLUSER% -p%MYSQLPASS% --single-transaction --skip-lock-tables --routines --triggers %MYSQLDATABASE% > '. $cachePath . $this->options['backup']['filename'];
-        
+
         file_put_contents($cachePath . 'duplicator.bat', $data);
 
         $return = null;

@@ -1640,7 +1640,7 @@ class WireDatabaseBackup {
      * @return bool
      *
      */
-    protected function backupEndFile($file, array $summary = array(), array $options) {
+    protected function backupEndFile($file, array $summary = array(), array $options = array()) {
         $fp = is_resource($file) ? $file : fopen($file, 'a+');
 
         if(!$fp) {

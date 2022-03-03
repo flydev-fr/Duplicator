@@ -274,7 +274,7 @@ class ProcessDuplicator extends Process
 		if(count($datas)) {
 			// sort the array by timestamps
 			usort($datas, function($a, $b) {
-				return $a['time'] < $b['time'];
+				return $a['time'] < $b['time'] ? 1 : -1;
 			});
 			// remove the column 'time' before its being rendered
 			array_walk($datas, function (&$value) {

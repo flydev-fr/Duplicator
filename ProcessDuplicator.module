@@ -229,6 +229,7 @@ class ProcessDuplicator extends Process
 		$field->collapsed = Inputfield::collapsedYes;
 		$field->attr('id', 'InputfieldLoglines');
         if(!file_exists($this->config->paths->logs . Duplicator::DUP_LOG_FILENAME . '.txt')) return '';
+		$field->attr(['id' => 'InputfieldLoglines', 'rows' => 8]);
 		$loglines = '';
 		$key = $this->dupmod->lastPackageName;
 		$ts = null;

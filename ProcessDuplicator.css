@@ -17,12 +17,16 @@ div .sub-head {
     display: table;
     width: 100%;
 }
-div.sub-head .btn, div.sub-head iframe {
+
+div.sub-head .btn,
+div.sub-head iframe {
     float: right !important;
 }
+
 div.sub-head .btn {
     margin-right: 10px;
 }
+
 div.sub-head span {
     display: inline-block;
     font-size: 10px;
@@ -38,6 +42,7 @@ div#head #duplogo {
     vertical-align: middle;
     text-align: center;
 }
+
 div#head h2 {
     color: #DB1174;
     font-weight: 900;
@@ -46,6 +51,7 @@ div#head h2 {
     vertical-align: middle;
     text-align: center;
 }
+
 .AdminThemeDefault div#head h2 {
     margin: 2em 1em 1em 0;
 }
@@ -63,11 +69,13 @@ div#head ul li {
     border: 1px solid #d7e2e6;
     border-radius: 6px;
 }
+
 div#head ul li:hover {
     background-color: #f0f0f0;
     color: #fff;
     cursor: pointer;
 }
+
 div#head ul li:hover a {
     color: #fff;
 }
@@ -90,7 +98,8 @@ div#head ul li:hover a {
     border-radius: 3px;
 }
 
-.pw-content .ui-accordion h3, .content .ui-accordion h3 {
+.pw-content .ui-accordion h3,
+.content .ui-accordion h3 {
     margin-bottom: 0 !important;
 }
 
@@ -98,6 +107,7 @@ div#head ul li:hover a {
     float: right;
     color: #9a9a9a;
 }
+
 #subwrap_content .title {
     font-weight: 900;
 }
@@ -115,18 +125,23 @@ div#head ul li:hover a {
 #subwrap_content ul li i {
     color: green;
 }
+
 #subwrap_content ul li p {
     display: inline;
 }
+
 #subwrap_content ul li span {
     display: block;
 }
+
 #subwrap_content ul li {
     font-size: 14px;
 }
+
 #subwrap_content .btn_content {
     padding-top: 1em;
 }
+
 #subwrap_content .btn_content button {
     float: right;
 }
@@ -148,6 +163,7 @@ div#head ul li:hover a {
     border: 1px solid #d9e1ea;
     padding: 10px 13px !important;
 }
+
 .adminDataTableMenu ul {
     list-style-type: none;
     padding: 0;
@@ -159,30 +175,36 @@ div#head ul li:hover a {
     background-color: #ffffff;
     border: 1px solid #d9e1ea;
 }
-#packagesDataTable td, #packagesDataTable th {
+
+#packagesDataTable td,
+#packagesDataTable th {
     padding: 10px 13px !important;
 }
+
 #packagesDataTable tr:nth-child(odd) {
     background-color: #ffffff;
 }
+
 #packagesDataTable tr:nth-child(even) {
     background-color: rgb(249, 253, 255);
 }
+
 #packagesDataTable img {
     max-width: 16px;
     display: inline;
     vertical-align: middle;
     margin-right: 10px;
 }
+
 #packagesDataTable .package-name {
     display: inline;
 }
 
-.modal-confirm, .job-running {
+.modal-confirm,
+.job-running {
     display: none;
     padding: 20px !important;
 }
-
 
 #dup-head {
     width: 100%;
@@ -199,9 +221,12 @@ div#head ul li:hover a {
     display: grid;
     width: 100%;
 }
-#dup-head .btn, #dup-head iframe {
+
+#dup-head .btn,
+#dup-head iframe {
     float: right !important;
 }
+
 #dup-head .btn {
     margin-right: 10px;
 }
@@ -212,6 +237,7 @@ div#head ul li:hover a {
     vertical-align: middle;
     text-align: center;
 }
+
 #dup-head h2 {
     color: #DB1174;
     font-weight: 900;
@@ -219,6 +245,7 @@ div#head ul li:hover a {
     vertical-align: middle;
     text-align: center;
 }
+
 .AdminThemeDefault #dup-head h2 {
     margin: 2em 1em 1em 0;
 }
@@ -235,21 +262,23 @@ div#head ul li:hover a {
     border: 1px solid #d7e2e6;
     border-radius: 6px;
 }
+
 #dup-head ul li:hover {
     box-shadow: inset -1px 0px 20px 0px #ff00c8;
     background: lightsalmon;
     color: #fff;
     cursor: pointer;
 }
+
 #dup-head ul li:hover a {
     color: #fff;
 }
-
 
 .dup-icon {
     max-width: 50px;
     opacity: .7;
 }
+
 .dup-icon:hover {
     opacity: 1;
 }
@@ -263,6 +292,7 @@ div#head ul li:hover a {
     background-size: 110% 110%;
     -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFFAFBFC', endColorstr='#FFE4EBF0')";
 }
+
 .dup-btn {
     display: inline-block;
     font-weight: 600;
@@ -274,6 +304,7 @@ div#head ul li:hover a {
     font-size: 14px;
     padding: 2px 8px 2px 2px !important;
 }
+
 .dup-btn:hover {
     background-color: #e6ebf1;
     background-image: -webkit-linear-gradient(top, #f0f3f6, #dce3ec);
@@ -283,19 +314,22 @@ div#head ul li:hover a {
     -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFF0F3F6', endColorstr='#FFDCE3EC')";
 }
 
-.dup-large a {
-}
+.dup-large a {}
+
 .dup-large .fa {
     height: 16px;
     top: 4px;
     font-size: 14px;
     padding: 0 4px;
 }
+
 a.dup-btn:hover {
     text-decoration: none;
     color: #24292e;
 }
-a.dup-btn:hover .fa, a.dup-btn:hover .octicon-star {
+
+a.dup-btn:hover .fa,
+a.dup-btn:hover .octicon-star {
     color: #DB1174;
 }
 

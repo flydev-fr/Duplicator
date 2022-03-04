@@ -1,6 +1,6 @@
 <?php namespace ProcessWire;
 
-require_once (__DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupUtil.php');
+require_once(__DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupUtil.php');
 
 class ProcessDuplicator extends Process
 {
@@ -25,7 +25,7 @@ class ProcessDuplicator extends Process
 				'title' => 'Duplicator'
 			),
 			'require' 	  => 'Duplicator',
-			'autoload'    => function() {
+			'autoload'    => function () {
 				return (wire('page')->process == 'ProcessDuplicator');
 			}
 		);
@@ -36,23 +36,24 @@ class ProcessDuplicator extends Process
 		parent::init();
 
 		if ($this->permissions->get('duplicator')->id && !$this->user->hasPermission('duplicator')) {
-				throw new WirePermissionException(__('Duplicator: You have no permission to use this module.'));
+			throw new WirePermissionException(__('Duplicator: You have no permission to use this module.'));
 		}
 
 		$this->config->scripts->add($this->config->urls->{$this->className} . "Assets/js/baffle.min.js");
 
 		$this->dupmod = $this->modules->get(Duplicator::DUP_APPLICATION_NAME);
 
-    $this->addHookAfter('Page::render', $this, 'styles');
+		$this->addHookAfter('Page::render', $this, 'styles');
 	}
 
-    protected function styles(HookEvent $event) {
-            $page = $event->object;
-            if(!($page->process == 'ProcessDuplicator')) return;
-            $github = '<script async defer src="https://buttons.github.io/buttons.js"></script>';
+	protected function styles(HookEvent $event)
+	{
+		$page = $event->object;
+		if (!($page->process == 'ProcessDuplicator')) return;
+		$github = '<script async defer src="https://buttons.github.io/buttons.js"></script>';
 
-        $event->return = str_replace("</head>", "\r\n$github</head>", $event->return);
-    }
+		$event->return = str_replace("</head>", "\r\n$github</head>", $event->return);
+	}
 
 	public function ___execute()
 	{
@@ -67,20 +68,20 @@ class ProcessDuplicator extends Process
 			case 'packages':
 				$out .= $this->renderGetPackages();
 
-				if(isset(wire('input')->get->service) && isset(wire('input')->get->file)) {
+				if (isset(wire('input')->get->service) && isset(wire('input')->get->file)) {
 					switch (wire('sanitizer')->text(wire('input')->get->service)) {
-                        case 'dropbox':
-                            $dropbox = new \DropboxClient();
-                            $dropbox->setAccessToken($this->dupmod->dropboxAccessToken);
-                            $dropbox->setIdentifier("Duplicator/1");
-                            $dropbox->setFolder(Duplicator::DUP_APPLICATION_NAME);
-                            $dropbox->setQuery(Duplicator::DUP_PACKAGE_EXTENSION);
-                            $dropbox->setMimeType(Duplicator::DUP_PACKAGE_MIME_TYPE);
-                            $result = $dropbox->download('/' . wire('sanitizer')->filename(wire('input')->get->file), wire('config')->paths->assets . Duplicator::DUP_DEFAULT_LOCAL_FOLDER);
-                            if($result === true) {
-                                DUP_Logs::log("Dropbox: package ". wire('sanitizer')->filename(wire('input')->get->file) ." synchronized successfully\n");
-                            }
-                            break;
+						case 'dropbox':
+							$dropbox = new \DropboxClient();
+							$dropbox->setAccessToken($this->dupmod->dropboxAccessToken);
+							$dropbox->setIdentifier("Duplicator/1");
+							$dropbox->setFolder(Duplicator::DUP_APPLICATION_NAME);
+							$dropbox->setQuery(Duplicator::DUP_PACKAGE_EXTENSION);
+							$dropbox->setMimeType(Duplicator::DUP_PACKAGE_MIME_TYPE);
+							$result = $dropbox->download('/' . wire('sanitizer')->filename(wire('input')->get->file), wire('config')->paths->assets . Duplicator::DUP_DEFAULT_LOCAL_FOLDER);
+							if ($result === true) {
+								DUP_Logs::log("Dropbox: package " . wire('sanitizer')->filename(wire('input')->get->file) . " synchronized successfully\n");
+							}
+							break;
 
 						case 'googledrive':
 							$google = new GoogleDriveClient();
@@ -104,14 +105,13 @@ class ProcessDuplicator extends Process
 						default:
 							break;
 					}
-				}
-				elseif(isset(wire('input')->get->file)) {
+				} elseif (isset(wire('input')->get->file)) {
 					$filename = wire('sanitizer')->filename(wire('input')->get->file);
 					$packages = DUP_Util::getPackages($this->dupmod->path, Duplicator::DUP_PACKAGE_EXTENSION);
-					if(in_array($filename, $packages)) {
+					if (in_array($filename, $packages)) {
 						wireSendFile($this->dupmod->path . DS . $filename);
 					}
-				} elseif(isset(wire('input')->get->installer)) {
+				} elseif (isset(wire('input')->get->installer)) {
 					$filename = wire('sanitizer')->filename(wire('input')->get->installer);
 					$this->getInstaller($filename);
 				}
@@ -120,14 +120,14 @@ class ProcessDuplicator extends Process
 
 			case 'delete':
 				$out .= $this->renderGetPackages();
-				if(isset(wire('input')->get->service) && isset(wire('input')->get->file)) {
+				if (isset(wire('input')->get->service) && isset(wire('input')->get->file)) {
 					switch (wire('sanitizer')->text(wire('input')->get->service)) {
-                        case 'dropbox':
-                            $dropbox = new \DropboxClient();
-                            $dropbox->setAccessToken($this->dupmod->dropboxAccessToken);
-                            $dropbox->setFolder(Duplicator::DUP_APPLICATION_NAME);
-                            $dropbox->deleteFile(wire('sanitizer')->filename(wire('input')->get->file), Duplicator::DUP_APPLICATION_NAME);
-                            break;
+						case 'dropbox':
+							$dropbox = new \DropboxClient();
+							$dropbox->setAccessToken($this->dupmod->dropboxAccessToken);
+							$dropbox->setFolder(Duplicator::DUP_APPLICATION_NAME);
+							$dropbox->deleteFile(wire('sanitizer')->filename(wire('input')->get->file), Duplicator::DUP_APPLICATION_NAME);
+							break;
 
 						case 'googledrive':
 							$google = new GoogleDriveClient();
@@ -150,7 +150,7 @@ class ProcessDuplicator extends Process
 						default:
 							break;
 					}
-				} elseif(isset(wire('input')->get->file)) {
+				} elseif (isset(wire('input')->get->file)) {
 					$filename = wire('sanitizer')->filename(wire('input')->get->file);
 					DUP_Util::deleteFile($this->dupmod->path . DS . $filename);
 				}
@@ -175,7 +175,8 @@ class ProcessDuplicator extends Process
 	/**
 	 * @param $filename
 	 */
-	protected function generateInstaller($filename) {
+	protected function generateInstaller($filename)
+	{
 		/**
 		 * TODO: {}
 		 * currently the installer is "universal"
@@ -185,16 +186,18 @@ class ProcessDuplicator extends Process
 	/**
 	 * @param $filename
 	 */
-	protected function getInstaller($filename) {
-		wireSendFile(wire('config')->paths->siteModules . Duplicator::DUP_APPLICATION_NAME . DS . 'Deploy' . DS .'installer.php');
+	protected function getInstaller($filename)
+	{
+		wireSendFile(wire('config')->paths->siteModules . Duplicator::DUP_APPLICATION_NAME . DS . 'Deploy' . DS . 'installer.php');
 	}
 
 	/**
 	 * @return string
 	 */
-	protected function renderHead() {
+	protected function renderHead()
+	{
 		$modinfo = $this->modules->getModuleInfo('Duplicator');
-		
+
 		$modinfo = self::getModuleInfo();
 		$out = "<div id='dup-head'>";
 		$out .= "  <img id='dup-logo' src='" . wire('config')->urls->siteModules . Duplicator::DUP_APPLICATION_NAME . "/Assets/Duplicator-logo-xl-v2.png'>";
@@ -227,20 +230,19 @@ class ProcessDuplicator extends Process
 		$field->label = __("Duplicator Log");
 		$field->icon = 'history';
 		$field->collapsed = Inputfield::collapsedYes;
-		$field->attr('id', 'InputfieldLoglines');
-        if(!file_exists($this->config->paths->logs . Duplicator::DUP_LOG_FILENAME . '.txt')) return '';
 		$field->attr(['id' => 'InputfieldLoglines', 'rows' => 8]);
+		if (!file_exists($this->config->paths->logs . Duplicator::DUP_LOG_FILENAME . '.txt')) return '';
 		$loglines = '';
 		$key = $this->dupmod->lastPackageName;
 		$ts = null;
-		if($key) {
+		if ($key) {
 			$datelog = basename($key, Duplicator::DUP_PACKAGE_EXTENSION);
 			$parts = explode('-', $datelog);
 			array_pop($parts);
 			$datelog = implode('-', $parts);
 			$ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $datelog);
 		}
-		if($ts) {
+		if ($ts) {
 			$from = array('from' => $ts->getTimestamp());
 			foreach (wire('log')->getEntries(Duplicator::DUP_LOG_FILENAME, $from) as $entry) {
 				$loglines .= $entry['date'] . ':  ' . $entry['text'] . "\n";
@@ -272,12 +274,12 @@ class ProcessDuplicator extends Process
 		$table->setSortable(true);
 		$table->setResizable(false);
 		$table->setEncodeEntities(false);
-		$table->headerRow( array("Package Name", "Created", "Size", "Download/Sync", "") );
+		$table->headerRow(array("Package Name", "Created", "Size", "Download/Sync", ""));
 		$datas = $this->getPackagesDetails($this->dupmod->path, Duplicator::DUP_PACKAGE_EXTENSION);
 		$numFiles = 0;
-		if(count($datas)) {
+		if (count($datas)) {
 			// sort the array by timestamps
-			usort($datas, function($a, $b) {
+			usort($datas, function ($a, $b) {
 				return $a['time'] < $b['time'] ? 1 : -1;
 			});
 			// remove the column 'time' before its being rendered
@@ -290,7 +292,7 @@ class ProcessDuplicator extends Process
 			}
 		}
 
-		if(!$numFiles) $out .= "<h2>" . __('No package found.') . "</h2>";
+		if (!$numFiles) $out .= "<h2>" . __('No package found.') . "</h2>";
 		$out .= $table->render();
 
 		$href = $this->config->urls->httpAdmin . 'setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME);
@@ -346,7 +348,7 @@ class ProcessDuplicator extends Process
 					// $tsstr = implode('-', $parts);
 					$tsstr = substr($originalFilename, 0, 19); // ATO
 					$ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);
-					if($ts) {
+					if ($ts) {
 						$createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
 
 						$dataAction = $this->config->urls->httpAdmin . 'setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
@@ -368,55 +370,14 @@ class ProcessDuplicator extends Process
 			}
 		}
 
-        // Dropbox
-        if($this->dupmod->useDropbox == 1) {
-            try {
-                $dropbox = new \DropboxClient();
-                $dropbox->setAccessToken($this->dupmod->dropboxAccessToken);
-                $files = $dropbox->getFiles();
-                DUP_Logs::log("Dropbox: found " . count($files) . " packages");
-                if(count($files)) {
-                    foreach ($files as $file) {
-                        if (strrpos($file['name'], $extension) == false) continue;
-                        $originalFilename = $file['name'];
-                        $parts = explode('-', $file['name']);
-                        array_pop($parts);
-                        $tsstr = implode('-', $parts);
-                        $ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);
-                        $createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
-                        $dataAction = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
-                        $href1 = '<a href="?action=packages&installer='. $originalFilename .'" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
-                        $href2 = '<a href="?action=packages&file='. $originalFilename .'&service=dropbox" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
-                        $href3 = '<a href="?action=delete&file='. $file['name'] .'&service=dropbox" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
-
-                        $data = array(
-                            'time' => $ts->getTimestamp(),
-                            "<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/dropbox-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
-                            $createdOn,
-                            DUP_Util::human_filesize($file['size']),
-                            $href1 . ' ' . $href2 . ' ',
-                            $href3
-                        );
-                        array_push($rows, $data);
-                    }
-                }
-            } catch (\Exception $ex) {
-                DUP_Logs::log("Dropbox error: " . $ex->getMessage(), 'error');
-            }
-
-        }
-
-		// GoogleDrive
-		if($this->dupmod->useGoogleDrive == 1) {
+		// Dropbox
+		if ($this->dupmod->useDropbox == 1) {
 			try {
-				$google = new \GoogleDriveClient();
-				$google->setTempFolder(Duplicator::DUP_TEMP_FOLDER);
-				$google->setAppName(Duplicator::DUP_APPLICATION_NAME);
-				$google->setGoogleKeyFile($this->dupmod->googleKeyFile);
-				$google->connect();
-				$files = $google->getFiles();
-				DUP_Logs::log("GoogleDrive: found " . count($files) . " packages");
-				if(count($files)) {
+				$dropbox = new \DropboxClient();
+				$dropbox->setAccessToken($this->dupmod->dropboxAccessToken);
+				$files = $dropbox->getFiles();
+				DUP_Logs::log("Dropbox: found " . count($files) . " packages");
+				if (count($files)) {
 					foreach ($files as $file) {
 						if (strrpos($file['name'], $extension) == false) continue;
 						$originalFilename = $file['name'];
@@ -426,9 +387,49 @@ class ProcessDuplicator extends Process
 						$ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);
 						$createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
 						$dataAction = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
-						$href1 = '<a href="?action=packages&installer='. $originalFilename .'" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
-						$href2 = '<a href="?action=packages&file='. $originalFilename .'&service=googledrive" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
-						$href3 = '<a href="?action=delete&file='. $file['id'] .'&service=googledrive" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
+						$href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
+						$href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=dropbox" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
+						$href3 = '<a href="?action=delete&file=' . $file['name'] . '&service=dropbox" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
+
+						$data = array(
+							'time' => $ts->getTimestamp(),
+							"<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/dropbox-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
+							$createdOn,
+							DUP_Util::human_filesize($file['size']),
+							$href1 . ' ' . $href2 . ' ',
+							$href3
+						);
+						array_push($rows, $data);
+					}
+				}
+			} catch (\Exception $ex) {
+				DUP_Logs::log("Dropbox error: " . $ex->getMessage(), 'error');
+			}
+		}
+
+		// GoogleDrive
+		if ($this->dupmod->useGoogleDrive == 1) {
+			try {
+				$google = new \GoogleDriveClient();
+				$google->setTempFolder(Duplicator::DUP_TEMP_FOLDER);
+				$google->setAppName(Duplicator::DUP_APPLICATION_NAME);
+				$google->setGoogleKeyFile($this->dupmod->googleKeyFile);
+				$google->connect();
+				$files = $google->getFiles();
+				DUP_Logs::log("GoogleDrive: found " . count($files) . " packages");
+				if (count($files)) {
+					foreach ($files as $file) {
+						if (strrpos($file['name'], $extension) == false) continue;
+						$originalFilename = $file['name'];
+						$parts = explode('-', $file['name']);
+						array_pop($parts);
+						$tsstr = implode('-', $parts);
+						$ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);
+						$createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
+						$dataAction = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
+						$href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
+						$href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=googledrive" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
+						$href3 = '<a href="?action=delete&file=' . $file['id'] . '&service=googledrive" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
 						$data = array(
 							'time' => $ts->getTimestamp(),
@@ -444,11 +445,10 @@ class ProcessDuplicator extends Process
 			} catch (\Exception $ex) {
 				DUP_Logs::log("GoogleDrive error: " . $ex->getMessage(), 'error');
 			}
-
 		}
 
 		// AmazonS3
-		if($this->dupmod->useAmazonS3 == 1) {
+		if ($this->dupmod->useAmazonS3 == 1) {
 			try {
 				$amazonaws = new \AmazonS3Client();
 				$amazonaws->setAccessKey($this->dupmod->awsAccessKey);
@@ -457,7 +457,7 @@ class ProcessDuplicator extends Process
 				$amazonaws->setBucket($this->dupmod->awsBucketName);
 				$files = $amazonaws->getFiles();
 
-				if(count($files)) {
+				if (count($files)) {
 					foreach ($files as $file) {
 						if (strrpos($file['Key'], $extension) == false) continue;
 						$originalFilename = $file['Key'];
@@ -467,9 +467,9 @@ class ProcessDuplicator extends Process
 						$ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);
 						$createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
 						$dataAction = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
-						$href1 = '<a href="?action=packages&installer='. $originalFilename .'" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
-						$href2 = '<a href="?action=packages&file='. $originalFilename .'&service=amazon" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
-						$href3 = '<a href="?action=delete&file='. $file['Key'] . '&service=amazon" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
+						$href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
+						$href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=amazon" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
+						$href3 = '<a href="?action=delete&file=' . $file['Key'] . '&service=amazon" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
 						$data = array(
 							'time' => $ts->getTimestamp(),
@@ -485,7 +485,6 @@ class ProcessDuplicator extends Process
 			} catch (\AmazonS3ClientException $ex) {
 				DUP_Logs::log("AmazonS3 error: " . $ex->getMessage(), 'error');
 			}
-
 		}
 
 		return array_reverse($rows);
@@ -495,12 +494,13 @@ class ProcessDuplicator extends Process
 	/**
 	 * @return string
 	 */
-	protected function renderFilters () {
+	protected function renderFilters()
+	{
 
 		$out = "
 			<div class='adminDataTableMenu'>
 				
-					<button id='btnSortByName' class='ui-button ui-widget ui-corner-all ui-state-default ui-priority-secondary'>". __("Sort by Name") . "</button>
+					<button id='btnSortByName' class='ui-button ui-widget ui-corner-all ui-state-default ui-priority-secondary'>" . __("Sort by Name") . "</button>
 				
 			</div>
 		";
@@ -516,7 +516,8 @@ class ProcessDuplicator extends Process
 	 * @param $body
 	 * @return string
 	 */
-	protected function dialogBoxModal($id, $title, $icon, $body) {
+	protected function dialogBoxModal($id, $title, $icon, $body)
+	{
 		$out = "<div id='$id' class='modal-confirm' title='$title'>
 				  <p><span class='ui-icon ui-icon-$icon' style='float:left; margin:12px 12px 20px 0;'></span>$body</p>
 				</div>";
@@ -524,4 +525,3 @@ class ProcessDuplicator extends Process
 		return $out;
 	}
 }
-

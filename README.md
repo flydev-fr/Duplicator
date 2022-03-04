@@ -1,6 +1,4 @@
-![Duplicator](https://s3.us-west-2.amazonaws.com/processwire-forums/monthly_2017_11/Duplicator-logo-v2-Dlong.png.891733350c03c3eb44ad77544a07a4c6.png)
-
-## Version 1.4.0
+![Duplicator](https://s3.us-west-2.amazonaws.com/processwire-forums/monthly_2017_11/Duplicator-logo-v2-Dlong.thumb.png.8898ec8cda79046779b10d8527fc0def.png)
 
 ### Instructions
 
@@ -110,7 +108,6 @@ Timeout usually happen if you are on a low-end budget host with limitations. The
 * 1and1 Shared hosting (resolved by using Filters)
 * Dreamhost hosting (resolved using the `Archive Flush` option); Need to be tested again.
 
-
 # FAQ
 ### GENERAL QUESTIONS
 ##### What is the primary goal of this module ?
@@ -150,9 +147,9 @@ Yes, the permission set is `duplicator`. User with this permission can initiate 
 
 
 
-
-
-
+## Special thanks
+- Duplicator's logo made by [@szabeszg](https://github.com/szabeszg)
+- The processwire community 💙
 
 
 

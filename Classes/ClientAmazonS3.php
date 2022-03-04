@@ -103,15 +103,20 @@ class AmazonS3Client
      * With a single PutObject operation, you can upload objects up to 5 GB in size.
      * However, by using the multipart uploads, you can upload object up to 5 TB in size.
     */
-    public function upload($file, $name)
+    public function upload($file, $name, $path)
     {
         if (!file_exists($file))
             throw new AmazonS3ClientException("AmazonS3: cannot upload <{$file}>, the file does not exist.");
 
-
+        if (strlen(trim($path)) > 0) {
+            $path = rtrim($path, '/') . '/';
+        } else {
+            $path = "";
+        }
+        DUP_Logs::log("AmazonS3: Uploading to {$path}${name} in {$this->bucket}");
         $param = array(
             'Bucket' => $this->bucket,
-            'Key' => $name,
+            'Key' => $path . $name,
             'Body' => @fopen($file, 'rb'),
             'ACL' => 'public-read'
         );
@@ -127,11 +132,15 @@ class AmazonS3Client
             DUP_Logs::log("AmazonS3: file is superior to 100MB, using MultiPartUploader.");
             $uploader = new \Aws\S3\MultipartUploader($s3, $file, array(
                 'Bucket' => $this->bucket,
-                'Key' => $name,
+                'Key' => $path . $name,
             ));
-            $result = $uploader->upload();
+            try {
+                $result = $uploader->upload();
+                DUP_Logs::log("AmazonS3: upload complete to {$result['ObjectURL']} on bucket {$this->bucket}.", 'message');
+            } catch (\Aws\Exception\MultipartUploadException $ex) {
+                throw new AmazonS3ClientException("Cannot upload package: {$ex}");
+            }
         }
-        DUP_Logs::log("AmazonS3: upload complete to {$result['ObjectURL']} on bucket {$this->bucket}.", 'message');
     }
 
     public function getFiles()
@@ -146,7 +155,7 @@ class AmazonS3Client
 
             return $result->get('Contents');
         } catch(\Aws\S3\Exception\S3Exception $ex) {
-            throw new AmazonS3ClientException("Cannot get files.");
+            throw new AmazonS3ClientException("Cannot get files: {$ex}");
         }
     }
 
@@ -165,7 +174,7 @@ class AmazonS3Client
             file_put_contents ($path, (string) $result['Body']);
             return $result;
         } catch(\Aws\S3\Exception\S3Exception $ex) {
-            throw new AmazonS3ClientException("Cannot get files.");
+            throw new AmazonS3ClientException("Cannot get files: {$ex}");
         }
     }
 
@@ -243,7 +252,7 @@ class AmazonS3Client
 class AmazonS3ClientException extends \Exception
 {
     public function __construct($message = null, $code = 0, Exception $previous = null) {
-        DUP_Logs::log($message);
+        DUP_Logs::log("AmazonS3: " . $message);
         parent::__construct($message, $code, $previous);
     }
 }

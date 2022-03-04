@@ -1,4 +1,4 @@
-<?php
+<?php namespace ProcessWire;
 
 require_once (__DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupUtil.php');
 
@@ -11,7 +11,7 @@ class ProcessDuplicator extends Process
 		return array(
 			'title' 	  => 'Duplicator - Packages Manager',
 			'summary' 	  => 'Manage your backups/packages built with Duplicator inside ProcessWire.',
-			'version' 	  => '1.4.0',
+			'version' 	  => Duplicator::DUP_MODULE_VERSION,
 			'author' 	  => 'flydev',
 			'icon' 		  => 'clone',
 			'href' 		  => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -36,12 +36,14 @@ class ProcessDuplicator extends Process
 		parent::init();
 
 		if ($this->permissions->get('duplicator')->id && !$this->user->hasPermission('duplicator')) {
-            throw new WirePermissionException(__('Duplicator: You have no permission to use this module.'));
-        }
+				throw new WirePermissionException(__('Duplicator: You have no permission to use this module.'));
+		}
+
+		$this->config->scripts->add($this->config->urls->{$this->className} . "Assets/js/baffle.min.js");
 
 		$this->dupmod = $this->modules->get(Duplicator::DUP_APPLICATION_NAME);
 
-        $this->addHookAfter('Page::render', $this, 'styles');
+    $this->addHookAfter('Page::render', $this, 'styles');
 	}
 
     protected function styles(HookEvent $event) {
@@ -191,26 +193,24 @@ class ProcessDuplicator extends Process
 	 * @return string
 	 */
 	protected function renderHead() {
-        $modinfo = $this->modules->getModuleInfo('Duplicator');
-        
-		$out = "<div id='head'>";
-		$out .= "    <div class='master-head'>";
-		$out .= "	    <img id='duplogo' src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/Duplicator-logo-v2.png'>";
-		$out .= "	";
-		$out .= "	    <ul>";
-		if(wire('user')->hasRole('superuser')) {
-			$out .= "	<li><a title='Got to settings' href='" . $this->config->urls->admin . "module/edit?name=" . Duplicator::DUP_APPLICATION_NAME . "&collapse_info=1'><img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/settings-ico.png' class='icon'></a></li>";
-		}
-		$out .=		"	<li><a title='Go to support thread' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank'><img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/support-ico.png' class='icon'></a></li>";
-		$out .=	"	    </ul>";
-		$out .= "    </div>";
-		$out .= "    <div class='sub-head'>";
-        $out .= "        <span>Duplicator version {$modinfo['version']}</span>";
-        $out .= "        <a class='github-button' href='https://github.com/flydev-fr/Duplicator' data-icon='octicon-star' data-show-count='false' aria-label='Star Duplicator on GitHub' data-size='large'>Star</a>";
-        $out .= "        <a class='large btn' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank' title='Like Duplicator on ProcessWire'><i class='fa fa-heart social'></i> Like </a>";
-        $out .= "    </div>";
+		$modinfo = $this->modules->getModuleInfo('Duplicator');
+		
+		$modinfo = self::getModuleInfo();
+		$out = "<div id='dup-head'>";
+		$out .= "  <img id='dup-logo' src='" . wire('config')->urls->siteModules . Duplicator::DUP_APPLICATION_NAME . "/Assets/Duplicator-logo-xl-v2.png'>";
+		$out .= "  <span class='dup-head-label dup-glitch animate-chars'> v{$modinfo['version']}</span>";
+		$out .= "  <ul>";
+		$out .= "	   <li><a title='Goto Package Manager' href='" . wire('config')->urls->httpAdmin . "module/edit?collapse_info=1&name=" . Duplicator::DUP_APPLICATION_NAME . "' target='_self'><img src='" . wire('config')->urls->siteModules . Duplicator::DUP_APPLICATION_NAME . "/Assets/settings.svg' class='dup-icon'></a></li>";
+		$out .= "	   <li><a title='Goto Support Thread' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank'><img src='" . wire('config')->urls->siteModules . Duplicator::DUP_APPLICATION_NAME . "/Assets/support.svg' class='dup-icon'></a></li>";
+		$out .= "  </ul>";
+		$out .= "  <div></div>";
+		$out .= "  <div></div>";
+		$out .= "  <div class='dup-flex-r'>";
+		$out .= "    <a class='dup-large dup-btn' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank' title='Like on ProcessWire modules directory'><i class='fa fa-heart social'></i> Like </a>";
+		$out .= "    <a class='github-button' href='https://github.com/flydev-fr/Duplicator' data-icon='octicon-star' data-show-count='false' aria-label='Stargaze Duplicator on GitHub' data-size='large'>Star</a>";
+		$out .= "    <a class='github-button' href='https://github.com/flydev-fr/Duplicator' data-show-count='false' aria-label='Documentation' data-size='large'>Doc</a>";
+		$out .= "  </div>";
 		$out .= "</div>";
-
 		return $out;
 	}
 
@@ -351,7 +351,7 @@ class ProcessDuplicator extends Process
 						$href3 = '<a href="?action=delete&file=' . $originalFilename . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
 						$data = array(
-							'time' => ($ts === false) ? 'invalid' : $ts->getTimestamp(),
+							'time' => $ts->getTimestamp(),
 							"<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/localfolder-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
 							$createdOn,
 							DUP_Util::human_filesize(filesize($path . DS . $originalFilename)),
@@ -386,7 +386,7 @@ class ProcessDuplicator extends Process
                         $href3 = '<a href="?action=delete&file='. $file['name'] .'&service=dropbox" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
                         $data = array(
-                            'time' => ($ts === false) ? 'invalid' : $ts->getTimestamp(),
+                            'time' => $ts->getTimestamp(),
                             "<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/dropbox-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
                             $createdOn,
                             DUP_Util::human_filesize($file['size']),
@@ -427,7 +427,7 @@ class ProcessDuplicator extends Process
 						$href3 = '<a href="?action=delete&file='. $file['id'] .'&service=googledrive" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
 						$data = array(
-							'time' => ($ts === false) ? 'invalid' : $ts->getTimestamp(),
+							'time' => $ts->getTimestamp(),
 							"<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/google_drive-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
 							$createdOn,
 							DUP_Util::human_filesize($file['size']),
@@ -466,9 +466,9 @@ class ProcessDuplicator extends Process
 						$href1 = '<a href="?action=packages&installer='. $originalFilename .'" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
 						$href2 = '<a href="?action=packages&file='. $originalFilename .'&service=amazon" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
 						$href3 = '<a href="?action=delete&file='. $file['Key'] . '&service=amazon" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
-						
+
 						$data = array(
-							'time' =>  ($ts === false) ? 'invalid' : $ts->getTimestamp(),
+							'time' => $ts->getTimestamp(),
 							"<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/amazon-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
 							$createdOn,
 							DUP_Util::human_filesize($file['Size']),
@@ -483,6 +483,7 @@ class ProcessDuplicator extends Process
 			}
 
 		}
+
 		return array_reverse($rows);
 	}
 
@@ -494,9 +495,9 @@ class ProcessDuplicator extends Process
 
 		$out = "
 			<div class='adminDataTableMenu'>
-				<ul>
-					<li><button id='btnSortByName' class='dsc btn large'>". __("Sort by Name") . "</button></li>
-				</ul>
+				
+					<button id='btnSortByName' class='ui-button ui-widget ui-corner-all ui-state-default ui-priority-secondary'>". __("Sort by Name") . "</button>
+				
 			</div>
 		";
 

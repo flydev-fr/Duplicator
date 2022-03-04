@@ -1,19 +1,27 @@
 ## [Unreleased]
-- new logging mechanism
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
-## [1.4.0] - 2020-11-27
+## [1.4.17] - 2022-03-04
+### New
+- Backup with native tool
 ### Fixed
-- Fix: PHP-8 compatibility, removed `get_magic_quotes_gpc()` call
+- See commits and ATO changes
 
-## [1.3.15-ATO] - 2020-01-15
-**`ATO DEVELOPMENT version`**
+## [1.4.16] - 2020-01-13
 ### Fixed
-- Fix: fixed invalid timestamp that was returning a boolean type
+- Fix: chmod duplicator.sh to 0744 on unix
 
-## [1.3.14-ATO] - 2020-01-06
-**`ATO DEVELOPMENT version`**
+## [1.4.15] - 2020-01-13
+### Added
+- Added: backup can be done with native tools (windows version)
+
+## [1.4.14] - 2020-01-13
+### Added
+- Added: backup can be done with native tools (unix version)
+
+## [1.3.14] - 2020-01-06
+**`ATO MASTER version`**
 ### Fixed
 - Fix: undefined variable ($zipFilename)
 
@@ -21,7 +29,6 @@
 **`ATO DEVELOPMENT version`**
 ### Added
 - Supporting ~ in local path to prefix input with current webroot ($config->paths->root)
-
 ### Fixed
 - Fix: Removing colon from default package name (port in URL)
 - Fix: Custom filename not used
@@ -42,7 +49,6 @@
 ### Added
 - Added regexp exclusion feature
 - Added checkbox for ProcessWire image variations exclusion (checked by default)
-
 ### Fixed
 - fix installer.php  
 

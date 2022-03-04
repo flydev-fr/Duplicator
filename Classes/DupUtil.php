@@ -1,4 +1,4 @@
-<?php
+<?php namespace ProcessWire;
 
 define('DS', DIRECTORY_SEPARATOR);
 
@@ -244,12 +244,12 @@ class DUP_Util
 }
 
 
-class DUP_DataFilter extends RecursiveFilterIterator {
+class DUP_DataFilter extends \RecursiveFilterIterator {
 
     protected $excluded;
     protected $excludedList = array();
 
-    public function __construct(RecursiveIterator $iterator, $excluded) {
+    public function __construct(\RecursiveIterator $iterator, $excluded) {
         $this->excluded = $excluded;
 		ini_set('max_execution_time', 300);
         parent::__construct($iterator);

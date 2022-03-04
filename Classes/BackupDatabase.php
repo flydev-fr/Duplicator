@@ -99,10 +99,10 @@ class BackupDatabase
 				unlink($cachePath .'duplicator.sh');
 			}
 			else {
-				exec(str_replace('\\', '/', wire('config')->paths->Duplicator) .'Bin/7z.exe a '. $zipfile . ' '. str_replace('\\', '/', $sqlfile), $output, $return);
+				exec(str_replace('\\', '/', wire('config')->paths->Duplicator) .'Bin/7za.exe a '. $zipfile . ' '. str_replace('\\', '/', $sqlfile), $output, $return);
 				unlink($sqlfile);
 				unlink(str_replace('\\', '/', $cachePath) . 'duplicator.bat');
-			}
+			}  
             if($return !== 0) {
                 if(count($output)) {
                     foreach ($output as $error) {

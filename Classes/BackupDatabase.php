@@ -19,7 +19,7 @@ class BackupDatabase
                 'description' => '',
                 'maxSeconds' => 120
             ),
-            'cachePath' => str_replace('\\', '/', wire('config')->paths->cache)
+            'cachePath' => wire('config')->paths->cache
         );
 
         $this->options = array_merge($this->options, $options);
@@ -53,7 +53,7 @@ class BackupDatabase
      */
     public function backup()
     {
-        DUP_Logs::log("Backup Up Database");
+        DUP_Logs::log("Backup Database");
         switch ($this->mode) {
             case 'MODE_PWAPI':
                 DUP_Logs::log("- Backup using standard mode");
@@ -93,7 +93,7 @@ class BackupDatabase
             $return = null;
             $output = array();
 
-			if($this->OS === 'UNIX') {
+            if($this->OS === 'UNIX') {
 				exec('zip '. $zipfile . ' '. $sqlfile, $output, $return);
 				unlink($sqlfile);
 				unlink($cachePath .'duplicator.sh');
@@ -103,6 +103,7 @@ class BackupDatabase
 				unlink($sqlfile);
 				unlink(str_replace('\\', '/', $cachePath) . 'duplicator.bat');
 			}  
+
             if($return !== 0) {
                 if(count($output)) {
                     foreach ($output as $error) {
@@ -145,7 +146,6 @@ class BackupDatabase
 
             case 'WINDOWS':
                 return $this->WindowsNative();
-
             default:
                 // not supported platform
                 return false;

@@ -1,4 +1,6 @@
-<?php namespace ProcessWire;
+<?php
+
+namespace ProcessWire;
 /*
  * Based on Duplicator 1.2.9, modified by A. Tofahrn (autofahrn) for enhanced processing of larger installs.
  *

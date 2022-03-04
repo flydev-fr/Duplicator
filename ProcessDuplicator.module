@@ -230,12 +230,15 @@ class ProcessDuplicator extends Process
 		$field->attr('id', 'InputfieldLoglines');
         if(!file_exists($this->config->paths->logs . Duplicator::DUP_LOG_FILENAME . '.txt')) return '';
 		$loglines = '';
-		$key   = $this->dupmod->lastPackageName;
-		$datelog = basename($key, Duplicator::DUP_PACKAGE_EXTENSION);
-		$parts = explode('-', $datelog);
-		array_pop($parts);
-		$datelog = implode('-', $parts);
-		$ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $datelog);
+		$key = $this->dupmod->lastPackageName;
+		$ts = null;
+		if($key) {
+			$datelog = basename($key, Duplicator::DUP_PACKAGE_EXTENSION);
+			$parts = explode('-', $datelog);
+			array_pop($parts);
+			$datelog = implode('-', $parts);
+			$ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $datelog);
+		}
 		if($ts) {
 			$from = array('from' => $ts->getTimestamp());
 			foreach (wire('log')->getEntries(Duplicator::DUP_LOG_FILENAME, $from) as $entry) {

@@ -1,17 +1,22 @@
 ## [Unreleased]
-- new logging mechanism
 - auto-deploy thought FTP/FTPS
 - installer optional deletion
 
-## [1.4.16] - 2020-01-013
+## [1.4.17] - 2022-03-04
+### New
+- Backup with native tool
+### Fixed
+- See commits and ATO changes
+
+## [1.4.16] - 2020-01-13
 ### Fixed
 - Fix: chmod duplicator.sh to 0744 on unix
 
-## [1.4.15] - 2020-01-013
+## [1.4.15] - 2020-01-13
 ### Added
 - Added: backup can be done with native tools (windows version)
 
-## [1.4.14] - 2020-01-013
+## [1.4.14] - 2020-01-13
 ### Added
 - Added: backup can be done with native tools (unix version)
 

@@ -173,7 +173,7 @@ class BackupDatabase
         # for a database server on a separate host:
         # mysqldump --opt --protocol=TCP --user=${USER} --password=${PASS} --host=${DBSERVER} ${DATABASE} > '. $cachePath . '${FILE}
         # use this command for a database server on localhost. add other options if need be.
-        (/Applications/MAMP/Library/bin/mysqldump --routines --single-transaction --skip-lock-tables --log-error=mysqldump_error.log --opt --user=${USER} --password=${PASS} ${DATABASE} >  '. $cachePath . '${FILE})  2>&1
+        mysqldump --routines --triggers --single-transaction --log-error=mysqldump_error.log --user=${USER} --password=${PASS} --databases ${DATABASE} > '. $cachePath . '${FILE}
         ';
 
         $return = null;
@@ -182,9 +182,12 @@ class BackupDatabase
         wireChmod($cachePath . 'duplicator.sh', false, "0744");
         chdir($cachePath);
         exec('./duplicator.sh', $output, $return);
-        if($return !== 0) {
-            bd($return); // (int) The exit status of the command (0 for success, > 0 for errors)
-            bd($output);
+
+        if($return !== 0) { // (int) The exit status of the command (0 for success, > 0 for errors)
+            // bd($return);
+            // bd($output);
+            $ex = json_encode($output);
+            throw new WireException("Error while running mysqldump\n, err {$return}: {$ex}\n\n");
         }
 
         return $cachePath . $this->options['backup']['filename'];

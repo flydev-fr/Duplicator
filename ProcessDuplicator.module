@@ -1,4 +1,6 @@
-<?php namespace ProcessWire;
+<?php
+
+namespace ProcessWire;
 
 require_once(__DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupUtil.php');
 
@@ -11,7 +13,7 @@ class ProcessDuplicator extends Process
 		return array(
 			'title' 	  => 'Duplicator - Packages Manager',
 			'summary' 	  => 'Manage your backups/packages built with Duplicator inside ProcessWire.',
-			'version' 	  => '1.4.17',
+			'version' 	  => '1.4.18',
 			'author' 	  => 'flydev',
 			'icon' 		  => 'clone',
 			'href' 		  => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',

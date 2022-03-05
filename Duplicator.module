@@ -1,4 +1,6 @@
-<?php namespace ProcessWire;
+<?php
+
+namespace ProcessWire;
 
 /*
  * Based on Duplicator 1.2.9, modified by A. Tofahrn (autofahrn) for enhanced processing of larger installs.
@@ -106,6 +108,7 @@ class DupZipLog
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
 	const DUP_APPLICATION_NAME = 'Duplicator';
+	const DUP_MODULE_VERSION = '1.4.18'; // module version
 	const DUP_MIN_VERSION = '3.0.34'; // tested - if you have a lower version please test it and report back your result! thanks
 	const DUP_LOG_FILENAME = 'duplicator';
 	const DUP_SITE_FOLDER = 'site';
@@ -130,6 +133,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 	{
 		return array(
 			'title' => 'Duplicator',
+			'version' => '1.4.18',
 			'summary' => 'Duplicate, backup and transfer an entire site from one location to another.',
 			'author' => 'flydev',
 			'href' => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',

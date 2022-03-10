@@ -205,7 +205,7 @@ class ProcessDuplicator extends Process
 		$out .= "  <img id='dup-logo' src='" . wire('config')->urls->siteModules . Duplicator::DUP_APPLICATION_NAME . "/Assets/Duplicator-logo-xl-v2.png'>";
 		$out .= "  <ul>";
 		$out .= "	   <li><a title='Goto Support Thread' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank'><img src='" . wire('config')->urls->siteModules . Duplicator::DUP_APPLICATION_NAME . "/Assets/support.svg' class='dup-icon'><span class='dup-label'>Discussion</span></a></li>";
-		$out .= "	   <li><a title='Goto Package Manager' href='" . wire('config')->urls->httpAdmin . "module/edit?collapse_info=1&name=" . Duplicator::DUP_APPLICATION_NAME . "' target='_self'><img src='" . wire('config')->urls->siteModules . Duplicator::DUP_APPLICATION_NAME . "/Assets/settings.svg' class='dup-icon'><span class='dup-label'>Settings</span></a></li>";
+		$out .= "	   <li><a title='Goto Duplicator Settings' href='" . wire('config')->urls->httpAdmin . "module/edit?collapse_info=1&name=" . Duplicator::DUP_APPLICATION_NAME . "' target='_self'><img src='" . wire('config')->urls->siteModules . Duplicator::DUP_APPLICATION_NAME . "/Assets/settings.svg' class='dup-icon'><span class='dup-label'>Settings</span></a></li>";
 		$out .= "  </ul>";
 		$out .= "  <span class='dup-head-label dup-glitch animate-chars dup-version'> v{$modinfo['version']}</span>";
 		$out .= "  <div class='dup-flex-r'>";

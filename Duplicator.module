@@ -108,7 +108,7 @@ class DupZipLog
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
 	const DUP_APPLICATION_NAME = 'Duplicator';
-	const DUP_MODULE_VERSION = '1.4.18'; // module version
+	const DUP_MODULE_VERSION = '1.4.19'; // module version
 	const DUP_MIN_VERSION = '3.0.34'; // tested - if you have a lower version please test it and report back your result! thanks
 	const DUP_LOG_FILENAME = 'duplicator';
 	const DUP_SITE_FOLDER = 'site';
@@ -133,7 +133,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 	{
 		return array(
 			'title' => 'Duplicator',
-			'version' => '1.4.18',
+			'version' => '1.4.19',
 			'summary' => 'Duplicate, backup and transfer an entire site from one location to another.',
 			'author' => 'flydev',
 			'href' => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -1120,6 +1120,9 @@ array_push($options['exclude'], $excludeRoot . $option);
 	{
 		$pkgs = DUP_Util::getTotalPackages(self::$_data['path'], self::DUP_PACKAGE_EXTENSION);
 		$path = strlen(self::$_data['path']) > 0 ? self::$_data['path'] : self::$_data['defaultPath'];
+		$freespace = function_exists('disk_free_space') ? disk_free_space($path) : 'n/a';
+		$totalspace = function_exists('disk_total_space') ? disk_total_space($path) : 'n/a';
+		
 		//$infos['notes'] = sprintf(__(" » %d package(s) found"), $pkgs);
 		if (!empty($path) && is_dir($path)) {
 			wire('modules')->get('JqueryUI')->use('modal');
@@ -1131,8 +1134,8 @@ array_push($options['exclude'], $excludeRoot . $option);
 				"Local packages overview › <span class='notes'>%s</span><br>Disk space used › \t<span class='notes'>&nbsp;~%s&nbsp;</span><br>Disk space remaining › <span class='notes'>&nbsp;%s/%s&nbsp;</span><br>Package(s) found › <span class='notes'>&nbsp;%d&nbsp;</span> {$preview}",
 				self::$_data->path,
 				($pkgs == 0) ? '0' : DUP_Util::human_filesize(DUP_Util::foldersize($path), 0),
-				DUP_Util::human_filesize(disk_free_space($path), 0),
-				DUP_Util::human_filesize(disk_total_space($path), 0),
+				DUP_Util::human_filesize($freespace, 0),
+				DUP_Util::human_filesize($totalspace, 0),
 				DUP_Util::getTotalPackages(self::$_data->path, self::DUP_PACKAGE_EXTENSION)
 			);
 		} else {

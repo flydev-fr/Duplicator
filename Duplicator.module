@@ -1120,8 +1120,8 @@ array_push($options['exclude'], $excludeRoot . $option);
 	{
 		$pkgs = DUP_Util::getTotalPackages(self::$_data['path'], self::DUP_PACKAGE_EXTENSION);
 		$path = strlen(self::$_data['path']) > 0 ? self::$_data['path'] : self::$_data['defaultPath'];
-		$freespace = function_exists('disk_free_space') ? disk_free_space($path) : 'n/a';
-		$totalspace = function_exists('disk_total_space') ? disk_total_space($path) : 'n/a';
+		$freespace = function_exists('disk_free_space') ? DUP_Util::human_filesize(disk_free_space($path), 0) : 'n/a';
+		$totalspace = function_exists('disk_total_space') ? DUP_Util::human_filesize(disk_total_space($path), 0) : 'n/a';
 		
 		//$infos['notes'] = sprintf(__(" » %d package(s) found"), $pkgs);
 		if (!empty($path) && is_dir($path)) {
@@ -1134,8 +1134,8 @@ array_push($options['exclude'], $excludeRoot . $option);
 				"Local packages overview › <span class='notes'>%s</span><br>Disk space used › \t<span class='notes'>&nbsp;~%s&nbsp;</span><br>Disk space remaining › <span class='notes'>&nbsp;%s/%s&nbsp;</span><br>Package(s) found › <span class='notes'>&nbsp;%d&nbsp;</span> {$preview}",
 				self::$_data->path,
 				($pkgs == 0) ? '0' : DUP_Util::human_filesize(DUP_Util::foldersize($path), 0),
-				DUP_Util::human_filesize($freespace, 0),
-				DUP_Util::human_filesize($totalspace, 0),
+				$freespace,
+				$totalspace,
 				DUP_Util::getTotalPackages(self::$_data->path, self::DUP_PACKAGE_EXTENSION)
 			);
 		} else {

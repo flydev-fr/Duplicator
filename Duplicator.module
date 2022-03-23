@@ -108,7 +108,7 @@ class DupZipLog
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
 	const DUP_APPLICATION_NAME = 'Duplicator';
-	const DUP_MODULE_VERSION = '1.4.20'; // module version
+	const DUP_MODULE_VERSION = '1.4.21'; // module version
 	const DUP_MIN_VERSION = '3.0.34'; // tested - if you have a lower version please test it and report back your result! thanks
 	const DUP_LOG_FILENAME = 'duplicator';
 	const DUP_SITE_FOLDER = 'site';
@@ -133,7 +133,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 	{
 		return array(
 			'title' => 'Duplicator',
-			'version' => '1.4.20',
+			'version' => '1.4.21',
 			'summary' => 'Duplicate, backup and transfer an entire site from one location to another.',
 			'author' => 'flydev',
 			'href' => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -631,7 +631,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 
 			if ($this->useFTP) {
 				try {
-					$ftp = new \FTPClient();
+					$ftp = new FTPClient();
 					$ftp->setHost($this->ftpHostname);
 					$ftp->setPort(empty($this->ftpPort) ? 21 : $this->ftpPort);
 					$ftp->setUser($this->ftpUsername);
@@ -645,7 +645,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 					$ftp->deleteOldBackups($this->maxPackages, $this->deadline);
 					$ftp->disconnect();
 					DUP_Logs::log("- [FTP] package uploaded successfully: $packageName", 'message');
-				} catch (\FTPClientException $ex) {
+				} catch (FTPClientException $ex) {
 					if (@is_resource($ftp)) {
 						$ftp->disconnect();
 					}

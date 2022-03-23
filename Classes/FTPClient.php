@@ -1,5 +1,7 @@
 <?php
 
+namespace ProcessWire;
+
 class FTPClient
 {
   protected $host;
@@ -233,6 +235,6 @@ class FTPClient
 }
 
 
-class FTPClientException extends Exception
+class FTPClientException extends \Exception
 {
 }

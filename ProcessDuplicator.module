@@ -13,7 +13,7 @@ class ProcessDuplicator extends Process
 		return array(
 			'title' 	  => 'Duplicator - Packages Manager',
 			'summary' 	  => 'Manage your backups/packages built with Duplicator inside ProcessWire.',
-			'version' 	  => '1.4.20',
+			'version' 	  => '1.4.21',
 			'author' 	  => 'flydev',
 			'icon' 		  => 'clone',
 			'href' 		  => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',

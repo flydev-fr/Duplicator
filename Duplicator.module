@@ -108,7 +108,7 @@ class DupZipLog
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
 	const DUP_APPLICATION_NAME = 'Duplicator';
-	const DUP_MODULE_VERSION = '1.4.19'; // module version
+	const DUP_MODULE_VERSION = '1.4.20'; // module version
 	const DUP_MIN_VERSION = '3.0.34'; // tested - if you have a lower version please test it and report back your result! thanks
 	const DUP_LOG_FILENAME = 'duplicator';
 	const DUP_SITE_FOLDER = 'site';
@@ -133,7 +133,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 	{
 		return array(
 			'title' => 'Duplicator',
-			'version' => '1.4.19',
+			'version' => '1.4.20',
 			'summary' => 'Duplicate, backup and transfer an entire site from one location to another.',
 			'author' => 'flydev',
 			'href' => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -619,7 +619,6 @@ array_push($options['exclude'], $excludeRoot . $option);
 		DUP_Util::setMaxExecutionTime(self::DUP_PHP_EXECUTION_TIME);
 
 		$package = $this->buildPackage();
-		bd($package);
 		if ($package && $package['zipfile'] !== null) {
 			$packageName = basename($package['zipfile']);
 			if ($this->useLocalFolder) {

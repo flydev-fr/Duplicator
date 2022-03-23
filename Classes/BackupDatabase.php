@@ -190,7 +190,7 @@ class BackupDatabase
       // bd($return);
       // bd($output);
       $ex = json_encode($output);
-      throw new WireException("Error while running mysqldump\n, err {$return}: {$ex}\n\n");
+      throw new WireException("Error while running UnixNative Backup\n, err {$return}: {$ex}\n\n");
     }
 
     return $cachePath . $this->options['backup']['filename'];
@@ -212,8 +212,10 @@ class BackupDatabase
     chdir($cachePath);
     exec('duplicator.bat', $output, $return);
     if ($return !== 0) {
-      bd($return); // (int) The exit status of the command (0 for success, > 0 for errors)
-      bd($output);
+      // bd($return); // (int) The exit status of the command (0 for success, > 0 for errors)
+      // bd($output);
+      $ex = json_encode($output);
+      throw new WireException("Error while running WindowsNative Backup\n, err {$return}: {$ex}\n\n");
     }
 
     return $cachePath . $this->options['backup']['filename'];

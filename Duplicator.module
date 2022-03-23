@@ -631,7 +631,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 
 			if ($this->useFTP) {
 				try {
-					$ftp = new \FTPClient();
+					$ftp = new FTPClient();
 					$ftp->setHost($this->ftpHostname);
 					$ftp->setPort(empty($this->ftpPort) ? 21 : $this->ftpPort);
 					$ftp->setUser($this->ftpUsername);
@@ -645,7 +645,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 					$ftp->deleteOldBackups($this->maxPackages, $this->deadline);
 					$ftp->disconnect();
 					DUP_Logs::log("- [FTP] package uploaded successfully: $packageName", 'message');
-				} catch (\FTPClientException $ex) {
+				} catch (FTPClientException $ex) {
 					if (@is_resource($ftp)) {
 						$ftp->disconnect();
 					}

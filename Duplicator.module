@@ -108,7 +108,7 @@ class DupZipLog
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
 	const DUP_APPLICATION_NAME = 'Duplicator';
-	const DUP_MODULE_VERSION = '1.4.22'; // module version
+	const DUP_MODULE_VERSION = '1.4.23'; // module version
 	const DUP_MIN_VERSION = '3.0.34'; // tested - if you have a lower version please test it and report back your result! thanks
 	const DUP_LOG_FILENAME = 'duplicator';
 	const DUP_SITE_FOLDER = 'site';
@@ -601,7 +601,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 			DUP_Logs::log($ex->getMessage());
 		}
 
-		return true;
+		return false;
 	}
 
 	/*
@@ -619,7 +619,8 @@ array_push($options['exclude'], $excludeRoot . $option);
 		DUP_Util::setMaxExecutionTime(self::DUP_PHP_EXECUTION_TIME);
 
 		$package = $this->buildPackage();
-		if ($package && $package['zipfile'] !== false) {
+
+		if (is_array($package) && $package['zipfile'] !== null) {
 			$packageName = basename($package['zipfile']);
 			if ($this->useLocalFolder) {
 				if (file_exists($package['zipfile'])) {

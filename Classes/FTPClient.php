@@ -24,7 +24,19 @@ class FTPClient
       throw new FTPClientException('PHP extension FTP is not loaded.');
     }
   }
-
+  /**
+   * On PHP_VERSION >= 8.1, an FTP $resource is an object, see the following commit:
+   *  https://github.com/php/php-src/commit/b4503fbf882e490f16d85915e83173bd1e414e84 (Convert FTP resource to object)
+   */
+  function is_ftp_resource($resource) {
+    if (version_compare(PHP_VERSION, '8.1.0', '>=')) {
+      return is_object($resource);
+    }
+    else {      
+      return is_resource($resource);
+    }
+  }
+  
   public function setPath($path)
   {
     $this->path = $path;
@@ -59,7 +71,7 @@ class FTPClient
   {
     DUP_Logs::log("FTP: connecting to {$this->host}:{$this->port}...");
     $this->connId = ftp_connect($this->host, $this->port, (int)$this->timeout);
-    if (!is_resource($this->connId))
+    if (!$this->is_ftp_resource($this->connId))
       throw new FTPClientException("cannot connect to <{$this->host}> on port <{$this->port}>");
 
     DUP_Logs::log("FTP: connection established.");
@@ -81,7 +93,7 @@ class FTPClient
 
     DUP_Logs::log("FTP: connecting to {$this->host}:{$this->port}...");
     $this->connId = ftp_ssl_connect($this->host, $this->port, $this->timeout);
-    if (!is_resource($this->connId))
+    if (!$this->is_ftp_resource($this->connId))
       throw new FTPClientException("cannot connect to <{$this->host}> on port <{$this->port}>");
 
     DUP_Logs::log("FTP: connection established.");
@@ -89,7 +101,7 @@ class FTPClient
 
   public function disconnect()
   {
-    if (is_resource($this->connId)) {
+    if ($this->is_ftp_resource($this->connId)) {
       @ftp_close($this->connId);
       DUP_Logs::log("FTP: disconnected from server.");
     }
@@ -97,7 +109,7 @@ class FTPClient
 
   public function login()
   {
-    if (!is_resource($this->connId))
+    if (!$this->is_ftp_resource($this->connId))
       throw new FTPClientException("cannot login. Invalid resource.");
     elseif (!@ftp_login($this->connId, $this->user, $this->password))
       throw new FTPClientException("cannot login. Please verify your connection informations.");

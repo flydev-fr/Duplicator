@@ -108,7 +108,7 @@ class DupZipLog
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
 	const DUP_APPLICATION_NAME = 'Duplicator';
-	const DUP_MODULE_VERSION = '1.4.24'; // module version
+	const DUP_MODULE_VERSION = '1.4.25'; // Update the module version here, it will be reflected in both modules
 	const DUP_MIN_VERSION = '3.0.34'; // tested - if you have a lower version please test it and report back your result! thanks
 	const DUP_LOG_FILENAME = 'duplicator';
 	const DUP_SITE_FOLDER = 'site';

@@ -73,8 +73,10 @@
 }
 
 .adminDataTableMenu {
-  background-color: #fff;
-  border: 1px solid #d9e1ea;
+  background-color: inherit;
+  /* border: 1px solid #d9e1ea; */
+  outline: 1px solid #d9e1ea;
+  margin-top: 6px;
   padding: 10px 13px !important;
 }
 
@@ -86,8 +88,9 @@
 
 #packagesDataTable {
   color: #555555;
-  background-color: #ffffff;
+  background-color: inherit;
   border: 1px solid #d9e1ea;
+  outline: 1px solid #d9e1ea;
 }
 
 #packagesDataTable td,
@@ -96,11 +99,13 @@
 }
 
 #packagesDataTable tr:nth-child(odd) {
-  background-color: #ffffff;
+  background-color: inherit;
 }
 
 #packagesDataTable tr:nth-child(even) {
-  background-color: rgb(249, 253, 255);
+  /* /background: #f1f1f1; */
+  background: rgba(0, 0, 0, 0.048);
+  background-blend-mode: lighten;
 }
 
 #packagesDataTable img {

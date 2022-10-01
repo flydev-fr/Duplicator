@@ -21,6 +21,7 @@ class BackupDatabase
         'maxSeconds' => 120,
       ),
       'cachePath' => wire('config')->paths->cache,
+      'chmodPermission' => '0600'
     );
 
     $this->options = array_merge($this->options, $options);
@@ -182,13 +183,24 @@ class BackupDatabase
     $return = null;
     $output = array();
     file_put_contents($cachePath . 'duplicator.sh', $data);
-    wireChmod($cachePath . 'duplicator.sh', false, "0744");
+    /**
+     *  Default:
+     *    Chmod 600 (chmod a+rwx,u-x,g-rwx,o-rwx) sets permissions so that:
+     *      (U)ser / owner can read, can write and can't execute.
+     *      (G)roup can't read, can't write and can't execute. 
+     *      (O)thers can't read, can't write and can't execute.
+     */
+    wireChmod($cachePath . 'duplicator.sh', false, $this->options['chmodPermission']);
     chdir($cachePath);
     exec('./duplicator.sh', $output, $return);
 
     if ($return !== 0) { // (int) The exit status of the command (0 for success, > 0 for errors)
       // bd($return);
       // bd($output);
+
+      // delete `duplicator.sh` script on error
+      unlink($cachePath . 'duplicator.sh');
+
       $ex = json_encode($output);
       throw new WireException("Error while running UnixNative Backup\n, err {$return}: {$ex}\n\n");
     }
@@ -214,6 +226,10 @@ class BackupDatabase
     if ($return !== 0) {
       // bd($return); // (int) The exit status of the command (0 for success, > 0 for errors)
       // bd($output);
+
+      // delete `duplicator.bat` script on error
+      unlink($cachePath . 'duplicator.bat');
+
       $ex = json_encode($output);
       throw new WireException("Error while running WindowsNative Backup\n, err {$return}: {$ex}\n\n");
     }

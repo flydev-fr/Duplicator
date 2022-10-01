@@ -90,6 +90,11 @@ class DUP_Util
       if (in_array($backup, $keep)) continue;
       if (DUP_Util::deleteFile($path . DIRECTORY_SEPARATOR . $backup)) {
         $cleaned[] = $backup;
+        // delete the corresponding log file (we do not keep trace of the log deletion)
+        $logfile = $path . DIRECTORY_SEPARATOR . $backup . '.' . 'log';
+        if(file_exists($logfile)) {
+          DUP_Util::deleteFile($logfile);
+        }
         continue;
       } else DUP_Logs::log(sprintf($error_message, $backup, $path));
     }
@@ -102,6 +107,10 @@ class DUP_Util
     $res = false;
     if (file_exists($path) && !is_dir($path)) {
       $res = unlink($path);
+
+      $logfile = $path . '.' . 'log';
+      if (file_exists($logfile))
+        $res = unlink($logfile);
     }
 
     return $res;

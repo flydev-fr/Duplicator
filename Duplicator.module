@@ -164,6 +164,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 			'removeBackups' => 1,
 			// Advanced options
 			'backup_mode' => 'MODE_PWAPI',
+			'chmodPermission' => '0600',
 			'archiveFlush' => 0,
 			'zip_flush_mbytes' => 0,
 			// CRON mode
@@ -512,6 +513,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 				'description' => '', //$this->backupFileinfo(),
 				'maxSeconds' => self::DUP_WIRETEMP_MAX_TIME,
 			),
+			'chmodPermission' => $this->chmodPermission
 		);
 		$options = array_merge($options, $defaultOptions);
 		$dbBackup = new BackupDatabase($options);
@@ -1443,8 +1445,17 @@ array_push($options['exclude'], $excludeRoot . $option);
 		if ($data['backup_mode']) {
 			$f->attr('value', $data['backup_mode']);
 		}
+		$f->columnWidth = 50;
+		$fs->append($f);
 
-		$f->columnWidth = 100;
+		$f = wire('modules')->get("InputfieldText");
+		$f->name = 'chmodPermission';
+		$f->label = __("Shell script permission");
+		$f->description = __("Apply this permission on generated `duplicator.sh` script");
+		$f->value = $data['chmodPermission'] ? $data['chmodPermission'] : '0600';
+		$f->icon = 'shield';
+		$f->columnWidth = 50;
+		$f->notes = 'Will use this permission when running the octal CHMOD command.';
 		$fs->append($f);
 
 		$field = $modules->get('InputfieldCheckbox');

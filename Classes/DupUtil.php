@@ -76,13 +76,13 @@ class DUP_Util
     return false;
   }
 
-  public static function clean($path, $size = 1, $deadline = null)
+  public static function clean($path, $size = 1, $deadline = null, $cleanOrphanedLogFiles = false)
   {
     if (!DUP_Util::keep($path)) return array();
 
     $cleaned = array();
 
-    $error_message = __("Removing %1s from %2s failed!");
+    $error_message = __("- removing %1s from %2s failed!");
     $keep = DUP_Util::keep($path, $size, $deadline);
     foreach (new \DirectoryIterator($path) as $backup) {
       if ($backup->getExtension() != 'zip' && $backup->getExtension() != 'json') continue;
@@ -96,7 +96,16 @@ class DUP_Util
           DUP_Util::deleteFile($logfile);
         }
         continue;
-      } else DUP_Logs::log(sprintf($error_message, $backup, $path));
+      } 
+      else DUP_Logs::log(sprintf($error_message, $backup, $path));
+    }
+
+    // if Duplicator::orphanedLogs is set
+    if ($cleanOrphanedLogFiles) {
+      $orphanedLogFiles = self::cleanOrphanedLogFiles($path);
+      if ($orphanedLogFiles == -1) {
+        DUP_Logs::log(sprintf($error_message, 'orphaned log files', $path));
+      }
     }
 
     return $cleaned;
@@ -114,6 +123,43 @@ class DUP_Util
     }
 
     return $res;
+  }
+
+  public static function cleanOrphanedLogFiles($path)
+  {
+    // number of files cleaned
+    $n = 0;
+    // array of package(s)
+    $packages = self::getPackages($path, Duplicator::DUP_PACKAGE_EXTENSION);
+    // array of log file(s)
+    $logs = scandir($path);
+    if (!count($logs)) return 0;
+    $error_message = __("- removing %1s from %2s failed!");
+    $success_message = __("- removed orphaned log %1s from %2s");
+    $extension = Duplicator::DUP_PACKAGE_EXTENSION . '.log';
+    foreach ($logs as $log) {
+      if (empty($log) || is_dir($log)) continue;
+      if (strrchr($log, $extension) == false) continue;
+      $package = str_replace('.log', '', $log);
+      if(in_array($package, $packages, true)) {
+        // package found, do not clean the log file
+        continue;
+      }
+      else {
+        // orphaned log file, delete it
+        $logfile = $path . DIRECTORY_SEPARATOR . $log;
+        if (self::deleteFile($logfile)) {        
+          $n++;
+          DUP_Logs::log(sprintf($success_message, $log, $path));
+        }
+        else {
+          DUP_Logs::log(sprintf($error_message, $log, $path)); 
+          return -1;         
+        }
+      }
+    }
+
+    return $n;
   }
 
   // TODO: check timestamp

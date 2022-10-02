@@ -108,7 +108,7 @@ class DupZipLog
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
 	const DUP_APPLICATION_NAME = 'Duplicator';
-	const DUP_MODULE_VERSION = '1.4.25'; // Update the module version here, it will be reflected in both modules
+	const DUP_MODULE_VERSION = '1.4.26'; // Update the module version here, it will be reflected in both modules
 	const DUP_MIN_VERSION = '3.0.34'; // tested - if you have a lower version please test it and report back your result! thanks
 	const DUP_LOG_FILENAME = 'duplicator';
 	const DUP_SITE_FOLDER = 'site';
@@ -133,7 +133,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 	{
 		return array(
 			'title' => 'Duplicator',
-			'version' => '1.4.25',
+			'version' => '1.4.26',
 			'summary' => 'Duplicate, backup and transfer an entire site from one location to another.',
 			'author' => 'flydev',
 			'href' => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -171,6 +171,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 			'cronMode' => 'none',
 			// storage mode
 			'useLocalFolder' => 1,
+			'orphanedLogs' => 1,
 			'useFTP' => 0,
 			'useDropbox' => 0,
 			'useGoogleDrive' => 0,
@@ -738,7 +739,13 @@ array_push($options['exclude'], $excludeRoot . $option);
 			}
 
 			if (!empty($this->deadline) || $this->maxPackages <= DUP_Util::getTotalPackages(self::$_data->path, self::DUP_PACKAGE_EXTENSION) && DUP_Util::getTotalPackages(self::$_data->path, self::DUP_PACKAGE_EXTENSION) != 0) {
-				$removed = count(DUP_Util::clean(self::$_data->path, $this->maxPackages, strtotime("-{$this->deadline}")));
+				/// decide if we should clean orphaned log files
+				$cleanOrphanedLogFiles = ($this->useLocalFolder == true && $this->orphanedLogs == 1) ? true : false;	
+				// log a message if `useLocalFolder` is true, but `orphanedLogs` is false
+				if($this->useLocalFolder == true && !$cleanOrphanedLogFiles) {
+					DUP_Logs::log("- orphaned log files not cleaned (disabled by settings)");
+				}			
+				$removed = count(DUP_Util::clean(self::$_data->path, $this->maxPackages, strtotime("-{$this->deadline}"), $cleanOrphanedLogFiles));
 				if ($removed > 0) {
 					DUP_Logs::log(sprintf("- deleted %d local package%s", $removed, ($removed > 1) ? 's' : ''));
 				}
@@ -1501,6 +1508,14 @@ array_push($options['exclude'], $excludeRoot . $option);
 		$field->description = __('Path of the directory where packages are saved. Path must either be an absolute path (anywhere in filesystem) or prefixed with ~/ to specify a path within webroot.');
 		$field->value = $data['path'];
 		$field->notes = 'Default path: ' . self::$_data['defaultPath'];
+		$fslocalfolder->append($field);
+
+		// remove orphaned logs
+		$field = $modules->get("InputfieldCheckbox");
+		$field->attr('name', 'orphanedLogs');
+		$field->label = __("Clean orphaned log files");
+		$field->description = __('Clean log files previously saved in `local folder path` and not linked to existing packages.');
+		$field->attr('checked', $data['orphanedLogs'] == '1' ? 'checked' : '');
 		$fslocalfolder->append($field);
 
 		$fs->append($fslocalfolder);

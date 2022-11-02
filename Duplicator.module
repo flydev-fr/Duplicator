@@ -108,7 +108,7 @@ class DupZipLog
 class Duplicator extends WireData implements Module, ConfigurableModule
 {
 	const DUP_APPLICATION_NAME = 'Duplicator';
-	const DUP_MODULE_VERSION = '1.4.26'; // Update the module version here, it will be reflected in both modules
+	const DUP_MODULE_VERSION = '1.4.27'; 
 	const DUP_MIN_VERSION = '3.0.34'; // tested - if you have a lower version please test it and report back your result! thanks
 	const DUP_LOG_FILENAME = 'duplicator';
 	const DUP_SITE_FOLDER = 'site';
@@ -133,7 +133,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 	{
 		return array(
 			'title' => 'Duplicator',
-			'version' => '1.4.26',
+			'version' => '1.4.27',
 			'summary' => 'Duplicate, backup and transfer an entire site from one location to another.',
 			'author' => 'flydev',
 			'href' => 'https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/',
@@ -164,7 +164,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 			'removeBackups' => 1,
 			// Advanced options
 			'backup_mode' => 'MODE_PWAPI',
-			'chmodPermission' => '0600',
+			'chmodPermission' => '0700',
 			'archiveFlush' => 0,
 			'zip_flush_mbytes' => 0,
 			// CRON mode
@@ -1459,7 +1459,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 		$f->name = 'chmodPermission';
 		$f->label = __("Shell script permission");
 		$f->description = __("Apply this permission on generated `duplicator.sh` script");
-		$f->value = $data['chmodPermission'] ? $data['chmodPermission'] : '0600';
+		$f->value = $data['chmodPermission'] ? $data['chmodPermission'] : '0700';
 		$f->icon = 'shield';
 		$f->columnWidth = 50;
 		$f->notes = 'Will use this permission when running the octal CHMOD command.';

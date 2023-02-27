@@ -939,7 +939,7 @@ class Installer
     }
 
 
-    $this->ok("Database connection successful to " . htmlspecialchars($values['dbName']));
+    $this->ok("Database connection successful to " . htmlspecialchars($values['dbName'], ENT_QUOTES, 'UTF-8'));
     $options = array(
       'dbCharset' => strtolower($values['dbCharset']),
       'dbEngine' => $values['dbEngine']

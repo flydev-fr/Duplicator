@@ -1427,14 +1427,29 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 		$fs->collapsed = false;
 
 		$f = wire('modules')->get("InputfieldSelect");
-		$options = array('MODE_PWAPI' => 'Web mode', 'MODE_NATIVE' => 'Native mode');
+    $note = "";
+    $options = array('MODE_PWAPI' => 'Web mode');
+    // check if mysqldump tool is available on env path
+    if (DUP_Util::isWinOS()) {
+      $shellExec = shell_exec("where mysqldump");
+    } else {
+      $shellExec = shell_exec("which mysqldump");
+    }
+    if ($shellExec !== null) {
+      $options = array_merge($options, array('MODE_NATIVE' => 'Native mode (mysqldump)'));
+      $note = __("\n☑️ `mysqldump` tool [**OK**].");
+    } else {
+      $note = __("\n⚠️ `mysqldump` not found on **PATH**. **Native Mode** backup is **not available**, ");
+    }
 		$f->name = 'backup_mode';
 		$f->label = __("Mode");
-		$f->description = __("Backup mode.");
-		$f->notes = !self::isExtensionLoaded('zip') ? __("ZIP Extension required") : 'ZIP extension [OK]';
+    $f->description = __("Choose the prefered backup mode. Select **Native Mode** for **large database**.");
+    $f->notes = !self::isExtensionLoaded('zip') ? __("⚠️ `php_zip` is **required**, extension **not found**") : __("☑️ `php_zip` extension [**OK**]");
+    $f->notes .= $note;
 		$f->addOptions($options);
 		if ($data['backup_mode']) {
 			$f->attr('value', $data['backup_mode']);
+      $f->attr('selected', $data['backup_mode']);
 		}
 		$f->columnWidth = 50;
 		$fs->append($f);

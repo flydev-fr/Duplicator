@@ -92,12 +92,11 @@ class DUP_Util
         $cleaned[] = $backup;
         // delete the corresponding log file (we do not keep trace of the log deletion)
         $logfile = $path . DIRECTORY_SEPARATOR . $backup . '.' . 'log';
-        if(file_exists($logfile)) {
+        if (file_exists($logfile)) {
           DUP_Util::deleteFile($logfile);
         }
         continue;
-      } 
-      else DUP_Logs::log(sprintf($error_message, $backup, $path));
+      } else DUP_Logs::log(sprintf($error_message, $backup, $path));
     }
 
     // if Duplicator::orphanedLogs is set
@@ -141,20 +140,18 @@ class DUP_Util
       if (empty($log) || is_dir($log)) continue;
       if (strrchr($log, $extension) == false) continue;
       $package = str_replace('.log', '', $log);
-      if(in_array($package, $packages, true)) {
+      if (in_array($package, $packages, true)) {
         // package found, do not clean the log file
         continue;
-      }
-      else {
+      } else {
         // orphaned log file, delete it
         $logfile = $path . DIRECTORY_SEPARATOR . $log;
-        if (self::deleteFile($logfile)) {        
+        if (self::deleteFile($logfile)) {
           $n++;
           DUP_Logs::log(sprintf($success_message, $log, $path));
-        }
-        else {
-          DUP_Logs::log(sprintf($error_message, $log, $path)); 
-          return -1;         
+        } else {
+          DUP_Logs::log(sprintf($error_message, $log, $path));
+          return -1;
         }
       }
     }

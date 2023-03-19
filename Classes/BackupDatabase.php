@@ -21,12 +21,12 @@ class BackupDatabase
         'maxSeconds' => 120,
       ),
       'cachePath' => wire('config')->paths->cache,
-      'chmodPermission' => '0600'
+      'chmodPermission' => '0700'
     );
 
     $this->options = array_merge($this->options, $options);
 
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    if (DUP_Util::isWinOS()) {
       $this->OS = 'WINDOWS';
     } else {
       $this->OS = 'UNIX';
@@ -185,10 +185,10 @@ class BackupDatabase
     file_put_contents($cachePath . 'duplicator.sh', $data);
     /**
      *  Default:
-     *    Chmod 600 (chmod a+rwx,u-x,g-rwx,o-rwx) sets permissions so that:
-     *      (U)ser / owner can read, can write and can't execute.
-     *      (G)roup can't read, can't write and can't execute. 
-     *      (O)thers can't read, can't write and can't execute.
+     *    Chmod 700 (chmod a+rwx,g-rwx,o-rwx) sets permissions so that:
+     *      (U)ser / owner can read, can write and can execute
+     *      (G)roup can't read, can't write and can't execute
+     *      (O)thers can't read, can't write and can't execute     
      */
     wireChmod($cachePath . 'duplicator.sh', false, $this->options['chmodPermission']);
     chdir($cachePath);
@@ -210,7 +210,10 @@ class BackupDatabase
 
   protected function WindowsNative()
   {
+    $return = null;
+    $output = array();
     $cachePath = $this->options['cachePath'];
+
     $data = '@echo off
         set MYSQLDATABASE=' . wire('config')->dbName . '
         set MYSQLUSER=' . wire('config')->dbUser . '
@@ -219,11 +222,9 @@ class BackupDatabase
 
     file_put_contents($cachePath . 'duplicator.bat', $data);
 
-    $return = null;
-    $output = array();
     chdir($cachePath);
-    exec("\"${cachePath}duplicator.bat\"", $output, $return);
-    
+    exec("duplicator.bat", $output, $return);
+
     if ($return !== 0) {
       // bd($return); // (int) The exit status of the command (0 for success, > 0 for errors)
       // bd($output);

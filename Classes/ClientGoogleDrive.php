@@ -1,4 +1,6 @@
 <?php
+
+namespace ProcessWire;
 /*
 * https://developers.google.com/drive/v3/reference/
 */
@@ -67,7 +69,7 @@ class GoogleDriveClient
         $client = $this->service->getClient();
       }
 
-      $this->service = new Google_Service_Drive($client);
+      $this->service = new \Google_Service_Drive($client);
 
       if ($client->isAccessTokenExpired()) {
         DUP_Logs::log('GoogleDrive: token expired - creating auth.');

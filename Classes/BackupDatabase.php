@@ -26,7 +26,7 @@ class BackupDatabase
 
     $this->options = array_merge($this->options, $options);
 
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    if (DUP_Util::isWinOS()) {
       $this->OS = 'WINDOWS';
     } else {
       $this->OS = 'UNIX';
@@ -210,7 +210,10 @@ class BackupDatabase
 
   protected function WindowsNative()
   {
+    $return = null;
+    $output = array();
     $cachePath = $this->options['cachePath'];
+
     $data = '@echo off
         set MYSQLDATABASE=' . wire('config')->dbName . '
         set MYSQLUSER=' . wire('config')->dbUser . '
@@ -223,7 +226,7 @@ class BackupDatabase
     $output = array();
     chdir($cachePath);
     exec("\"${cachePath}duplicator.bat\"", $output, $return);
-    
+
     if ($return !== 0) {
       // bd($return); // (int) The exit status of the command (0 for success, > 0 for errors)
       // bd($output);

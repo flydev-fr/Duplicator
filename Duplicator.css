@@ -6,7 +6,6 @@
   color: #777;
 }
 
-
 /*
 .warning-notes .notes {
     border: 1px solid;
@@ -21,11 +20,11 @@
 */
 
 .pw-notes span {
-  font-family: 'Consolas';
+  font-family: "Consolas";
 }
 
 #wrap_cronMode .InputfieldRadiosStacked {
-  background-image: url('./Assets/cron.png');
+  background-image: url("./Assets/cron.png");
   background-position: right 10px top;
   background-repeat: no-repeat;
   background-size: 70px;
@@ -37,28 +36,28 @@
 }
 
 .AdminThemeDefault #wrap_Inputfield_useLocalFolder .InputfieldContent {
-  background-image: url('./Assets/localfolder.png');
+  background-image: url("./Assets/localfolder.png");
   background-position: right 20px top !important;
   background-repeat: no-repeat;
   background-size: 100px;
 }
 
 #wrap_Inputfield_useLocalFolder .InputfieldContent {
-  background-image: url('./Assets/localfolder.png');
+  background-image: url("./Assets/localfolder.png");
   background-position: right 10px top 10px;
   background-repeat: no-repeat;
   background-size: 110px;
 }
 
 .AdminThemeDefault #wrap_Inputfield_useFTP .InputfieldContent {
-  background-image: url('./Assets/ftp.png');
+  background-image: url("./Assets/ftp.png");
   background-position: right 20px top !important;
   background-repeat: no-repeat;
   background-size: 100px;
 }
 
 #wrap_Inputfield_useFTP .InputfieldContent {
-  background-image: url('./Assets/ftp.png');
+  background-image: url("./Assets/ftp.png");
   background-position: right 20px top 15px;
   background-repeat: no-repeat;
   background-size: 100px;
@@ -69,7 +68,7 @@
 }
 
 #wrap_Inputfield_useGoogleDrive .InputfieldContent {
-  background-image: url('./Assets/googledrive.png');
+  background-image: url("./Assets/googledrive.png");
   background-position: top 20px right 10px;
   background-repeat: no-repeat;
   background-size: 110px;
@@ -80,7 +79,7 @@
 }
 
 #wrap_Inputfield_useDropbox .InputfieldContent {
-  background-image: url('./Assets/dropbox.png');
+  background-image: url("./Assets/dropbox.png");
   background-position: top 20px right 10px;
   background-repeat: no-repeat;
   background-size: 110px;
@@ -91,7 +90,7 @@
 }
 
 #wrap_Inputfield_useAmazonS3 .InputfieldContent {
-  background-image: url('./Assets/amazon.png');
+  background-image: url("./Assets/amazon.png");
   background-position: top 20px right 10px;
   background-repeat: no-repeat;
   background-size: 105px;
@@ -208,7 +207,7 @@
   margin-top: -6px;
 }
 
-@media screen and (max-width:767px) {
+@media screen and (max-width: 767px) {
   #dup-head {
     grid-template-columns: repeat(2, 2fr);
     grid-template-rows: 60px;
@@ -268,7 +267,8 @@
   filter: invert(1);
 }
 
-#dup-head ul li:focus {}
+#dup-head ul li:focus {
+}
 
 .dup-flex-r {
   display: flex;
@@ -308,7 +308,8 @@
   -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#FFF0F3F6', endColorstr='#FFDCE3EC')";
 }
 
-.dup-large a {}
+.dup-large a {
+}
 
 .dup-large .fa {
   height: 16px;
@@ -338,7 +339,13 @@ a.dup-btn:hover .octicon-star {
 }
 
 .animate-chars {
-  background-image: linear-gradient(-225deg, #15c472 0%, #4185df 29%, #ff1361 67%, #fff800 100%);
+  background-image: linear-gradient(
+    -225deg,
+    #15c472 0%,
+    #4185df 29%,
+    #ff1361 67%,
+    #fff800 100%
+  );
   background-size: auto auto;
   background-clip: border-box;
   background-size: 200% auto;

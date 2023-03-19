@@ -403,10 +403,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 	{
 		$defaultOptions = array(
 			//ATO: Generate ZIP in final folder and name it package2.zip
-			//ATO:            'filename' => DUP_Util::formatFilename(wire('config')->httpHost, 'pw' . strrchr(self::DUP_PACKAGE_EXTENSION, '.')),
-			//ATO:            'folder' => wireTempDir(self::DUP_TEMP_FOLDER, array('maxAge' => self::DUP_WIRETEMP_MAX_TIME)),
-			//            'filename' => DUP_Util::formatFilename(wire('config')->httpHost, 'package2.zip'),
-			'filename' => DUP_Util::formatFilename($this->packageName, 'package2.zip'), //ATO:Fix for Custom Package name
+      'filename' => DUP_Util::formatFilename($this->packageName, 'package2.zip'),
 			'folder' => $this->path . '/',
 			'exclude' => array(),
 			'extension' => array(),
@@ -415,17 +412,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 		$options = array_merge($options, $defaultOptions);
 
 		$root = wire('config')->paths->root;
-
-		//ATO: all paths are site-relative
-		//ATO:        $path = wire('config')->paths->root . self::DUP_SITE_FOLDER . '/' . basename(wire('config')->paths->assets) . '/';
-		//ATO:        array_push($options['exclude'], $path . 'cache' . '/' . 'WireTempDir');
-		//ATO:        if ($this->backupWire) array_push($options['exclude'], $root . 'wire');
-		//ATO:        if ($this->backups) array_push($options['exclude'], $path . 'backups');
-		//ATO:        if ($this->backupLogs) array_push($options['exclude'], $path . 'logs');
-		//ATO:        if ($this->backupCache) array_push($options['exclude'], $path . 'cache');
-		//ATO:        if ($this->backupSessions) array_push($options['exclude'], $path . 'sessions');
-		//ATO:        if ($this->backupFiles) array_push($options['exclude'], $path . 'files');
-
 		$excludeRoot = '/';
 		$assetsPath = $excludeRoot . self::DUP_SITE_FOLDER . '/' . basename(wire('config')->paths->assets) . '/';
 		array_push($options['exclude'], $assetsPath . 'cache' . '/' . 'WireTempDir');
@@ -459,22 +445,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
 		$excluded = preg_split('/\r\n|[\r\n]/', $this->ignoredPath);
 		$options['exclude'] = array_merge($options['exclude'], $excluded);
-
-		/*ATO: not required, handled in Zap2
-foreach ($options['exclude'] as $option) {
-if(!empty($option)) {
-$validExt = ($option[0] === '*' && $option[1] === '.') ? $option : '';
-$ext = substr(strchr($validExt, '.'), 1);
-if (!empty($ext)) array_push($options['extension'], $ext);
-
-if(is_dir($root . $option)) {
-array_push($options['exclude'], $excludeRoot . $option);
-} elseif(is_file($root . $option)) {
-array_push($options['exclude'], $excludeRoot . $option);
-}
-}
-}
- */
 
 		foreach ($this->ignoredExtensions as $ignoredExtension) {
 			$validExt = substr(strchr($ignoredExtension, '.'), 1);
@@ -700,8 +670,6 @@ array_push($options['exclude'], $excludeRoot . $option);
 					if (is_array($files) && count($files)) {
 						$google->deleteFiles($files);
 					}
-					//$quota = $google->getStorageQuota();
-					//bd(DUP_Util::human_filesize($quota));
 				} catch (\Exception $ex) {
 					DUP_Logs::log("- [GoogleDrive] error: " . $ex->getMessage(), 'error');
 				}
@@ -769,7 +737,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 	}
 
 	//ATO: Optimized, non-recursive archiver
-	/*
+  /**
      * zipData2 - Archive directory tree into a ZIP
      * This implementation starts from a root directory and operates on an
      * array of pending directories.
@@ -1185,8 +1153,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 
 	protected static function isExtensionLoaded($ext)
 	{
-
-		if (extension_loaded('zip')) {
+    if (extension_loaded($ext)) {
 			return true;
 		}
 
@@ -1257,13 +1224,12 @@ array_push($options['exclude'], $excludeRoot . $option);
 		$field->attr('name', 'packageName');
 		$field->label = __("Name");
 		$field->icon = 'file';
-		$field->description = __("Name of the final package file - without extension.");
+    $field->description = __("Name of the final package file, without extension.");
 		if ($data['packageName']) {
 			$field->attr('value', $data['packageName']);
 		}
-
 		$field->collapsed = false;
-		$field->notes = 'Default name: {timestamp}-' . $config->httpHost . '.' . self::DUP_PACKAGE_EXTENSION;
+    $field->notes = 'Default name: `{yyyy-mm-dd_hh-ii-ss}-' . $config->httpHost . '.' . self::DUP_PACKAGE_EXTENSION . '`';
 		$fs->append($field);
 
 		$field = $modules->get("InputfieldFieldset");
@@ -1301,7 +1267,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 
 		$fim = $modules->get("InputfieldMarkup");
 		$fim->attr('class', 'pw-notes');
-		$fim->markupText = '<p class="notes">Shortcuts: Wire refer to the root <span><strong>&laquo;wire/&raquo;</strong></span> folder. Backups, Logs, Sessions, Cache and Files refer to <span><strong>&laquo;site/assets/&raquo;</strong></span></p>';
+    $fim->description = 'Shortcuts: **Wire** refer to the root `/wire` folder. **Backups**, **Logs**, **Sessions**, **Cache** and **Files** refer to `/site/assets`';
 		$field->append($fim);
 
 		$ta = $modules->get("InputfieldTextarea");
@@ -1310,10 +1276,10 @@ array_push($options['exclude'], $excludeRoot . $option);
 		$ta->value = $data['ignoredPath'];
 		$ta->collapsed = false;
 		//        $ta->notes = 'Enter absolute or relative path. One (1) extension, filename or path per line. To exclude extension: *.foo';
-		$ta->notes = "Items to exclude one per line, this may be path, a filename, an extension or RegExp.\n" .
-			"Paths need to begin and end with a slash, for example /site/js/\n" .
-			"To exclude an extension use *.foo\n" .
-			"RexEx pattern need to be specified in % chars like %\.\d+x\d+\.[^/]+$%  # Image variants created by PW";
+    $ta->notes = "Items to exclude, **one per line**, this may be **path**, **a filename**, **an extension** or **RegExp**.\n" .
+      "- Paths **need to begin and end with a slash**, for example `/site/js/`\n" .
+      "- To exclude an extension use `*.foo`\n" .
+      "- **RexEx pattern** need to be specified surrounded by `%` chars. Example:\n`%\.\d+x\d+\.[^/]+$%` *# exclude Image variants created by PW*";
 		$ta->columnWidth = 50;
 		$field->append($ta);
 
@@ -1350,7 +1316,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 		$field->set('collapsed', true);
 		$field->label = __('Maximum number of packages');
 		$field->description = __('How many packages do you want to keep in the storage directory ?');
-		$field->notes = sprintf(__("max value: %d"), self::DUP_MAX_PACKAGES);
+    $field->notes = sprintf(__("**Max** value: `%d`"), self::DUP_MAX_PACKAGES);
 		$field->columnWidth = 50;
 		$field->collapsed = false;
 		$fs->add($field);
@@ -1380,7 +1346,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 		$field->addOption('PWCron', __("PWCron - Cron or equivalent system required {$mod}"));
 		$field->addOption('none', 'None');
 		$field->attr('value', is_null($data['cronMode']) ? 'none' : $data['cronMode']);
-		$field->notes = __("To use the built-in cron feature, call \"**/webroot/yourwebsite/site/modules/Duplicator/cron.php**\" from your system cron.");
+    $field->notes = __("To use the built-in cron feature, call with your system task scheduler the script `cron.php` in the following path:\n`" . wire('config')->paths->Duplicator . "cron.php`");
 		$fs->append($field);
 
 		$field = $modules->get("InputfieldSelect");
@@ -1425,7 +1391,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 		$field->set('collapsed', true);
 		$field->addOptions(array(
 			null => __('never'),
-			'1 minute' => __('1 minute'), // for development use
+      '1 minute' => __('1 minute [warning!]'), // for development use
 			'1 day' => __('1 day'),
 			'1 week' => __('1 week'),
 			'1 month' => __('1 month'),
@@ -1462,7 +1428,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 		$f->value = $data['chmodPermission'] ? $data['chmodPermission'] : '0700';
 		$f->icon = 'shield';
 		$f->columnWidth = 50;
-		$f->notes = 'Will use this permission when running the octal CHMOD command.';
+    $f->notes = '`security settings`: **CHMOD** generated script on creation. Default: `0700` *(chmod a+rwx,g-rwx,o-rwx)*';
 		$fs->append($f);
 
 		$field = $modules->get('InputfieldCheckbox');
@@ -1505,7 +1471,7 @@ array_push($options['exclude'], $excludeRoot . $option);
 		$field->attr('name', 'path');
 		$field->label = __("Path");
 		//ATO: Modified description        $field->description = __('Absolute path of the directory where packages are saved.');
-		$field->description = __('Path of the directory where packages are saved. Path must either be an absolute path (anywhere in filesystem) or prefixed with ~/ to specify a path within webroot.');
+    $field->description = __('Path of the directory where packages are saved. **Path** must either be an **absolute path** (anywhere in filesystem) or prefixed with `~/` to specify a path within webroot.');
 		$field->value = $data['path'];
 		$field->notes = 'Default path: ' . self::$_data['defaultPath'];
 		$fslocalfolder->append($field);

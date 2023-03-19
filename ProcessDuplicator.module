@@ -518,9 +518,11 @@ class ProcessDuplicator extends Process
 	 */
 	protected function dialogBoxModal($id, $title, $icon, $body)
 	{
-		$out = "<div id='$id' class='modal-confirm' title='$title'>
+    $out = "
+    <div id='$id' class='modal-confirm' title='$title'>
 				  <p><span class='ui-icon ui-icon-$icon' style='float:left; margin:12px 12px 20px 0;'></span>$body</p>
-				</div>";
+		</div>
+    ";
 
 		return $out;
 	}

@@ -222,10 +222,8 @@ class BackupDatabase
 
     file_put_contents($cachePath . 'duplicator.bat', $data);
 
-    $return = null;
-    $output = array();
     chdir($cachePath);
-    exec("\"${cachePath}duplicator.bat\"", $output, $return);
+    exec("duplicator.bat", $output, $return);
 
     if ($return !== 0) {
       // bd($return); // (int) The exit status of the command (0 for success, > 0 for errors)

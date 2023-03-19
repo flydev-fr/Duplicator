@@ -217,7 +217,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 		$this->moduleDir = $this->config->paths->siteModules . $this->className;
 
 		$this->config->styles->add($this->config->urls->{$this->className} . "{$this->className}.css");
-		$this->config->scripts->add($this->config->urls->{$this->className} . "Assets/js/baffle.min.js");
+    $this->config->scripts->add($this->config->urls->{$this->className} . "Assets/lib/baffle.min.js");
 		$this->config->scripts->add($this->config->urls->{$this->className} . "{$this->className}.js");
 
 		$this->defaultPath = wire('config')->paths->assets . self::DUP_DEFAULT_LOCAL_FOLDER;

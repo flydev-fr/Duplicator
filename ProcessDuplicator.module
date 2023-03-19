@@ -41,7 +41,7 @@ class ProcessDuplicator extends Process
 			throw new WirePermissionException(__('Duplicator: You have no permission to use this module.'));
 		}
 
-		$this->config->scripts->add($this->config->urls->{$this->className} . "Assets/js/baffle.min.js");
+    $this->config->scripts->add($this->config->urls->{$this->className} . "Assets/lib/baffle.min.js");
 
 		$this->dupmod = $this->modules->get(Duplicator::DUP_APPLICATION_NAME);
 

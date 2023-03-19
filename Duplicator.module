@@ -658,7 +658,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 						throw new WireException("GoogleDrive SDK not installed.");
 					}
 
-					$google = new \GoogleDriveClient();
+          $google = new GoogleDriveClient();
 					$google->setTempFolder(self::DUP_TEMP_FOLDER);
 					$google->setAppName(self::DUP_APPLICATION_NAME);
 					$google->setGoogleKeyFile($this->googleKeyFile);
@@ -1106,9 +1106,15 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 			//$href = wire('config')->urls->admin . "module/edit?name=" . DUP_APPLICATION_NAME . "&action=view_listing";
 			$href = wire('config')->urls->admin . "setup/" . self::DUP_APPLICATION_NAME . "/?action=packages";
 			//$preview = ($pkgs === 0) ? '' : "<a href='{$href}' class='pw-modal'><i class='fa fa-eye'></i> Manage Package(s)</a>";
-			$preview = wire('modules')->isInstalled("ProcessDuplicator") ? "<a href='{$href}'><i class='fa fa-eye'></i> Package Manager</a>" : "";
+      $preview = wire('modules')->isInstalled("ProcessDuplicator") ? "<a href='{$href}'><i class='fa fa-eye'></i></a>" : "";
 			$infos['markupText'] = sprintf(
-				"Local packages overview › <span class='notes'>%s</span><br>Disk space used › \t<span class='notes'>&nbsp;~%s&nbsp;</span><br>Disk space remaining › <span class='notes'>&nbsp;%s/%s&nbsp;</span><br>Package(s) found › <span class='notes'>&nbsp;%d&nbsp;</span> {$preview}",
+        "
+        <img src='%s/Assets/localfolder-64.png' width='16' height='16'>
+        Local packages overview › <span class='notes'><strong>%s</strong></span><br>
+        Disk space used › \t<span class='notes'>&nbsp;<strong>~%s</strong></span><br>
+        Disk space remaining › <span class='notes'><strong>%s/%s</strong></span><br>
+        Package(s) found › <span class='notes'><strong>%d</strong></span> {$preview}",
+        wire('config')->urls->Duplicator,
 				self::$_data->path,
 				($pkgs == 0) ? '0' : DUP_Util::human_filesize(DUP_Util::foldersize($path), 0),
 				$freespace,
@@ -1123,29 +1129,37 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 		return $infos;
 	}
 
-	/*
+  /**
      * return various information about GoogleDrive storage
-     * (ALPHA)
      */
 	protected static function getGoogleDriveInfo()
 	{
-		$pkgs = 0;
-		$infos['markupText'] = 'Invalid informations';
-		if (class_exists('GoogleDriveClient')) {
-			$google = new \GoogleDriveClient();
+    $infos['markupText'] = '\n\n';
+    if (class_exists('\Google_Client') && self::$_data->useGoogleDrive) {
+      $google = new GoogleDriveClient();
 			$google->setTempFolder(self::DUP_TEMP_FOLDER);
 			$google->setAppName(self::DUP_APPLICATION_NAME);
 			$google->setGoogleKeyFile(self::$_data->googleKeyFile);
 			$google->setShareWithEmail(self::$_data->shareWithEmail);
 			$google->connect();
 			$quota = $google->getStorageQuota();
+      $pkgs = $google->getPackages(self::DUP_PACKAGE_EXTENSION, self::DUP_PACKAGE_MIME_TYPE, self::$_data->deadline);
+      $href = wire('config')->urls->admin . "setup/" . self::DUP_APPLICATION_NAME . "/?action=packages";
+      $preview = wire('modules')->isInstalled("ProcessDuplicator") ? "<a href='{$href}'><i class='fa fa-eye'></i></a>" : "";
 			$infos['markupText'] = sprintf(
-				"GoogleDrive packages overview › <span class='notes'>%s</span><br>Usage in drive › \t<span class='notes'>&nbsp;~%s&nbsp;</span><br>Drive space remaining › <span class='notes'>&nbsp;%s/%s&nbsp;</span><br>Package(s) found › <span class='notes'>&nbsp;%d&nbsp;</span>",
-				'Using GoogleDrive cloud service',
+        "
+        <br /><br />
+        <img src='%s/Assets/google_drive-64.png' width='16' height='16'> 
+        GoogleDrive packages overview › <span class='notes'>&nbsp;<strong>%s</strong></span><br>
+        Usage in drive › \t<span class='notes'>&nbsp;<strong>~%s</strong></span><br>
+        Drive space remaining › <span class='notes'>&nbsp;<strong>%s/%s</strong></span><br>
+        Package(s) found › <span class='notes'><strong>%d</strong></span> {$preview}",
+        wire('config')->urls->Duplicator,
+        'GoogleDrive Cloud Service',
 				DUP_Util::human_filesize($quota->usage),
 				DUP_Util::human_filesize($quota->limit - ((int) $quota->usage)),
 				DUP_Util::human_filesize($quota->limit),
-				count($google->getPackages(self::DUP_PACKAGE_EXTENSION, self::DUP_PACKAGE_MIME_TYPE, self::$_data->deadline))
+        $pkgs !== null ? $pkgs : 0
 			);
 		}
 		return $infos;
@@ -1207,6 +1221,10 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
 		$field = $modules->get("InputfieldMarkup");
 		$markup = self::getLocalFolderInfo();
+    if (self::$_data->useGoogleDrive) {
+      $infos = self::getGoogleDriveInfo();
+      $markup['markupText'] .= $infos['markupText'];
+    }
 		$field->markupText = $markup['markupText'];
 		//$field->notes = $markup['notes'];
 		//$field->showIf = "useLocalFolder=1";
@@ -1607,7 +1625,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 		$fs->append($fsdb);
 
 		// GOOGLE DRIVE
-		if (!class_exists('GoogleDriveClient')) {
+    if (!class_exists('\Google_Client')) {
 			$skip = true;
 		}
 		$description = ($skip == false) ? $disabled = '' : __("The required SDK is not installed. You can download it [here](https://github.com/flydev-fr/duplicator-google-drive) or install it with [Composer](https://getcomposer.org/doc/00-intro.md). Run **composer require google/apiclient**");

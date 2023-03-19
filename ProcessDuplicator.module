@@ -410,14 +410,15 @@ class ProcessDuplicator extends Process
 		// GoogleDrive
 		if ($this->dupmod->useGoogleDrive == 1) {
 			try {
-				$google = new \GoogleDriveClient();
+        $google = new GoogleDriveClient();
 				$google->setTempFolder(Duplicator::DUP_TEMP_FOLDER);
 				$google->setAppName(Duplicator::DUP_APPLICATION_NAME);
 				$google->setGoogleKeyFile($this->dupmod->googleKeyFile);
 				$google->connect();
 				$files = $google->getFiles();
-				DUP_Logs::log("GoogleDrive: found " . count($files) . " packages");
-				if (count($files)) {
+        $cntFiles = $files !== null ? count($files) : 0;
+        DUP_Logs::log("GoogleDrive: found " . $cntFiles . " packages");
+        if ($cntFiles) {
 					foreach ($files as $file) {
 						if (strrpos($file['name'], $extension) == false) continue;
 						$originalFilename = $file['name'];

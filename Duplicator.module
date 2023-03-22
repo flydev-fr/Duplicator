@@ -853,7 +853,13 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
     $dirsToProcess = ['/']; // Start at root
 
+    if ($this->cronMode !== 'none') {
+      DUP_Logs::log("- running ZipData2() with cronMode = {$this->cronMode}");
+      DUP_Logs::log("- trying to allow longer execution time");
     set_time_limit(300); // Try to allow longer execution time
+      DUP_Logs::log("- php time limit => " . ini_get('max_execution_time') . " sec");
+    }
+
     while ($thisDir = array_shift($dirsToProcess)) { // Process first entry in array
       $fullPath = $rootDirectory . $thisDir;
 
@@ -935,7 +941,12 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
                 $zipLog->verbose("OPENED ZIP: {$zipfile}");
                 $fragmentBytes = 0;
-                set_time_limit(300);
+                if ($this->cronMode !== 'none') {
+                  DUP_Logs::log("- running ZipData2() with cronMode = {$this->cronMode}");
+                  DUP_Logs::log("- trying to allow longer execution time");
+                  set_time_limit(300); // Try to allow longer execution time
+                  DUP_Logs::log("- php time limit => " . ini_get('max_execution_time') . " sec");
+                }
               }
             } else {
               $ret['errors'][] = $filePath;

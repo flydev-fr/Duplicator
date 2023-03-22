@@ -79,7 +79,7 @@ $(document).ready(function () {
   });
 
   function backupNow() {
-    if ($job == true) {      
+    if ($job == true) {
       return;
     }
 

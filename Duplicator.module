@@ -3,7 +3,7 @@
 namespace ProcessWire;
 
 /*
- * Contributors: 
+ * Contributors and thanks to: 
  * - Szabesz (@szabeszg)
  * - Stan Lindsey (@stanlindsey)
  * - Adrian Jones (@adrianbj)
@@ -223,7 +223,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
     $this->config->styles->add($this->config->urls->{$this->className} . "{$this->className}.css");
     $this->config->scripts->add($this->config->urls->{$this->className} . "Assets/lib/baffle.min.js");
-    $this->config->scripts->add($this->config->urls->{$this->className} . "{$this->className}.js");
 
     $this->defaultPath = wire('config')->paths->assets . self::DUP_DEFAULT_LOCAL_FOLDER;
     if (!is_dir($this->defaultPath) && empty($this->path)) {
@@ -582,9 +581,11 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     return false;
   }
 
+
+
   /*
-     * call this function from a cron tool to launch the backup task
-     */
+  * call this function from a cron tool to launch the backup task
+  */
   public function ___cronJob()
   {
     if (!$this->useLocalFolder && !$this->useDropbox && !$this->useGoogleDrive && !$this->useAmazonS3 && !$this->useFTP) {
@@ -888,7 +889,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     if ($this->cronMode !== 'none') {
       DUP_Logs::log("- running ZipData2() with cronMode = {$this->cronMode}");
       DUP_Logs::log("- trying to allow longer execution time");
-    set_time_limit(300); // Try to allow longer execution time
+      set_time_limit(300); // Try to allow longer execution time
       DUP_Logs::log("- php time limit => " . ini_get('max_execution_time') . " sec");
     }
 
@@ -1273,6 +1274,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $out .= "    <a class='github-button' href='https://github.com/flydev-fr/Duplicator' data-show-count='false' aria-label='Documentation' data-size='large'>Doc</a>";
     $out .= "  </div>";
     $out .= "</div>";
+    $out .= "<script>baffle('.dup-glitch', {characters: '█▓█ ▒░1▒░3█░▒▓3 █▒▒7▓▒▓ █ ░█▒ ▒▓░: █)░▒ ▓░', speed: 110}).reveal(11500);</script>";
 
     $fs = $modules->get("InputfieldFieldset");
     $fs->label = " ";
@@ -1448,6 +1450,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     if ($data['cycle'] == 'logoutTrigger') {
       $field->notes = __("The cronjob to backup your database executes only if current user has db-backup permission.");
     }
+    $field->showIf = "cronMode='LazyCron'";
 
     $field->addOptions(array(
       0 => __('Trigger disabled'),
@@ -1574,6 +1577,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     // append to advanced settings fieldset
     $fs->append($fsEnc);
 
+    /**
+     * Cloud Providers Settings
+     */
     $fs = $modules->get("InputfieldFieldset");
     $fs->label = "Save package to";
     $fs->icon = 'cloud';

@@ -1541,6 +1541,27 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $fs->append($field);
 
     $fields->append($fs);
+    /**
+     * Encryption Settings
+     */
+    $fsEnc = $modules->get("InputfieldFieldset");
+    $fsEnc->label = "Encryption";
+    $fsEnc->icon = 'lock';
+    $fsEnc->collapsed = false;
+
+    $field = $modules->get('InputfieldTextarea');
+    $field->name = "encryptionPublicKey";
+    $field->label = __("Public Key");
+    $field->description = __("Paste here the content of your public key file. This key will be used to encrypt the backup package.");
+    $field->value = $data['encryptionPublicKey'];
+    if (!\ParagonIE\Halite\Halite::isLibsodiumSetupCorrectly()) {
+      $field->notes = __("☑️ `libsodium` setup [**OK**]");
+    } else {
+      $field->notes = __("⚠️ `libsodium` setup [**FAIL**]");
+    }
+    $fsEnc->append($field);
+    // append to advanced settings fieldset
+    $fs->append($fsEnc);
 
     $fs = $modules->get("InputfieldFieldset");
     $fs->label = "Save package to";

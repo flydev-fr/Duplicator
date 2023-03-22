@@ -171,6 +171,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       'chmodPermission' => '0700',
       'archiveFlush' => 0,
       'zip_flush_mbytes' => 0,
+      'encryptionPublicKey' => '',
       // CRON mode
       'cronMode' => 'none',
       // storage mode
@@ -598,6 +599,63 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $package = $this->buildPackage();
 
     if (is_array($package) && $package['zipfile'] !== null) {
+      /**
+       * Halite encryption
+       * 
+       * WIP
+       * run if encryption public key is set
+       */
+      if (strlen($this->encryptionPublicKey) > 0) {
+        DUP_Logs::log('- package encryption starting...');
+        DUP_Util::timer('encryption');
+        try {
+          try {
+            file_put_contents($this->path . DS . 'duplicator.public.key', $this->encryptionPublicKey);
+            $publicKey = \ParagonIE\Halite\KeyFactory::loadEncryptionPublicKey($this->path . DS . 'duplicator.public.key');
+            $secretKey = \ParagonIE\Halite\KeyFactory::loadEncryptionSecretKey($this->path . DS . 'duplicator.secret.key');
+            if ($publicKey !== null) {
+              $encryptedFilename = $package['zipfile'] . '.enc';
+
+              if ($this->cronMode !== 'none') {
+                DUP_Logs::log("- running encryption with cronMode = {$this->cronMode}");
+                DUP_Logs::log("- trying to allow longer execution time");
+                set_time_limit(300); // Try to allow longer execution time
+                DUP_Logs::log("- php time limit => " . ini_get('max_execution_time') . " sec");
+              }
+
+              \ParagonIE\Halite\File::seal($package['zipfile'], $encryptedFilename, $publicKey);
+
+              DUP_Logs::log('- package encryption success, took ' . DUP_Util::timer('encryption') . 'sec');
+            }
+          } catch (\Exception $e) {
+            DUP_Logs::log('- package encryption failed: ' . $e->getMessage());
+          }
+
+          /**
+           * Uncomment to test decryption after encryption run
+           */
+          try {
+            // DUP_Logs::log('- package decryption staring...');
+            // DUP_Util::timer('decryption');
+            // if ($this->cronMode !== 'none') {
+            //   DUP_Logs::log("- running encryption with cronMode = {$this->cronMode}");
+            //   DUP_Logs::log("- trying to allow longer execution time");
+            //   set_time_limit(300); // Try to allow longer execution time
+            //   DUP_Logs::log("- php time limit => " . ini_get('max_execution_time') . " sec");
+            // }
+
+            // \ParagonIE\Halite\File::unseal($encryptedFilename, $this->path . DS . 'decrypted-package2.zip', $secretKey);
+
+            // DUP_Logs::log('- package decryption success, took ' . DUP_Util::timer('decryption') . 'sec');
+          } catch (\Exception $e) {
+            DUP_Logs::log('- package decryption failed: ' . $e->getMessage());
+          }
+        } finally {
+          // delete public key file
+          @unlink($this->path . DS . 'duplicator.public.key');
+        }
+      }
+
       $packageName = basename($package['zipfile']);
       if ($this->useLocalFolder) {
         if (file_exists($package['zipfile'])) {

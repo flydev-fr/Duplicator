@@ -1568,7 +1568,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $field->label = __("Public Key");
     $field->description = __("Paste here the content of your public key file. This key will be used to encrypt the backup package.");
     $field->value = $data['encryptionPublicKey'];
-    if (!\ParagonIE\Halite\Halite::isLibsodiumSetupCorrectly()) {
+    if (\ParagonIE\Halite\Halite::isLibsodiumSetupCorrectly()) {
       $field->notes = __("☑️ `libsodium` setup [**OK**]");
     } else {
       $field->notes = __("⚠️ `libsodium` setup [**FAIL**]");

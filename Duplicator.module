@@ -615,10 +615,15 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         DUP_Util::timer('encryption');
         try {
           try {
+            // write required public key to file
             file_put_contents($this->path . DS . 'duplicator.public.key', $this->encryptionPublicKey);
+            // chmod the file to the correct permission
+            wireChmod($this->path . DS . 'duplicator.public.key', octdec($this->chmodPermission));
+            // load the public key
             $publicKey = \ParagonIE\Halite\KeyFactory::loadEncryptionPublicKey($this->path . DS . 'duplicator.public.key');
-            $secretKey = \ParagonIE\Halite\KeyFactory::loadEncryptionSecretKey($this->path . DS . 'duplicator.secret.key');
+
             if ($publicKey !== null) {
+              // filename of encrypted file
               $encryptedFilename = $package['zipfile'] . '.enc';
 
               if ($this->cronMode !== 'none') {

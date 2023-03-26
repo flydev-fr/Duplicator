@@ -746,7 +746,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             throw new WireException("AmazonS3 SDK not installed.");
           }
 
-          $amazonaws = new \AmazonS3Client();
+          $amazonaws = new AmazonS3Client();
           $amazonaws->setAccessKey($this->awsAccessKey);
           $amazonaws->setSecretKey($this->awsSecretKey);
           $amazonaws->setRegion($this->awsRegion);
@@ -766,7 +766,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
           $amazonaws->upload($package['zipfile'], $packageName, $this->awsSubDir);
           //if($url === null) throw new AmazonS3ClientException("AmazonS3: An error occured while uploading package <{$packageName}>");
           $amazonaws->deleteOldBackups($this->maxPackages, $this->deadline);
-        } catch (\AmazonS3ClientException $ex) {
+        } catch (AmazonS3ClientException $ex) {
           DUP_Logs::log("[AmazonS3] error: " . $ex->getMessage(), 'warning');
         }
       }
@@ -1788,7 +1788,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $fs->append($fsgd);
 
     // AMAZON
-    if (!class_exists('AmazonS3Client')) {
+    if (!class_exists('\Aws\S3\S3Client')) {
       $skip = true;
     }
     $description = ($skip == false) ? $disabled = '' : __("The required SDK is not installed. You can download it [here](https://github.com/flydev-fr/duplicator-amazon-s3) or install it with [Composer](https://getcomposer.org/doc/00-intro.md). Run **composer require aws/aws-sdk-php**");

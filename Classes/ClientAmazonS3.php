@@ -1,5 +1,7 @@
 <?php
 
+namespace ProcessWire;
+
 use Aws\S3\S3Client;
 
 class AmazonS3Client

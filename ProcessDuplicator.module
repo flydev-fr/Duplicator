@@ -453,7 +453,7 @@ class ProcessDuplicator extends Process
     // AmazonS3
     if ($this->dupmod->useAmazonS3 == 1) {
       try {
-        $amazonaws = new \AmazonS3Client();
+        $amazonaws = new AmazonS3Client();
         $amazonaws->setAccessKey($this->dupmod->awsAccessKey);
         $amazonaws->setSecretKey($this->dupmod->awsSecretKey);
         $amazonaws->setRegion($this->dupmod->awsRegion);
@@ -485,7 +485,7 @@ class ProcessDuplicator extends Process
             array_push($rows, $data);
           }
         }
-      } catch (\AmazonS3ClientException $ex) {
+      } catch (AmazonS3ClientException $ex) {
         DUP_Logs::log("AmazonS3 error: " . $ex->getMessage(), 'error');
       }
     }

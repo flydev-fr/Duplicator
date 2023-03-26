@@ -473,9 +473,8 @@ class ProcessDuplicator extends Process
             $href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
             $href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=amazon" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
             $href3 = '<a href="?action=delete&file=' . $file['Key'] . '&service=amazon" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
-
             $data = array(
-              'time' => $ts->getTimestamp(),
+              'time' => $ts ? $ts->getTimestamp() : 0,
               "<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/amazon-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
               $createdOn,
               DUP_Util::human_filesize($file['Size']),

@@ -464,7 +464,10 @@ class ProcessDuplicator extends Process
           foreach ($files as $file) {
             if (strrpos($file['Key'], $extension) == false) continue;
             $originalFilename = $file['Key'];
-            $parts = explode('-', $file['Key']);
+            if ($this->dupmod->awsSubDir !== '' && strpos($originalFilename, $this->dupmod->awsSubDir) === 0) {
+              $originalFilename = substr($originalFilename, strlen($this->dupmod->awsSubDir . '/'));
+            }
+            $parts = explode('-', $originalFilename);
             array_pop($parts);
             $tsstr = implode('-', $parts);
             $ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);

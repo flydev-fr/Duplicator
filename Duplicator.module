@@ -666,7 +666,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             //   set_time_limit(300); // Try to allow longer execution time
             //   DUP_Logs::log("- php time limit => " . ini_get('max_execution_time') . " sec");
             // }
-
+            // $secretKey = \ParagonIE\Halite\KeyFactory::loadEncryptionSecretKey($this->path . DS . 'duplicator.secret.key');
             // \ParagonIE\Halite\File::unseal($encryptedFilename, $this->path . DS . 'decrypted-package2.zip', $secretKey);
 
             // DUP_Logs::log('- package decryption success, took ' . DUP_Util::timer('decryption') . 'sec');
@@ -674,7 +674,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             DUP_Logs::log('- package decryption failed: ' . $e->getMessage());
           }
         } finally {
-          // delete public key file
+          // always delete public key file
           @unlink($this->path . DS . 'duplicator.public.key');
         }
       }

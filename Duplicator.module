@@ -1571,7 +1571,18 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     if (\ParagonIE\Halite\Halite::isLibsodiumSetupCorrectly()) {
       $field->notes = __("☑️ `libsodium` setup [**OK**]");
     } else {
-      $field->notes = __("⚠️ `libsodium` setup [**FAIL**]");
+      /**
+       * As of PHP 7.2.0 this extension is bundled with PHP. 
+       * For older PHP versions this extension is available via PECL.
+       * - enable extension in php.ini
+       */
+      $errormsg = "";
+      if (version_compare(PHP_VERSION, '7.2', '<')) {
+        $errormsg = "You need to install `libsodium` extension. See [**documentation**](https://github.com/flydev-fr/Duplicator)";
+      } else {
+        $errormsg = "You need to enable `libsodium` extension. See [**documentation**](https://github.com/flydev-fr/Duplicator)";
+      }
+      $field->notes = __("⚠️ `libsodium` setup [**FAIL**] | {$errormsg}");
     }
     $fsEnc->append($field);
     // append to advanced settings fieldset

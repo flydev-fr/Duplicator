@@ -636,7 +636,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
            * Uncomment to test decryption after encryption run
            */
           try {
-            // DUP_Logs::log('- package decryption staring...');
+            // DUP_Logs::log('- package decryption starting...');
             // DUP_Util::timer('decryption');
             // if ($this->cronMode !== 'none') {
             //   DUP_Logs::log("- running encryption with cronMode = {$this->cronMode}");

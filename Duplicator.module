@@ -172,6 +172,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       'archiveFlush' => 0,
       'zip_flush_mbytes' => 0,
       'encryptionPublicKey' => '',
+      'encryptionDeleteOriginal' => 1,
       // CRON mode
       'cronMode' => 'none',
       // storage mode
@@ -628,7 +629,21 @@ class Duplicator extends WireData implements Module, ConfigurableModule
               }
 
               \ParagonIE\Halite\File::seal($package['zipfile'], $encryptedFilename, $publicKey);
-              DUP_Logs::log('- package encryption success, took ' . DUP_Util::timer('encryption') . 'sec');
+              if ($this->encryptionDeleteOriginal) {
+                DUP_Logs::log("- deleting original zipfile");
+                if (DUP_Util::deleteFile($package['zipfile'])) {
+                  DUP_Logs::log("- original zipfile deleted");
+                  DUP_Logs::log("- renaming encrypted zipfile to original zipfile name");
+                  if (rename($encryptedFilename, $package['zipfile'])) {
+                    DUP_Logs::log("- encrypted zipfile renamed to original zipfile name");
+                  } else {
+                    DUP_Logs::log("- encrypted zipfile not renamed to original zipfile name");
+                  }
+                } else {
+                  DUP_Logs::log("- original zipfile not deleted");
+                }
+              }
+              DUP_Logs::log('- package encryption successful, took ' . DUP_Util::timer('encryption') . 'sec');
             }
           } catch (\Exception $e) {
             DUP_Logs::log('- package encryption failed: ' . $e->getMessage());
@@ -1586,7 +1601,16 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       }
       $field->notes = __("⚠️ `libsodium` setup [**FAIL**] | {$errormsg}");
     }
+    }
     $fsEnc->append($field);
+
+    $field = $modules->get('InputfieldCheckbox');
+      $field->attr('name', 'encryptionDeleteOriginal');
+    $field->label = 'Delete original ZIP file after encryption';
+    $field->notes = 'The encrypted file will be renamed to the original ZIP file name.';
+      $field->attr('checked', $data['encryptionDeleteOriginal'] == '1' ? 'checked' : '');
+    $fsEnc->append($field);
+
     // append to advanced settings fieldset
     $fs->append($fsEnc);
 

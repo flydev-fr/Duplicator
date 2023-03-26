@@ -171,6 +171,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       'chmodPermission' => '0700',
       'archiveFlush' => 0,
       'zip_flush_mbytes' => 0,
+      'encryptionEnabled' => 0,
       'encryptionPublicKey' => '',
       'encryptionDeleteOriginal' => 1,
       // CRON mode
@@ -608,9 +609,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
        * @ref http://php.net/manual/en/functions.returning-values.php#functions.returning-values.type-declaration
        * 
        * WIP
-       * run if encryption public key is set
+       * run if encryption is enabled and public key is set
        */
-      if (strlen($this->encryptionPublicKey) > 0) {
+      if ($this->encryptionEnabled === true && strlen($this->encryptionPublicKey) > 0) {
         DUP_Logs::log('- package encryption starting...');
         DUP_Util::timer('encryption');
         try {
@@ -1585,36 +1586,47 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $fsEnc->icon = 'lock';
     $fsEnc->collapsed = false;
 
-    $field = $modules->get('InputfieldTextarea');
-    $field->name = "encryptionPublicKey";
-    $field->label = __("Public Key");
-    $field->description = __("Paste here the content of your public key file. This key will be used to encrypt the backup package.");
-    $field->value = $data['encryptionPublicKey'];
-    if (\ParagonIE\Halite\Halite::isLibsodiumSetupCorrectly()) {
-      $field->notes = __("☑️ `libsodium` setup [**OK**]");
-    } else {
-      /**
-       * As of PHP 7.2.0 this extension is bundled with PHP. 
-       * For older PHP versions this extension is available via PECL.
-       * - enable extension in php.ini
-       */
-      $errormsg = "";
-      if (version_compare(PHP_VERSION, '7.2', '<')) {
-        $errormsg = "You need to install `libsodium` extension. See [**documentation**](https://github.com/flydev-fr/Duplicator)";
-      } else {
-        $errormsg = "You need to enable `libsodium` extension. See [**documentation**](https://github.com/flydev-fr/Duplicator)";
-      }
-      $field->notes = __("⚠️ `libsodium` setup [**FAIL**] | {$errormsg}");
-    }
-    }
-    $fsEnc->append($field);
+    if (class_exists('\ParagonIE\Halite\Halite')) {
+      self::$_data['encryptionEnabled'] = true;
 
-    $field = $modules->get('InputfieldCheckbox');
+      $field = $modules->get('InputfieldTextarea');
+      $field->name = "encryptionPublicKey";
+      $field->label = __("Public Key");
+      $field->description = __("Paste here the content of your public key file. This key will be used to encrypt the backup package.");
+      $field->value = $data['encryptionPublicKey'];
+      // test Halite installation
+      $testHalite = false;
+      $testHalite = \ParagonIE\Halite\Halite::isLibsodiumSetupCorrectly(true);
+      if ($testHalite) {
+        $field->notes = __("☑️ `libsodium` setup [**OK**]");
+      } else {
+        /**
+         * As of PHP 7.2.0 this extension is bundled with PHP. 
+         * For older PHP versions this extension is available via PECL.
+         * - enable extension in php.ini
+         */
+        $errormsg = "";
+        if (version_compare(PHP_VERSION, '7.2', '<')) {
+          $errormsg = "You need to install `libsodium` extension. See [**documentation**](https://github.com/flydev-fr/Duplicator)";
+        } else {
+          $errormsg = "You need to enable `libsodium` extension. See [**documentation**](https://github.com/flydev-fr/Duplicator)";
+        }
+        $field->notes = __("⚠️ `libsodium` setup [**FAIL**] | {$errormsg}");
+      }
+
+      $fsEnc->append($field);
+
+      $field = $modules->get('InputfieldCheckbox');
       $field->attr('name', 'encryptionDeleteOriginal');
-    $field->label = 'Delete original ZIP file after encryption';
-    $field->notes = 'The encrypted file will be renamed to the original ZIP file name.';
+      $field->label = 'Delete original ZIP file after encryption';
+      $field->notes = 'The encrypted file will be renamed to the original ZIP file name.';
       $field->attr('checked', $data['encryptionDeleteOriginal'] == '1' ? 'checked' : '');
-    $fsEnc->append($field);
+      $fsEnc->append($field);
+    } else {
+      self::$_data['encryptionEnabled'] = false;
+      $fsEnc->notes = __("ℹ️ To enable **Encryption feature**, you need to install `paragonie/halite` library. See [**documentation**](https://github.com/flydev-fr/Duplicator)");
+    }
+
 
     // append to advanced settings fieldset
     $fs->append($fsEnc);

@@ -2,6 +2,8 @@
 
 namespace ProcessWire;
 
+use ParagonIE\HiddenString\HiddenString;
+
 /*
  * Contributors and thanks to: 
  * - Szabesz (@szabeszg)
@@ -617,12 +619,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         DUP_Util::timer('encryption');
         try {
           try {
-            // write required public key to file
-            file_put_contents($this->path . DS . 'duplicator.public.key', $this->encryptionPublicKey);
-            // chmod the file to the correct permission
-            wireChmod($this->path . DS . 'duplicator.public.key', octdec($this->chmodPermission));
-            // load the public key
-            $publicKey = \ParagonIE\Halite\KeyFactory::loadEncryptionPublicKey($this->path . DS . 'duplicator.public.key');
+            $publicKey = \ParagonIE\Halite\KeyFactory::importEncryptionPublicKey(new HiddenString($this->encryptionPublicKey));
 
             if ($publicKey !== null) {
               // filename of encrypted file

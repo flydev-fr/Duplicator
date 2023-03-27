@@ -27,7 +27,7 @@ Installing all SDK are not required, you can choose the one you need.
 ### Note:
 - `Dropbox` dropped support for the version 1 of the API since september 2017 - [api-v1-deprecation-timeline](https://blogs.dropbox.com/developers/2017/06/updated-api-v1-deprecation-timeline/) - so I removed it from Duplicator until I got the time to code an interface for the API v2
 - `GoogleDrive` tested the 2023-03-20 `successfully` ✅
-- `AmazonS3` tested the 2017-12-03 `todo` ⏳
+- `AmazonS3` tested the 2023-03-26 `successfully` ✅
 
 ## Using Composer
 In the root directory of your ProcessWire installation, just type in a terminal :
@@ -51,20 +51,21 @@ Permission set is `duplicator`. User with this permission can initiate a backup,
 - Version of PHP supported: PHP >= v8.x
   Note: performance on PHP 8.0.x is poor. You must consider using PHP 8.1.x for better performance.
 
+### Linux
+Run on terminal:
+```apt-get install libsodium-dev```
+
 ### Windows Install
-Use `vcpkg` to install libsodium:
-  a. ``cd vcpkg
-  b. `.\bootstrap-vcpkg.bat`
-  c. `vcpkg install libsodium`
+Use `vcpkg` to install libsodium. In a terminal:
+
+  1. `cd vcpkg`
+  2. `.\bootstrap-vcpkg.bat`
+  3. `vcpkg install libsodium`
 
 You can find pre-built libraries there: https://download.libsodium.org/libsodium/releases/
 
-### Linux
-Run on terminal:
-`sudo apt-get install php8.1-sodium`
-
 Once all prequisites installed, insatll Halite by running **composer** in the root directory:
-`composer require paragonie/halite:^5`
+```composer require paragonie/halite:^5```
 
 ## CRON job
 Actually you have 3 choices to setup a cron job.

@@ -171,6 +171,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       'chmodPermission' => '0700',
       'archiveFlush' => 0,
       'zip_flush_mbytes' => 0,
+      // encryption settings
       'encryptionEnabled' => 0,
       'encryptionPublicKey' => '',
       'encryptionDeleteOriginal' => 1,
@@ -611,7 +612,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
        * WIP
        * run if encryption is enabled and public key is set
        */
-      if ($this->encryptionEnabled === true && strlen($this->encryptionPublicKey) > 0) {
+      if ($this->encryptionEnabled == true && strlen($this->encryptionPublicKey) > 0) {
         DUP_Logs::log('- package encryption starting...');
         DUP_Util::timer('encryption');
         try {
@@ -1587,7 +1588,19 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $fsEnc->collapsed = false;
 
     if (class_exists('\ParagonIE\Halite\Halite')) {
-      self::$_data['encryptionEnabled'] = true;
+
+      $field = $modules->get('InputfieldCheckbox');
+      $field->attr('name', 'encryptionEnabled');
+      $field->label = 'Enable encryption';
+      $field->attr('checked', $data['encryptionEnabled'] == '1' ? 'checked' : '');
+      $fsEnc->append($field);
+
+      $field = $modules->get('InputfieldCheckbox');
+      $field->attr('name', 'encryptionDeleteOriginal');
+      $field->label = 'Delete original ZIP file after encryption';
+      $field->notes = 'The encrypted file will be renamed to the original ZIP file name.';
+      $field->attr('checked', $data['encryptionDeleteOriginal'] == '1' ? 'checked' : '');
+      $fsEnc->append($field);
 
       $field = $modules->get('InputfieldTextarea');
       $field->name = "encryptionPublicKey";
@@ -1613,21 +1626,10 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         }
         $field->notes = __("⚠️ `libsodium` setup [**FAIL**] | {$errormsg}");
       }
-
-      $fsEnc->append($field);
-
-      $field = $modules->get('InputfieldCheckbox');
-      $field->attr('name', 'encryptionDeleteOriginal');
-      $field->label = 'Delete original ZIP file after encryption';
-      $field->notes = 'The encrypted file will be renamed to the original ZIP file name.';
-      $field->attr('checked', $data['encryptionDeleteOriginal'] == '1' ? 'checked' : '');
       $fsEnc->append($field);
     } else {
-      self::$_data['encryptionEnabled'] = false;
       $fsEnc->notes = __("ℹ️ To enable **Encryption feature**, you need to install `paragonie/halite` library. See [**documentation**](https://github.com/flydev-fr/Duplicator)");
     }
-
-
     // append to advanced settings fieldset
     $fs->append($fsEnc);
 

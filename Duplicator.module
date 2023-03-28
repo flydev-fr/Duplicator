@@ -1597,6 +1597,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       $field->label = 'Delete original ZIP file after encryption';
       $field->notes = 'The encrypted file will be renamed to the original ZIP file name.';
       $field->attr('checked', $data['encryptionDeleteOriginal'] == '1' ? 'checked' : '');
+      $field->showIf('encryptionEnabled=1');
       $fsEnc->append($field);
 
       $field = $modules->get('InputfieldTextarea');
@@ -1604,6 +1605,8 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       $field->label = __("Public Key");
       $field->description = __("Paste here the content of your public key file. This key will be used to encrypt the backup package.");
       $field->value = $data['encryptionPublicKey'];
+      $field->showIf('encryptionEnabled=1');
+      $field->collapsed = Inputfield::collapsedPopulated;
       // test Halite installation
       $testHalite = false;
       $testHalite = \ParagonIE\Halite\Halite::isLibsodiumSetupCorrectly(true);
@@ -1625,7 +1628,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       }
       $fsEnc->append($field);
     } else {
-      $fsEnc->notes = __("ℹ️ To enable **Encryption feature**, you need to install `paragonie/halite` library. See [**documentation**](https://github.com/flydev-fr/Duplicator)");
+      $fsEnc->notes = __("ℹ️ To enable **Encryption feature**, you need to install the `paragonie/halite` library. See the [**documentation**](https://github.com/flydev-fr/Duplicator)");
     }
     // append to advanced settings fieldset
     $fs->append($fsEnc);

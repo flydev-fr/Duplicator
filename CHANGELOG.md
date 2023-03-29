@@ -1,3 +1,12 @@
+## [1.4.28](https://github.com/flydev-fr/Duplicator/compare/v1.4.27...v1.4.28) (2023-03-29)
+
+
+### Bug Fixes
+
+* Version number (processwire modules directory) ([4563eea](https://github.com/flydev-fr/Duplicator/commit/4563eeaa62a3c8d6a577a36b4696552509b0b4a4))
+
+
+
 ## [1.4.27](https://github.com/flydev-fr/Duplicator/compare/v1.4.26...v1.4.27) (2023-03-19)
 
 
@@ -34,15 +43,6 @@
 ### Bug Fixes
 
 * namespace issue on FTPClient class [#22](https://github.com/flydev-fr/Duplicator/issues/22) ([31d47ab](https://github.com/flydev-fr/Duplicator/commit/31d47abf2c6c1150f6156e8fdef13be126cec8fe)), closes [#24](https://github.com/flydev-fr/Duplicator/issues/24) [#25](https://github.com/flydev-fr/Duplicator/issues/25)
-
-
-
-## [1.4.20](https://github.com/flydev-fr/Duplicator/compare/v1.2.19...v1.4.20) (2022-03-23)
-
-
-### Bug Fixes
-
-* removed bd() TracyDebugger ([3118e01](https://github.com/flydev-fr/Duplicator/commit/3118e015c5e7ba28185f98a3e18036b24acae5f5))
 
 
 

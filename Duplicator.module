@@ -1433,10 +1433,13 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $note = "";
     $options = array('MODE_PWAPI' => 'Web mode');
     // check if mysqldump tool is available on env path
-    if (DUP_Util::isWinOS()) {
-      $shellExec = shell_exec("where mysqldump");
-    } else {
-      $shellExec = shell_exec("which mysqldump");
+    $shellExec = null;
+    if (DUP_Util::isEnabled('shell_exec')) {
+      if (DUP_Util::isWinOS()) {
+        $shellExec = shell_exec("where mysqldump");
+      } else {
+        $shellExec = shell_exec("which mysqldump");
+      }
     }
     if ($shellExec !== null) {
       $options = array_merge($options, array('MODE_NATIVE' => 'Native mode (mysqldump)'));

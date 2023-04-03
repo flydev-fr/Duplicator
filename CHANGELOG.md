@@ -1,3 +1,17 @@
+## [1.4.29](https://github.com/flydev-fr/Duplicator/compare/v1.4.28...v1.4.29) (2023-04-03)
+
+
+### Bug Fixes
+
+* Check for php disable_functions directive ([b6aa019](https://github.com/flydev-fr/Duplicator/commit/b6aa019242ad3deb68166172c85bbe2584f687d5))
+
+
+### Reverts
+
+* Revert "fix: Version number (processwire modules directory)" ([2ba21ae](https://github.com/flydev-fr/Duplicator/commit/2ba21ae9aacab0c3379334b1949c8a9450a3254d))
+
+
+
 ## [1.4.28](https://github.com/flydev-fr/Duplicator/compare/v1.4.27...v1.4.28) (2023-03-29)
 
 
@@ -34,15 +48,6 @@
 * Native backup on Windows OS ([0810a6c](https://github.com/flydev-fr/Duplicator/commit/0810a6c15b07905141c5994cec23e0f131f690fd))
 * Octal CHMOD command give permission 0600 by default ([cefb9ab](https://github.com/flydev-fr/Duplicator/commit/cefb9ab1fb701b7740652245d66c1fe2c2ea61b1))
 * Revert commit bb1823d53fdfcb5a67e0e3444894b041a638e014 ([7949afb](https://github.com/flydev-fr/Duplicator/commit/7949afb330fa2f4494c0dc65fb77433655147268))
-
-
-
-## [1.4.21](https://github.com/flydev-fr/Duplicator/compare/v1.4.20...v1.4.21) (2022-03-23)
-
-
-### Bug Fixes
-
-* namespace issue on FTPClient class [#22](https://github.com/flydev-fr/Duplicator/issues/22) ([31d47ab](https://github.com/flydev-fr/Duplicator/commit/31d47abf2c6c1150f6156e8fdef13be126cec8fe)), closes [#24](https://github.com/flydev-fr/Duplicator/issues/24) [#25](https://github.com/flydev-fr/Duplicator/issues/25)
 
 
 

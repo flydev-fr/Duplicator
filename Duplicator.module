@@ -468,7 +468,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $fileinfo['structure'] = $zipinfo['zipfile'];
 
     if (!file_exists($fileinfo['structure'])) {
-      DUP_Logs::log("- an error occured while building the ProcessWire structure: " . $fileinfo['zipfile'] . " root: " . $root . " " . print_r($options, true));
+      DUP_Logs::log("- an error occured while building the ProcessWire structure: ");
+      DUP_Logs::log(json_encode($fileinfo['zipfile'], JSON_PRETTY_PRINT));
+      DUP_Logs::log(" root: " . $root . "\n" . json_encode($options, JSON_PRETTY_PRINT ));
       return false;
     }
 
@@ -1447,6 +1449,13 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     } else {
       $note = __("\n⚠️ `mysqldump` not found on **PATH**. **Native Mode** backup is **not available**, ");
     }
+    if ($zipExec !== null) {
+      $note .= __("\n☑️ `zip` binary [**OK**].");
+    } else {
+      $note .= __("\n⚠️ `zip` binary not found on **PATH**. **wireZipFile** will be used instead.");
+    }
+    
+  
     $f->name = 'backup_mode';
     $f->label = __("Mode");
     $f->description = __("Choose the prefered backup mode. Select **Native Mode** for **large database**.");
@@ -1469,7 +1478,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $f->columnWidth = 50;
     $f->notes = '`security settings`: **CHMOD** generated script on creation. Default: `0700` *(chmod a+rwx,g-rwx,o-rwx)*';
     $fs->append($f);
-
+    
     $field = $modules->get('InputfieldCheckbox');
     $field->attr('name', 'archiveFlush');
     $field->label = 'Archive Flush: Attempt Network Keep Alive';

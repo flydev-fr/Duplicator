@@ -238,6 +238,18 @@ class DUP_Util
     return (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
   }
 
+  // MAC (DARWIN) is threat as UNIX: not tested since M1 Silicon
+  public static function getOS()
+  {
+    $os = strtoupper(substr(PHP_OS, 0, 3));
+    if ($os === 'WIN') {
+      return 'WINDOWS';
+    } 
+    else {
+      return 'UNIX';
+    }
+  }
+
   static public function safePath($path)
   {
     return str_replace("\\", "/", $path);
@@ -297,12 +309,26 @@ class DUP_Util
 
     return $timers;
   }
-}
+  
+  static public function getStub($OS = null) {
+    if ($OS) {
+      $os = strtolower($OS);
+    } else {
+      $os = strtolower(self::getOS());
+    }
+    $filename = __DIR__ . '/../scripts/mysqldump.' . $os . '.sh';
+    // assert script file exists based $OS
+    if (!file_exists($filename)) {
+      return false;
+    }
+    return $filename;
+  }
+
+} // end class
 
 
 class DUP_DataFilter extends \RecursiveFilterIterator
 {
-
   protected $excluded;
   protected $excludedList = array();
 
@@ -327,4 +353,4 @@ class DUP_DataFilter extends \RecursiveFilterIterator
     ini_set('max_execution_time', 300);
     return new self($this->getInnerIterator()->getChildren(), $this->excluded);
   }
-}
+} // end class

@@ -4,6 +4,9 @@ namespace ProcessWire;
 
 class BackupDatabase
 {
+  const DUP_MODE_PWAPI  = 0;
+  const DUP_MODE_NATIVE = 1;
+
   protected $database;
   protected $options;
   protected $mode;
@@ -13,6 +16,8 @@ class BackupDatabase
 
   public function __construct(array $options = array())
   {
+    $this->OS = DUP_Util::getOS();
+
     $this->options = array(
       'path' => '',
       'backup' => array(
@@ -21,7 +26,9 @@ class BackupDatabase
         'maxSeconds' => 120,
       ),
       'cachePath' => wire('config')->paths->cache,
-      'chmodPermission' => '0700'
+      'chmodPermission' => '0700',
+      'shellScript' => '',
+      'zipbinary' => false,
     );
         
     $this->options = array_merge($this->options, $options);
@@ -41,6 +48,33 @@ class BackupDatabase
     return $this;
   }
 
+  // set default shell script from stub file for Windows OS (batch file) or Unix OS (shell script)
+  public function setDefaultShellScript($customScriptData = false)
+  {
+    $stub = '';
+    if ($customScriptData) {
+      $stub = $customScriptData;
+    } else {
+      $filename = DUP_Util::getStub($this->OS);
+      if (!$filename) return false;
+      $stub = file_get_contents($filename);
+    }
+
+    if ($stub) {
+      $stub = str_replace('%%FILE%%', $this->options['backup']['filename'], $stub);
+      $stub = str_replace('%%SERVER%%', wire('config')->dbHost, $stub);
+      $stub = str_replace('%%DATABASE%%', wire('config')->dbName, $stub);
+      $stub = str_replace('%%USER%%', wire('config')->dbUser, $stub);
+      $stub = str_replace('%%PASS%%', wire('config')->dbPass, $stub);
+      $stub = str_replace('%%CACHEPATH%%', $this->options['cachePath'], $stub);
+    }
+
+    // set shell script
+    $this->options['shellScript'] = $stub;
+
+    return $stub;
+  }
+
   /*
      * do backup using different mode
      * return a SQL file
@@ -51,12 +85,12 @@ class BackupDatabase
   {
     DUP_Logs::log("Backup Database");
     switch ($this->mode) {
-      case 'MODE_PWAPI':
+      case self::DUP_MODE_PWAPI:
         DUP_Logs::log("- Backup using standard mode");
         return $this->fromProcessWire();
         break;
 
-      case 'MODE_NATIVE':
+      case self::DUP_MODE_NATIVE:
         DUP_Logs::log("- Backup using native tools");
         return $this->fromNativeTools();
         break;
@@ -76,7 +110,7 @@ class BackupDatabase
     $sqlfile = $this->backup();
     $this->size = filesize($sqlfile);
     $zipfile = $this->options['path'] . $this->options['backup']['filename'] . '.zip';
-    if ($this->mode === 'MODE_PWAPI') {
+    if ($this->mode === self::DUP_MODE_PWAPI) {
       $result = wireZipFile($zipfile, $sqlfile);
       DUP_Util::deleteFile($sqlfile);
       if (count($result['errors'])) {
@@ -84,7 +118,7 @@ class BackupDatabase
           DUP_Logs::log("ZIP add failed: $error");
         }
       }
-    } else if ($this->mode === 'MODE_NATIVE') {
+    } else if ($this->mode === self::DUP_MODE_NATIVE) {
       $return = null;
       $output = array();
 
@@ -99,11 +133,11 @@ class BackupDatabase
           if (!count($output['errors'])) {
             $return = 0;
           }
-        }        
+        }
+        
         unlink($cachePath . 'duplicator.sh');
       } else {
         exec(str_replace('\\', '/', wire('config')->paths->Duplicator) . 'Bin/7za.exe a ' . $zipfile . ' ' . str_replace('\\', '/', $sqlfile), $output, $return);
-        unlink($sqlfile);
         unlink(str_replace('\\', '/', $cachePath) . 'duplicator.bat');
       }
 
@@ -114,6 +148,10 @@ class BackupDatabase
           }
         }
       }
+    }
+
+    if (file_exists($sqlfile)) {
+      unlink($sqlfile);
     }
 
     if (file_exists($zipfile)) {
@@ -152,6 +190,7 @@ class BackupDatabase
 
       case 'WINDOWS':
         return $this->WindowsNative();
+
       default:
         // not supported platform
         return false;
@@ -162,11 +201,33 @@ class BackupDatabase
 
   protected function UnixNative()
   {
-    $cachePath = $this->options['cachePath'];
-    $data = $this->options['shellScript'];
-    // remove carriage return or script will fail
+    if ($this->options['shellScript'] == '') {
+      $data = $this->setDefaultShellScript(); 
+      DUP_Logs::log("- using default shell script");
+    } 
+    else {
+      $data = $this->setDefaultShellScript($this->options['shellScript']);
+      DUP_Logs::log("- using custom shell script");
+    }
+
+    if (!$data) {
+      throw new WireException("!! Error while running UnixNative Backup\n, err: shell script not found\n\n");
+    }
+    
+    // remove carriage return or script will fail on unix
     $data = str_replace("\r", "", $data);
 
+    $zipExec = shell_exec("which zip");
+    // check if zip tool is available on env path
+    if ($zipExec !== null) {
+      $this->options['zipbinary'] = true;
+      DUP_Logs::log("- zip binary is available");
+    } else {
+      DUP_Logs::log("- zip binary not available, fallback using wireZipFile function");
+    }  
+
+    $cachePath = $this->options['cachePath'];
+    
     $return = null;
     $output = array();
     file_put_contents($cachePath . 'duplicator.sh', $data);
@@ -216,16 +277,20 @@ class BackupDatabase
 
   protected function WindowsNative()
   {
+    // exit if shell script is empty
+    if ($this->options['shellScript'] === '') {
+      return false;
+    }
+
+    $data = $this->setDefaultShellScript($this->options['shellScript']);
+    if (!$data) {
+      throw new WireException("!! Error while running UnixNative Backup\n, err: shell script not found\n\n");
+    }
+
     $return = null;
     $output = array();
     $cachePath = $this->options['cachePath'];
-
-    $data = '@echo off
-        set MYSQLDATABASE=' . wire('config')->dbName . '
-        set MYSQLUSER=' . wire('config')->dbUser . '
-        set MYSQLPASS=' . wire('config')->dbPass . '
-        "mysqldump.exe" -u%MYSQLUSER% -p%MYSQLPASS% --single-transaction --skip-lock-tables --routines --triggers %MYSQLDATABASE% > ' . $cachePath . $this->options['backup']['filename'];
-
+    
     file_put_contents($cachePath . 'duplicator.bat', $data);
 
     chdir($cachePath);

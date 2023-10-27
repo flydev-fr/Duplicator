@@ -172,6 +172,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       // Advanced options
       'backup_mode' => self::DEFAULT_BACKUP_MODE,
       'chmodPermission' => '0700',
+      'shellScript' => '',
       'archiveFlush' => 0,
       'zip_flush_mbytes' => 0,
       // CRON mode
@@ -511,8 +512,10 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         'description' => '', //$this->backupFileinfo(),
         'maxSeconds' => self::DUP_WIRETEMP_MAX_TIME,
       ),
-      'chmodPermission' => $this->chmodPermission
+      'chmodPermission' => $this->chmodPermission,
+      'shellScript' => $this->shellScript,
     );
+
     $options = array_merge($options, $defaultOptions);
     $dbBackup = new BackupDatabase($options);
     $zipobj = $dbBackup->setDatabase($this->database)->setMode((int)$this->backup_mode);
@@ -1456,12 +1459,20 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $note = "";
     $options = array(self::DUP_MODE_PWAPI => 'Web mode');
     // check if mysqldump tool is available on env path
-    $shellExec = null;
+    $mysqldumpExec = null;
+    $zipExec = null;
+    // check if shell_exec is enabled
     if (DUP_Util::isEnabled('shell_exec')) {
+      // exec mysqldump to check if it's available. 
       if (DUP_Util::isWinOS()) {
-        $shellExec = shell_exec("where mysqldump");
+        $mysqldumpExec = shell_exec("where mysqldump");
       } else {
-        $shellExec = shell_exec("which mysqldump");
+        $mysqldumpExec = shell_exec("which mysqldump");
+        
+      }
+      // check if zip binary is available
+      if (!DUP_Util::isWinOS()) {
+        $zipExec = shell_exec("which zip");
       }
     }
     if ($mysqldumpExec !== null) {

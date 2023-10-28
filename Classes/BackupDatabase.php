@@ -23,14 +23,8 @@ class BackupDatabase
       'cachePath' => wire('config')->paths->cache,
       'chmodPermission' => '0700'
     );
-
+        
     $this->options = array_merge($this->options, $options);
-
-    if (DUP_Util::isWinOS()) {
-      $this->OS = 'WINDOWS';
-    } else {
-      $this->OS = 'UNIX';
-    }
   }
 
   public function setDatabase($database)
@@ -95,8 +89,17 @@ class BackupDatabase
       $output = array();
 
       if ($this->OS === 'UNIX') {
-        exec('zip ' . $zipfile . ' ' . $sqlfile, $output, $return);
-        unlink($sqlfile);
+        if ($this->options['zipbinary']) {
+          // use zip binary as it's available
+          exec('zip ' . $zipfile . ' ' . $sqlfile, $output, $return);
+        }
+        else {
+          // use processwire zip function
+          $output = wireZipFile($zipfile, $sqlfile);
+          if (!count($output['errors'])) {
+            $return = 0;
+          }
+        }        
         unlink($cachePath . 'duplicator.sh');
       } else {
         exec(str_replace('\\', '/', wire('config')->paths->Duplicator) . 'Bin/7za.exe a ' . $zipfile . ' ' . str_replace('\\', '/', $sqlfile), $output, $return);
@@ -200,9 +203,28 @@ class BackupDatabase
 
       // delete `duplicator.sh` script on error
       unlink($cachePath . 'duplicator.sh');
-
-      $ex = json_encode($output);
-      throw new WireException("Error while running UnixNative Backup\n, err {$return}: {$ex}\n\n");
+      
+      $meaning = '';
+      if ($return == 1) {
+        $meaning = 'general error in command line';
+      } 
+      else if ($return == 2) {
+        $meaning = 'misuse of shell builtins (according to Bash documentation), verify that "mysqldump" or "zip" is available on env path';
+      } 
+      else if ($return == 126) {
+        $meaning = 'command invoked cannot execute';
+      } 
+      else if ($return == 127) {
+        $meaning = 'error while running the script, maybe the script is not well formatted (carriage return)';
+      }
+      else if ($return == 126) {
+        $meaning = 'command invoked cannot execute';
+      }
+      else {
+        $meaning = 'unknown error';
+      }
+      
+      throw new WireException("!! Error while running UnixNative Backup\n, err {$return}: $meaning\n\n");
     }
 
     return $cachePath . $this->options['backup']['filename'];

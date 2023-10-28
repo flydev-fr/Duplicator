@@ -1,3 +1,17 @@
+# [1.5.0](https://github.com/flydev-fr/Duplicator/compare/v1.4.29...v1.5.0) (2023-10-28)
+
+
+### Bug Fixes
+
+* If zip binary is not found on the system, fallback to wireZipFile ([ad53225](https://github.com/flydev-fr/Duplicator/commit/ad53225f29ad10bf3a9d67ed506b41c7564cf0e3))
+
+
+### Features
+
+* Set custom dump shell script from configuration ([30c5143](https://github.com/flydev-fr/Duplicator/commit/30c514340a2e5d67c5f934888a528f179fad20a0))
+
+
+
 ## [1.4.29](https://github.com/flydev-fr/Duplicator/compare/v1.4.28...v1.4.29) (2023-04-03)
 
 
@@ -33,21 +47,6 @@
 
 
 ## [1.4.26](https://github.com/flydev-fr/Duplicator/compare/v1.4.25...v1.4.26) (2022-10-02)
-
-
-
-## [1.4.25](https://github.com/flydev-fr/Duplicator/compare/v1.4.21...v1.4.25) (2022-10-01)
-
-
-### Bug Fixes
-
-* `buildPackage()` fixe the fix - issue [#28](https://github.com/flydev-fr/Duplicator/issues/28) ([4e3e8a2](https://github.com/flydev-fr/Duplicator/commit/4e3e8a2ccaf27ea51c8dcf76867fc8eb9551b089))
-* `buildPackage()` return a `boolean` on error - issue [#28](https://github.com/flydev-fr/Duplicator/issues/28) ([727e9c2](https://github.com/flydev-fr/Duplicator/commit/727e9c218de9f678145ca45cc55f5f334c6e263c))
-* FTP resource is an object since PHP-8.1   [#31](https://github.com/flydev-fr/Duplicator/issues/31) ([85f280a](https://github.com/flydev-fr/Duplicator/commit/85f280a8c9941464e9a0c3da18ff697216d740b6))
-* Module version was hardcoded, instead of using `DUP_MODULE_VERSION` ([bb1823d](https://github.com/flydev-fr/Duplicator/commit/bb1823d53fdfcb5a67e0e3444894b041a638e014))
-* Native backup on Windows OS ([0810a6c](https://github.com/flydev-fr/Duplicator/commit/0810a6c15b07905141c5994cec23e0f131f690fd))
-* Octal CHMOD command give permission 0600 by default ([cefb9ab](https://github.com/flydev-fr/Duplicator/commit/cefb9ab1fb701b7740652245d66c1fe2c2ea61b1))
-* Revert commit bb1823d53fdfcb5a67e0e3444894b041a638e014 ([7949afb](https://github.com/flydev-fr/Duplicator/commit/7949afb330fa2f4494c0dc65fb77433655147268))
 
 
 

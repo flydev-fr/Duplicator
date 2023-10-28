@@ -163,25 +163,9 @@ class BackupDatabase
   protected function UnixNative()
   {
     $cachePath = $this->options['cachePath'];
-    $data = '
-        # (1) set up all the mysqldump variables
-        FILE=' . $this->options['backup']['filename'] . '
-        DBSERVER=127.0.0.1
-        DATABASE=' . wire('config')->dbName . '
-        USER=' . wire('config')->dbUser . '
-        PASS=' . wire('config')->dbPass . '
-
-        # (2) in case you run this more than once a day, remove the previous version of the file
-        unalias rm     2> /dev/null
-        rm ${FILE}     2> /dev/null
-        rm ${FILE}.zip  2> /dev/null
-
-        # (3) do the mysql database backup (dump)
-        # for a database server on a separate host:
-        # mysqldump --opt --protocol=TCP --user=${USER} --password=${PASS} --host=${DBSERVER} ${DATABASE} > ' . $cachePath . '${FILE}
-        # use this command for a database server on localhost. add other options if need be.
-        mysqldump --routines --triggers --single-transaction --log-error=mysqldump_error.log --user=${USER} --password=${PASS} --databases ${DATABASE} > ' . $cachePath . '${FILE}
-        ';
+    $data = $this->options['shellScript'];
+    // remove carriage return or script will fail
+    $data = str_replace("\r", "", $data);
 
     $return = null;
     $output = array();

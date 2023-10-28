@@ -18,7 +18,7 @@ require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupLogs.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/BackupDatabase.php';
 
 class DupZipLog
-{ //ATO: Utility class to implement some logging into a file per ZIP
+{ //ATO: Utility class to implement some logging into a file per ZIP  
   public $fLog = null;
   public $startTime = 0;
   public $logLevel = 0;
@@ -26,7 +26,7 @@ class DupZipLog
   public $excludeNames = [];
   public $excludeRegEx = [];
   public $excludeExtension = [];
-
+  
   public function log($str)
   {
     if ($this->fLog) {
@@ -393,6 +393,11 @@ class Duplicator extends WireData implements Module, ConfigurableModule
      */
   public function ___uninstall()
   {
+    // uninstall ProcessDuplicator if installed
+    if ($this->modules->isInstalled('ProcessDuplicator')) {
+      $this->modules->uninstall('ProcessDuplicator');
+    }
+
     $path = str_replace($this->config->paths->root, '/', $this->path);
     $this->warning("Please note that packages files in {$path} remain. You may remove them manually.");
   }

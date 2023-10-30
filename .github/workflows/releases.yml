@@ -10,12 +10,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Initialize Git user
+        run: |
+          git config --global user.email "code@sekretservices.com"
+          git config --global user.name "Release Workflow 🤖"
+      - name: Log git status
+        run: git status
       - name: conventional Changelog Action
         id: changelog
         uses: TriPSs/conventional-changelog-action@v3.18.0
         with:
           github-token: ${{ secrets.github_token }}
-
       - name: create release
         uses: actions/create-release@v1
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
@@ -25,11 +30,15 @@ jobs:
           tag_name: ${{ steps.changelog.outputs.tag }}
           release_name: ${{ steps.changelog.outputs.tag }}
           body: ${{ steps.changelog.outputs.clean_changelog }}
-          
-      - name: Contribute List
-        uses: akhilmhdh/contributors-readme-action@v2.3.6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate Contributors Images
+        uses: jaywcjlove/github-action-contributors@main
+        id: contributors
         with:
-          commit_message: "docs(contributor): contrib updated"
+          filter-author: (renovate\[bot\]|renovate-bot|dependabot\[bot\])
+          avatarSize: 32
+      - name: Modify README.md
+        uses: jaywcjlove/github-action-modify-file-content@main
+        with:
+          path: README.md
+          body: '${{steps.contributors.outputs.htmlList}}'
   

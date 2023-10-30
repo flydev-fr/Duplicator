@@ -1,3 +1,7 @@
+![Duplicator](https://s3.us-west-2.amazonaws.com/processwire-forums/monthly_2017_11/Duplicator-logo-v2-Dlong.thumb.png.8898ec8cda79046779b10d8527fc0def.png)
+
+***
+
 <div align="center">
 
 ![Current stable version)](https://img.shields.io/github/package-json/v/flydev-fr/duplicator)
@@ -6,10 +10,6 @@
 [![Get support](https://img.shields.io/badge/%F0%9F%9B%9F_support_thread-gray)](https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/?page=2#comment-139376)
 
 </div>
-
-***
-
-![Duplicator](https://s3.us-west-2.amazonaws.com/processwire-forums/monthly_2017_11/Duplicator-logo-v2-Dlong.thumb.png.8898ec8cda79046779b10d8527fc0def.png)
 
 ***
 
@@ -150,8 +150,9 @@ Timeout usually happen if you are on a low-end budget host with limitations. The
 
 ## Contributors
 
-<!-- readme: szabeszg,contributors,tofahrn,adrianbj -start -->
-<!-- readme: contributors -end -->
+Thanks to all the contributors for their help and support.
+
+<!--GAMFC--><!--GAMFC-END-->
 
 # Special thanks
 - Duplicator's logo made by [@szabeszg](https://github.com/szabeszg)

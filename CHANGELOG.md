@@ -1,3 +1,12 @@
+## [1.5.1](https://github.com/flydev-fr/Duplicator/compare/v1.5.0...v1.5.1) (2023-10-30)
+
+
+### Bug Fixes
+
+* Added missing `%%port%%` to stub config ([ea30f34](https://github.com/flydev-fr/Duplicator/commit/ea30f3442150375c240895f1247057d87f9700fd))
+
+
+
 # [1.5.0](https://github.com/flydev-fr/Duplicator/compare/v1.4.29...v1.5.0) (2023-10-28)
 
 
@@ -43,10 +52,6 @@
 * Small fix for Native Backup on Windows ([3bdc87c](https://github.com/flydev-fr/Duplicator/commit/3bdc87c47cf6804766d19ef060a586d188c44661))
 * Version in package.json and changelog ([ce699d5](https://github.com/flydev-fr/Duplicator/commit/ce699d5c3a66f84eaf29cd5e2f7aa426f58f8ec2))
 * Workflow branch name ([675e970](https://github.com/flydev-fr/Duplicator/commit/675e970cb6a21fe05886450875ce406ed69f0bdf))
-
-
-
-## [1.4.26](https://github.com/flydev-fr/Duplicator/compare/v1.4.25...v1.4.26) (2022-10-02)
 
 
 

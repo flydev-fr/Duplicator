@@ -67,6 +67,7 @@ class BackupDatabase
       $stub = str_replace('%%USER%%', wire('config')->dbUser, $stub);
       $stub = str_replace('%%PASS%%', wire('config')->dbPass, $stub);
       $stub = str_replace('%%CACHEPATH%%', $this->options['cachePath'], $stub);
+      $stub = str_replace('%%PORT%%', wire('config')->dbPort, $stub);
     }
 
     // set shell script

@@ -1530,14 +1530,14 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $f->description = __("Shell script used to backup database in Native Mode.");
     $f->notes = __("This script is used to backup database in Native Mode. You can edit this script to fit your needs.");
     // load from stub
-    $f->value = $data['shellScript'] ? $data['shellScript'] : '';
     $f->icon = 'terminal';
     $f->columnWidth = 100;
     $f->rows = 18;
     $f->collapsed = $data['backup_mode'] == self::DUP_MODE_NATIVE ? ($data['shellScript'] == '' ? true : false) : false;
     $f->showIf = "backup_mode=".self::DUP_MODE_NATIVE;
     $stub = DUP_Util::getStub();
-    $f->placeholder = $stub ? file_get_contents($stub) : 'Paste or write your custom dump shell script here...';
+    $f->placeholder = 'Paste or write your custom dump shell script here...';
+    $f->value = $data['shellScript'] ? $data['shellScript'] : ($stub ? file_get_contents($stub) : '');
     $fs->append($f);
     
     $field = $modules->get('InputfieldCheckbox');

@@ -7,6 +7,7 @@ set USER=%%USER%%
 set PASS=%%PASS%%
 set FILE=%%FILE%%
 set CACHEPATH=%%CACHEPATH%%
+REM set PORT=%%PORT%%
 
 REM Fix trailing slash in cache path
 set lastchar=%CACHEPATH%:~-1%

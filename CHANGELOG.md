@@ -1,3 +1,16 @@
+## [1.5.2](https://github.com/flydev-fr/Duplicator/compare/v1.5.1...v1.5.2) (2023-11-01)
+
+
+### Bug Fixes
+
+* `set_time_limit` is called only when web cron is used ([4fe8e2b](https://github.com/flydev-fr/Duplicator/commit/4fe8e2babadf42ac08d8dadcd032436b51b3c4d7))
+* Added missing variable `PORT` and placeholder in shell scripts ([19dd37e](https://github.com/flydev-fr/Duplicator/commit/19dd37e51cd6fc466237d1858afe40758ed7c8dc))
+* Check if timestamp is not false ([c338f15](https://github.com/flydev-fr/Duplicator/commit/c338f15424d22806d982e0ce2c55e5fc84910383))
+* class "DUP_Logs" not found ([67b90c7](https://github.com/flydev-fr/Duplicator/commit/67b90c7e87fda7ada27b9c24e890a46beafed38e))
+* Remove AWS3 subfolder name from returned filename ([073ca0a](https://github.com/flydev-fr/Duplicator/commit/073ca0af46ddcf9f35e1eff597892ace3f7da200))
+
+
+
 ## [1.5.1](https://github.com/flydev-fr/Duplicator/compare/v1.5.0...v1.5.1) (2023-10-30)
 
 
@@ -41,17 +54,6 @@
 ### Bug Fixes
 
 * Version number (processwire modules directory) ([4563eea](https://github.com/flydev-fr/Duplicator/commit/4563eeaa62a3c8d6a577a36b4696552509b0b4a4))
-
-
-
-## [1.4.27](https://github.com/flydev-fr/Duplicator/compare/v1.4.26...v1.4.27) (2023-03-19)
-
-
-### Bug Fixes
-
-* Small fix for Native Backup on Windows ([3bdc87c](https://github.com/flydev-fr/Duplicator/commit/3bdc87c47cf6804766d19ef060a586d188c44661))
-* Version in package.json and changelog ([ce699d5](https://github.com/flydev-fr/Duplicator/commit/ce699d5c3a66f84eaf29cd5e2f7aa426f58f8ec2))
-* Workflow branch name ([675e970](https://github.com/flydev-fr/Duplicator/commit/675e970cb6a21fe05886450875ce406ed69f0bdf))
 
 
 

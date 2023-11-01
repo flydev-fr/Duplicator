@@ -3,7 +3,7 @@
 namespace ProcessWire;
 
 /*
- * Contributors: 
+ * Contributors and thanks to: 
  * - Szabesz (@szabeszg)
  * - Stan Lindsey (@stanlindsey)
  * - Adrian Jones (@adrianbj)
@@ -226,7 +226,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
     $this->config->styles->add($this->config->urls->{$this->className} . "{$this->className}.css");
     $this->config->scripts->add($this->config->urls->{$this->className} . "Assets/lib/baffle.min.js");
-    $this->config->scripts->add($this->config->urls->{$this->className} . "{$this->className}.js");
 
     $this->defaultPath = wire('config')->paths->assets . self::DUP_DEFAULT_LOCAL_FOLDER;
     if (!is_dir($this->defaultPath) && empty($this->path)) {
@@ -607,9 +606,11 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     return false;
   }
 
+
+
   /*
-     * call this function from a cron tool to launch the backup task
-     */
+  * call this function from a cron tool to launch the backup task
+  */
   public function ___cronJob()
   {
     if (!$this->useLocalFolder && !$this->useDropbox && !$this->useGoogleDrive && !$this->useAmazonS3 && !$this->useFTP) {
@@ -711,7 +712,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
             throw new WireException("AmazonS3 SDK not installed.");
           }
 
-          $amazonaws = new \AmazonS3Client();
+          $amazonaws = new AmazonS3Client();
           $amazonaws->setAccessKey($this->awsAccessKey);
           $amazonaws->setSecretKey($this->awsSecretKey);
           $amazonaws->setRegion($this->awsRegion);
@@ -731,7 +732,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
           $amazonaws->upload($package['zipfile'], $packageName, $this->awsSubDir);
           //if($url === null) throw new AmazonS3ClientException("AmazonS3: An error occured while uploading package <{$packageName}>");
           $amazonaws->deleteOldBackups($this->maxPackages, $this->deadline);
-        } catch (\AmazonS3ClientException $ex) {
+        } catch (AmazonS3ClientException $ex) {
           DUP_Logs::log("[AmazonS3] error: " . $ex->getMessage(), 'warning');
         }
       }
@@ -853,7 +854,13 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
     $dirsToProcess = ['/']; // Start at root
 
-    set_time_limit(300); // Try to allow longer execution time
+    if ($this->cronMode !== 'none') {
+      DUP_Logs::log("- running ZipData2() with cronMode = {$this->cronMode}");
+      DUP_Logs::log("- trying to allow longer execution time");
+      set_time_limit(300); // Try to allow longer execution time
+      DUP_Logs::log("- php time limit => " . ini_get('max_execution_time') . " sec");
+    }
+
     while ($thisDir = array_shift($dirsToProcess)) { // Process first entry in array
       $fullPath = $rootDirectory . $thisDir;
 
@@ -935,7 +942,12 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
                 $zipLog->verbose("OPENED ZIP: {$zipfile}");
                 $fragmentBytes = 0;
-                set_time_limit(300);
+                if ($this->cronMode !== 'none') {
+                  DUP_Logs::log("- running ZipData2() with cronMode = {$this->cronMode}");
+                  DUP_Logs::log("- trying to allow longer execution time");
+                  set_time_limit(300); // Try to allow longer execution time
+                  DUP_Logs::log("- php time limit => " . ini_get('max_execution_time') . " sec");
+                }
               }
             } else {
               $ret['errors'][] = $filePath;
@@ -1230,6 +1242,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $out .= "    <a class='github-button' href='https://github.com/flydev-fr/Duplicator' data-show-count='false' aria-label='Documentation' data-size='large'>Doc</a>";
     $out .= "  </div>";
     $out .= "</div>";
+    $out .= "<script>baffle('.dup-glitch', {characters: '█▓█ ▒░1▒░3█░▒▓3 █▒▒7▓▒▓ █ ░█▒ ▒▓░: █)░▒ ▓░', speed: 110}).reveal(11500);</script>";
 
     $fs = $modules->get("InputfieldFieldset");
     $fs->label = " ";
@@ -1405,6 +1418,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     if ($data['cycle'] == 'logoutTrigger') {
       $field->notes = __("The cronjob to backup your database executes only if current user has db-backup permission.");
     }
+    $field->showIf = "cronMode='LazyCron'";
 
     $field->addOptions(array(
       0 => __('Trigger disabled'),
@@ -1516,14 +1530,14 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $f->description = __("Shell script used to backup database in Native Mode.");
     $f->notes = __("This script is used to backup database in Native Mode. You can edit this script to fit your needs.");
     // load from stub
-    $f->value = $data['shellScript'] ? $data['shellScript'] : '';
     $f->icon = 'terminal';
     $f->columnWidth = 100;
     $f->rows = 18;
     $f->collapsed = $data['backup_mode'] == self::DUP_MODE_NATIVE ? ($data['shellScript'] == '' ? true : false) : false;
     $f->showIf = "backup_mode=".self::DUP_MODE_NATIVE;
     $stub = DUP_Util::getStub();
-    $f->placeholder = $stub ? file_get_contents($stub) : 'Paste or write your custom dump shell script here...';
+    $f->placeholder = 'Paste or write your custom dump shell script here...';
+    $f->value = $data['shellScript'] ? $data['shellScript'] : ($stub ? file_get_contents($stub) : '');
     $fs->append($f);
     
     $field = $modules->get('InputfieldCheckbox');
@@ -1543,6 +1557,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
     $fields->append($fs);
 
+    /**
+     * Cloud Providers Settings
+     */
     $fs = $modules->get("InputfieldFieldset");
     $fs->label = "Save package to";
     $fs->icon = 'cloud';
@@ -1738,7 +1755,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $fs->append($fsgd);
 
     // AMAZON
-    if (!class_exists('AmazonS3Client')) {
+    if (!class_exists('\Aws\S3\S3Client')) {
       $skip = true;
     }
     $description = ($skip == false) ? $disabled = '' : __("The required SDK is not installed. You can download it [here](https://github.com/flydev-fr/duplicator-amazon-s3) or install it with [Composer](https://getcomposer.org/doc/00-intro.md). Run **composer require aws/aws-sdk-php**");

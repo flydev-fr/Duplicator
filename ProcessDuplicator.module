@@ -453,7 +453,7 @@ class ProcessDuplicator extends Process
     // AmazonS3
     if ($this->dupmod->useAmazonS3 == 1) {
       try {
-        $amazonaws = new \AmazonS3Client();
+        $amazonaws = new AmazonS3Client();
         $amazonaws->setAccessKey($this->dupmod->awsAccessKey);
         $amazonaws->setSecretKey($this->dupmod->awsSecretKey);
         $amazonaws->setRegion($this->dupmod->awsRegion);
@@ -464,7 +464,10 @@ class ProcessDuplicator extends Process
           foreach ($files as $file) {
             if (strrpos($file['Key'], $extension) == false) continue;
             $originalFilename = $file['Key'];
-            $parts = explode('-', $file['Key']);
+            if ($this->dupmod->awsSubDir !== '' && strpos($originalFilename, $this->dupmod->awsSubDir) === 0) {
+              $originalFilename = substr($originalFilename, strlen($this->dupmod->awsSubDir . '/'));
+            }
+            $parts = explode('-', $originalFilename);
             array_pop($parts);
             $tsstr = implode('-', $parts);
             $ts = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);
@@ -473,9 +476,8 @@ class ProcessDuplicator extends Process
             $href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
             $href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=amazon" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
             $href3 = '<a href="?action=delete&file=' . $file['Key'] . '&service=amazon" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
-
             $data = array(
-              'time' => $ts->getTimestamp(),
+              'time' => $ts ? $ts->getTimestamp() : 0,
               "<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/amazon-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
               $createdOn,
               DUP_Util::human_filesize($file['Size']),
@@ -485,7 +487,7 @@ class ProcessDuplicator extends Process
             array_push($rows, $data);
           }
         }
-      } catch (\AmazonS3ClientException $ex) {
+      } catch (AmazonS3ClientException $ex) {
         DUP_Logs::log("AmazonS3 error: " . $ex->getMessage(), 'error');
       }
     }

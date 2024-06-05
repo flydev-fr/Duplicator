@@ -152,15 +152,9 @@ Timeout usually happen if you are on a low-end budget host with limitations. The
 
 Thanks to all the contributors for their help and support.
 
-<!--GAMFC--><a href="https://github.com/flydev-fr" title="j. eizmendi">
-  <img src="https://avatars.githubusercontent.com/u/11658616?v=4" width="32;" alt="j. eizmendi"/>
-</a>
-<a href="https://github.com/netcarver" title="Steve">
-  <img src="https://avatars.githubusercontent.com/u/16049?v=4" width="32;" alt="Steve"/>
-</a>
-<a href="https://github.com/StanLindsey" title="Stan Lindsey">
-  <img src="https://avatars.githubusercontent.com/u/3317882?v=4" width="32;" alt="Stan Lindsey"/>
-</a><!--GAMFC-END-->
+<!--GAMFC--><a href="https://github.com/flydev-fr" title="j. eizmendi"><img src="https://avatars.githubusercontent.com/u/11658616?v=4" width="32;" alt="j. eizmendi"/></a>
+<a href="https://github.com/netcarver" title="Steve"><img src="https://avatars.githubusercontent.com/u/16049?v=4" width="32;" alt="Steve"/></a>
+<a href="https://github.com/StanLindsey" title="Stan Lindsey"><img src="https://avatars.githubusercontent.com/u/3317882?v=4" width="32;" alt="Stan Lindsey"/></a><!--GAMFC-END-->
 
 # Special thanks
 - Duplicator's logo made by [@szabeszg](https://github.com/szabeszg)

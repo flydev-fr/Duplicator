@@ -1,3 +1,12 @@
+## [1.5.3](https://github.com/flydev-fr/Duplicator/compare/v1.5.2...v1.5.3) (2024-06-05)
+
+
+### Bug Fixes
+
+* Avoid error when first configuring S3 backups [#49](https://github.com/flydev-fr/Duplicator/issues/49) ([d338fc2](https://github.com/flydev-fr/Duplicator/commit/d338fc2e53778de595c7d99d23c71b2c4c7c1b35))
+
+
+
 ## [1.5.2](https://github.com/flydev-fr/Duplicator/compare/v1.5.1...v1.5.2) (2023-11-01)
 
 
@@ -45,15 +54,6 @@
 ### Reverts
 
 * Revert "fix: Version number (processwire modules directory)" ([2ba21ae](https://github.com/flydev-fr/Duplicator/commit/2ba21ae9aacab0c3379334b1949c8a9450a3254d))
-
-
-
-## [1.4.28](https://github.com/flydev-fr/Duplicator/compare/v1.4.27...v1.4.28) (2023-03-29)
-
-
-### Bug Fixes
-
-* Version number (processwire modules directory) ([4563eea](https://github.com/flydev-fr/Duplicator/commit/4563eeaa62a3c8d6a577a36b4696552509b0b4a4))
 
 
 

@@ -460,7 +460,7 @@ class ProcessDuplicator extends Process
         $amazonaws->setBucket($this->dupmod->awsBucketName);
         $files = $amazonaws->getFiles();
 
-        if (count($files)) {
+        if ($files && count($files)) {
           foreach ($files as $file) {
             if (strrpos($file['Key'], $extension) == false) continue;
             $originalFilename = $file['Key'];

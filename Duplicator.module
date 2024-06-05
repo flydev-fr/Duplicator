@@ -20,7 +20,7 @@ require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupLogs.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/BackupDatabase.php';
 
 class DupZipLog
-{ //ATO: Utility class to implement some logging into a file per ZIP
+{ //ATO: Utility class to implement some logging into a file per ZIP  
   public $fLog = null;
   public $startTime = 0;
   public $logLevel = 0;
@@ -28,7 +28,7 @@ class DupZipLog
   public $excludeNames = [];
   public $excludeRegEx = [];
   public $excludeExtension = [];
-
+  
   public function log($str)
   {
     if ($this->fLog) {
@@ -130,6 +130,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
   const DUP_DB_MAX_TIME = 5000;
   const DUP_PHP_EXECUTION_TIME = 300;
   const DUP_ZIP_FLUSH_TRIGGER = 1000;
+  const DUP_MODE_PWAPI = 0;
+  const DUP_MODE_NATIVE = 1;
+  const DEFAULT_BACKUP_MODE = self::DUP_MODE_PWAPI;
 
   protected static $_data;
 
@@ -169,8 +172,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       'maxPackages' => self::DUP_MAX_PACKAGES,
       'removeBackups' => 1,
       // Advanced options
-      'backup_mode' => 'MODE_PWAPI',
+      'backup_mode' => self::DEFAULT_BACKUP_MODE,
       'chmodPermission' => '0700',
+      'shellScript' => '',
       'archiveFlush' => 0,
       'zip_flush_mbytes' => 0,
       // encryption settings
@@ -395,8 +399,26 @@ class Duplicator extends WireData implements Module, ConfigurableModule
      */
   public function ___uninstall()
   {
+    // uninstall ProcessDuplicator if installed
+    if ($this->modules->isInstalled('ProcessDuplicator')) {
+      $this->modules->uninstall('ProcessDuplicator');
+    }
+
     $path = str_replace($this->config->paths->root, '/', $this->path);
     $this->warning("Please note that packages files in {$path} remain. You may remove them manually.");
+  }
+
+  public function ___upgrade($fromVersion, $toVersion) {
+    // Show a warning if previous installed version was configured using native_mode about this previous setting
+    if ($this->modules->isInstalled('Duplicator') && $this->modules->get('Duplicator')->backup_mode == 'MODE_NATIVE') {
+      $this->modules->saveConfig(self::class, 'backup_mode', self::DUP_MODE_NATIVE);
+      if ($this->backup_mode == self::DUP_MODE_NATIVE) {
+        $this->message("The **previous version** of Duplicator was configured using `native_mode`. Please note that the value of this setting has changed. The change **is already applied** to your current configuration.", Notice::allowMarkdown);
+      }
+      else {
+        $this->warning("The **previous version** of Duplicator was configured using `native_mode`. Please note that the value of this setting has changed. You need to set the backup mode to `Native mode` and **save the settings**.", Notice::allowMarkdown);
+      }
+    }
   }
 
   public static function getPath()
@@ -473,7 +495,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $fileinfo['structure'] = $zipinfo['zipfile'];
 
     if (!file_exists($fileinfo['structure'])) {
-      DUP_Logs::log("- an error occured while building the ProcessWire structure: " . $fileinfo['zipfile'] . " root: " . $root . " " . print_r($options, true));
+      DUP_Logs::log("- an error occured while building the ProcessWire structure: ");
+      DUP_Logs::log(json_encode($fileinfo['zipfile'], JSON_PRETTY_PRINT));
+      DUP_Logs::log(" root: " . $root . "\n" . json_encode($options, JSON_PRETTY_PRINT ));
       return false;
     }
 
@@ -493,11 +517,13 @@ class Duplicator extends WireData implements Module, ConfigurableModule
         'description' => '', //$this->backupFileinfo(),
         'maxSeconds' => self::DUP_WIRETEMP_MAX_TIME,
       ),
-      'chmodPermission' => $this->chmodPermission
+      'chmodPermission' => $this->chmodPermission,
+      'shellScript' => $this->shellScript,
     );
+
     $options = array_merge($options, $defaultOptions);
     $dbBackup = new BackupDatabase($options);
-    $zipobj = $dbBackup->setDatabase($this->database)->setMode($this->backup_mode);
+    $zipobj = $dbBackup->setDatabase($this->database)->setMode((int)$this->backup_mode);
     $zipfile = $zipobj->getZip();
     if (file_exists($zipfile)) {
       $fileinfo['zipfile'] = $zipfile;
@@ -1524,29 +1550,45 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
     $f = wire('modules')->get("InputfieldSelect");
     $note = "";
-    $options = array('MODE_PWAPI' => 'Web mode');
+    $options = array(self::DUP_MODE_PWAPI => 'Web mode');
     // check if mysqldump tool is available on env path
-    if (DUP_Util::isWinOS()) {
-      $shellExec = shell_exec("where mysqldump");
-    } else {
-      $shellExec = shell_exec("which mysqldump");
+    $mysqldumpExec = null;
+    $zipExec = null;
+    // check if shell_exec is enabled
+    if (DUP_Util::isEnabled('shell_exec')) {
+      // exec mysqldump to check if it's available. 
+      if (DUP_Util::isWinOS()) {
+        $mysqldumpExec = shell_exec("where mysqldump");
+      } else {
+        $mysqldumpExec = shell_exec("which mysqldump");
+        
+      }
+      // check if zip binary is available
+      if (!DUP_Util::isWinOS()) {
+        $zipExec = shell_exec("which zip");
+      }
     }
-    if ($shellExec !== null) {
-      $options = array_merge($options, array('MODE_NATIVE' => 'Native mode (mysqldump)'));
-      $note = __("\n☑️ `mysqldump` tool [**OK**]");
+    if ($mysqldumpExec !== null) {
+      $options = array_merge($options, array(self::DUP_MODE_NATIVE => 'Native mode (mysqldump)'));
+      $note = __("\n☑️ `mysqldump` tool [**OK**].");
     } else {
       $note = __("\n⚠️ `mysqldump` not found on **PATH**. **Native Mode Backup** is **not available**");
     }
+    if ($zipExec !== null) {
+      $note .= __("\n☑️ `zip` binary [**OK**].");
+    } else {
+      $note .= __("\n⚠️ `zip` binary not found on **PATH**. **wireZipFile** will be used instead.");
+    }
+    
+  
     $f->name = 'backup_mode';
     $f->label = __("Mode");
     $f->description = __("Choose the prefered backup mode. Select **Native Mode** for **large database**.");
     $f->notes = !self::isExtensionLoaded('zip') ? __("⚠️ `php_zip` is **required**, extension **not found**") : __("☑️ `php_zip` extension [**OK**]");
     $f->notes .= $note;
+
     $f->addOptions($options);
-    if ($data['backup_mode']) {
-      $f->attr('value', $data['backup_mode']);
-      $f->attr('selected', $data['backup_mode']);
-    }
+    $f->value = (int)$data['backup_mode'];
     $f->columnWidth = 50;
     $fs->append($f);
 
@@ -1558,8 +1600,25 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $f->icon = 'shield';
     $f->columnWidth = 50;
     $f->notes = '`security settings`: **CHMOD** generated script on creation. Default: `0700` *(chmod a+rwx,g-rwx,o-rwx)*';
+    $f->showIf = "backup_mode=".self::DUP_MODE_NATIVE;
     $fs->append($f);
 
+    $f = wire('modules')->get("InputfieldTextarea");
+    $f->name = 'shellScript';
+    $f->label = __("Custom Shell script");
+    $f->description = __("Shell script used to backup database in Native Mode.");
+    $f->notes = __("This script is used to backup database in Native Mode. You can edit this script to fit your needs.");
+    // load from stub
+    $f->icon = 'terminal';
+    $f->columnWidth = 100;
+    $f->rows = 18;
+    $f->collapsed = $data['backup_mode'] == self::DUP_MODE_NATIVE ? ($data['shellScript'] == '' ? true : false) : false;
+    $f->showIf = "backup_mode=".self::DUP_MODE_NATIVE;
+    $stub = DUP_Util::getStub();
+    $f->placeholder = 'Paste or write your custom dump shell script here...';
+    $f->value = $data['shellScript'] ? $data['shellScript'] : ($stub ? file_get_contents($stub) : '');
+    $fs->append($f);
+    
     $field = $modules->get('InputfieldCheckbox');
     $field->attr('name', 'archiveFlush');
     $field->label = 'Archive Flush: Attempt Network Keep Alive';

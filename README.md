@@ -1,5 +1,18 @@
 ![Duplicator](https://s3.us-west-2.amazonaws.com/processwire-forums/monthly_2017_11/Duplicator-logo-v2-Dlong.thumb.png.8898ec8cda79046779b10d8527fc0def.png)
 
+***
+
+<div align="center">
+
+![Current stable version)](https://img.shields.io/github/package-json/v/flydev-fr/duplicator)
+![GitHub Repo stars](https://img.shields.io/github/stars/flydev-fr/duplicator)
+[![process.com](https://img.shields.io/badge/%F0%9F%8C%80_processwire-lightblue)](https://processwire.com)
+[![Get support](https://img.shields.io/badge/%F0%9F%9B%9F_support_thread-gray)](https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/?page=2#comment-139376)
+
+</div>
+
+***
+
 ### WIP
 
 - The readme is being re-written.
@@ -24,17 +37,17 @@ If you want to use `GoogleDrive` or `AmazonS3`, you have two choices of type of 
 
 Installing all SDK are not required, you can choose the one you need.
 
-### Note:
+#### Note:
 - `Dropbox` dropped support for the version 1 of the API since september 2017 - [api-v1-deprecation-timeline](https://blogs.dropbox.com/developers/2017/06/updated-api-v1-deprecation-timeline/) - so I removed it from Duplicator until I got the time to code an interface for the API v2
 - `GoogleDrive` tested the 2023-03-20 `successfully` ✅
-- `AmazonS3` tested the 2023-03-26 `successfully` ✅
+- `AmazonS3` tested the 2017-12-03 `todo` ⏳
 
-## Using Composer
+### Using Composer
 In the root directory of your ProcessWire installation, just type in a terminal :
 * `composer require google/apiclient`
 * `composer require aws/aws-sdk-php`
 
-## ZIP Archive
+### ZIP Archive
 After downloading the archive, open it, you will find a folder called **`SDKs`** under each provider named directory. Extract or Upload this folder in the **`Duplicator module folder`**. If the folder already exist, merge it. Example: `/www/public_html/site/modules/Duplicator/SDKs`
 
 Download it from the [**Duplicator-SDKs**](https://github.com/flydev-fr/Duplicator-SDKs/archive/master.zip) repository.
@@ -136,9 +149,11 @@ Timeout usually happen if you are on a low-end budget host with limitations. The
 * 1and1 Shared hosting (resolved by using Filters)
 * Dreamhost hosting (resolved using the `Archive Flush` option); Need to be tested again.
 
+## Contributors
 
-<!-- readme: szabeszg,contributors,tofahrn,adrianbj -start -->
-<!-- readme: contributors -end -->
+Thanks to all the contributors for their help and support.
+
+<!--GAMFC--><!--GAMFC-END-->
 
 # Special thanks
 - Duplicator's logo made by [@szabeszg](https://github.com/szabeszg)

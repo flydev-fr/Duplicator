@@ -114,7 +114,7 @@ class AmazonS3Client
     } else {
       $path = "";
     }
-    DUP_Logs::log("AmazonS3: Uploading to {$path}${name} in {$this->bucket}");
+    DUP_Logs::log("AmazonS3: Uploading to {$path}{$name} in {$this->bucket}");
     $param = array(
       'Bucket' => $this->bucket,
       'Key' => $path . $name,

@@ -14,7 +14,7 @@ class ProcessDuplicator extends Process
 
     return array(
       'title'     => 'Duplicator - Packages Manager',
-      'summary'     => '📦 Manage your backups/packages built with Duplicator inside ProcessWire.',
+      'summary'     => '📦 Manage your packages built with Duplicator.',
       'version'     => $package->version,
       'author'     => 'flydev',
       'icon'       => 'clone',

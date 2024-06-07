@@ -1,3 +1,12 @@
+## [1.5.4](https://github.com/flydev-fr/Duplicator/compare/v1.5.3...v1.5.4) (2024-06-07)
+
+
+### Bug Fixes
+
+* PHP deprecated var [#51](https://github.com/flydev-fr/Duplicator/issues/51) ([8c333f0](https://github.com/flydev-fr/Duplicator/commit/8c333f065a67eb622bb0dd4a0277dd753f69f65e)), closes [#48](https://github.com/flydev-fr/Duplicator/issues/48)
+
+
+
 ## [1.5.3](https://github.com/flydev-fr/Duplicator/compare/v1.5.2...v1.5.3) (2024-06-05)
 
 
@@ -40,20 +49,6 @@
 ### Features
 
 * Set custom dump shell script from configuration ([30c5143](https://github.com/flydev-fr/Duplicator/commit/30c514340a2e5d67c5f934888a528f179fad20a0))
-
-
-
-## [1.4.29](https://github.com/flydev-fr/Duplicator/compare/v1.4.28...v1.4.29) (2023-04-03)
-
-
-### Bug Fixes
-
-* Check for php disable_functions directive ([b6aa019](https://github.com/flydev-fr/Duplicator/commit/b6aa019242ad3deb68166172c85bbe2584f687d5))
-
-
-### Reverts
-
-* Revert "fix: Version number (processwire modules directory)" ([2ba21ae](https://github.com/flydev-fr/Duplicator/commit/2ba21ae9aacab0c3379334b1949c8a9450a3254d))
 
 
 

@@ -1,0 +1,119 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  ClientHeight = 600
+  ClientWidth = 640
+  Position = ScreenCenter
+  Caption = 'Duplicator Desktop'
+  object Layout: TLayout
+    Align = Client
+    object lblSourceDir: TLabel
+      Position.X = 20
+      Position.Y = 20
+      Text = 'Source Website Directory:'
+    end
+    object editSourceDir: TEdit
+      Position.X = 20
+      Position.Y = 40
+      Width = 540
+    end
+    object btnSelectSource: TButton
+      Position.X = 570
+      Position.Y = 40
+      Width = 50
+      Text = '...'
+    end
+    object lblDestinationPath: TLabel
+      Position.X = 20
+      Position.Y = 80
+      Text = 'Backup Destination Path (.zip):'
+    end
+    object editDestinationPath: TEdit
+      Position.X = 20
+      Position.Y = 100
+      Width = 540
+    end
+    object btnSelectDestination: TButton
+      Position.X = 570
+      Position.Y = 100
+      Width = 50
+      Text = '...'
+    end
+    object grpDatabase: TGroupBox
+      Position.X = 20
+      Position.Y = 140
+      Width = 600
+      Height = 120
+      Text = 'Database Credentials'
+      object lblDBHost: TLabel
+        Position.X = 10
+        Position.Y = 10
+        Text = 'Host:'
+      end
+      object editDBHost: TEdit
+        Position.X = 10
+        Position.Y = 30
+        Width = 280
+      end
+      object lblDBName: TLabel
+        Position.X = 310
+        Position.Y = 10
+        Text = 'Database:'
+      end
+      object editDBName: TEdit
+        Position.X = 310
+        Position.Y = 30
+        Width = 280
+      end
+      object lblDBUser: TLabel
+        Position.X = 10
+        Position.Y = 60
+        Text = 'User:'
+      end
+      object editDBUser: TEdit
+        Position.X = 10
+        Position.Y = 80
+        Width = 280
+      end
+      object lblDBPass: TLabel
+        Position.X = 310
+        Position.Y = 60
+        Text = 'Password:'
+      end
+      object editDBPass: TEdit
+        Position.X = 310
+        Position.Y = 80
+        Width = 280
+        Password = True
+      end
+    end
+    object grpExclusions: TGroupBox
+      Position.X = 20
+      Position.Y = 270
+      Width = 600
+      Height = 100
+      Text = 'Exclusions (one per line: *.log, /cache/, filename.txt)'
+      object memoExclusions: TMemo
+        Align = Client
+      end
+    end
+    object grpLogs: TGroupBox
+      Position.X = 20
+      Position.Y = 380
+      Width = 600
+      Height = 150
+      Text = 'Logs'
+      object memoLogs: TMemo
+        Align = Client
+        ReadOnly = True
+      end
+    end
+    object btnCreateBackup: TButton
+      Position.X = 20
+      Position.Y = 540
+      Width = 600
+      Height = 40
+      Text = 'Create Backup'
+    end
+  end
+end

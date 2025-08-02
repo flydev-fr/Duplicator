@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
-  System.IOUtils, System.Zip, System.Diagnostics, // Added for file/db operations
+  System.IOUtils, System.Zip, System.Generics.Collections, Winapi.Windows, // Added for file/db operations and generics
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
   FMX.Layouts, FMX.StdCtrls, FMX.Controls.Presentation, FMX.Edit,
   // Assuming Skia for FireMonkey is installed and units are available
@@ -127,9 +127,12 @@ end;
 
 procedure TForm1.ExecuteDatabaseDump(const aDBHost, aDBName, aDBUser, aDBPass, aDumpFilePath: string);
 var
-  Process: TProcess;
-  Cmd: string;
-  OutputFile: TFileStream;
+  CmdLine: string;
+  SI: TStartupInfo;
+  PI: TProcessInformation;
+  SA: TSecurityAttributes;
+  hFile: THandle;
+  CmdLinePtr: PChar;
 begin
   // Basic validation
   if (aDBHost = '') or (aDBName = '') or (aDBUser = '') then
@@ -137,30 +140,53 @@ begin
     raise Exception.Create('Database credentials cannot be empty.');
   end;
 
-  Cmd := Format('mysqldump -h %s -u %s -p%s %s',
-    [Quote(aDBHost), Quote(aDBUser), aDBPass, aDBName]);
+  // Construct the command line for mysqldump
+  CmdLine := Format('mysqldump.exe -h %s -u %s --password=%s %s',
+    [aDBHost, aDBUser, aDBPass, aDBName]);
 
-  memoLogs.Lines.Add('Executing: ' + Cmd);
+  memoLogs.Lines.Add('Executing mysqldump...');
 
-  Process := TProcess.Create(nil);
-  OutputFile := TFileStream.Create(aDumpFilePath, fmCreate);
+  // Set up security attributes to allow handle inheritance
+  ZeroMemory(@SA, SizeOf(TSecurityAttributes));
+  SA.nLength := SizeOf(TSecurityAttributes);
+  SA.bInheritHandle := True;
+  SA.lpSecurityDescriptor := nil;
+
+  // Create the output file with security attributes
+  hFile := CreateFile(PChar(aDumpFilePath), GENERIC_WRITE, FILE_SHARE_READ, @SA, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+  if hFile = INVALID_HANDLE_VALUE then
+    RaiseLastOSError;
+
   try
-    Process.Executable := 'mysqldump';
-    // Parameters must be passed via command line string on some platforms
-    Process.CommandLine := Format('-h %s -u %s -p%s %s', [aDBHost, aDBUser, aDBPass, aDBName]);
-    Process.Options := [poUsePipes, poNoConsole];
-    Process.Output := OutputFile;
+    // Set up startup info to redirect standard output to our file handle
+    ZeroMemory(@SI, SizeOf(TStartupInfo));
+    SI.cb := SizeOf(TStartupInfo);
+    SI.dwFlags := STARTF_USESTDHANDLES;
+    SI.hStdInput := GetStdHandle(STD_INPUT_HANDLE);
+    SI.hStdOutput := hFile;
+    SI.hStdError := hFile; // Redirect errors to the same file
 
-    Process.Execute;
-    Process.WaitForExit;
+    // Create the process
+    CmdLinePtr := PChar(CmdLine);
+    if not CreateProcess(nil, CmdLinePtr, nil, nil, True, CREATE_NO_WINDOW, nil, nil, SI, PI) then
+      RaiseLastOSError;
 
-    if Process.ExitCode <> 0 then
-    begin
-      raise Exception.CreateFmt('mysqldump failed with exit code %d.', [Process.ExitCode]);
+    try
+      // Wait for the process to finish
+      WaitForSingleObject(PI.hProcess, INFINITE);
+
+      var ExitCode: DWord;
+      GetExitCodeProcess(PI.hProcess, ExitCode);
+      if ExitCode <> 0 then
+      begin
+        raise Exception.CreateFmt('mysqldump failed with exit code %d.', [ExitCode]);
+      end;
+    finally
+      CloseHandle(PI.hProcess);
+      CloseHandle(PI.hThread);
     end;
   finally
-    Process.Free;
-    OutputFile.Free;
+    CloseHandle(hFile);
   end;
 end;
 
@@ -172,6 +198,8 @@ var
   I: Integer;
   EntryName: string;
   BaseDir: string;
+  DirStack: TStack<string>;
+  CurrentRelativeDir: string;
 begin
   memoLogs.Lines.Add('Creating ZIP file: ' + aDestinationZipFile);
   ZipFile := TZipFile.Create;
@@ -181,13 +209,12 @@ begin
     BaseDir := IncludeTrailingPathDelimiter(aSourceDirectory);
 
     // Use a stack for iterative traversal instead of recursion to avoid stack overflow on deep directories
-    var DirStack: TStack<string>;
     DirStack := TStack<string>.Create;
     DirStack.Push(''); // Start with the root relative path
 
     while DirStack.Count > 0 do
     begin
-      var CurrentRelativeDir := DirStack.Pop;
+      CurrentRelativeDir := DirStack.Pop;
       var CurrentFullDir := TPath.Combine(BaseDir, CurrentRelativeDir);
 
       // Add files in the current directory

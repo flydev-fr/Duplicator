@@ -240,6 +240,8 @@ class Duplicator extends WireData implements Module, ConfigurableModule
      */
   public function init()
   {
+    // Register the REST API endpoints
+    require_once __DIR__ . DIRECTORY_SEPARATOR . 'api.php';
 
     $this->addHookAfter('Page::render', $this, 'styles');
 
@@ -1556,6 +1558,24 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $fs->append($field);
 
     $fields->append($fs);
+
+    // API Settings
+    $fs = $modules->get("InputfieldFieldset");
+    $fs->label = __("API Settings");
+    $fs->icon = 'key';
+    $fs->description = __("Configure settings for the REST API used by the desktop application.");
+    $fs->collapsed = false;
+
+    $field = $modules->get("InputfieldText");
+    $field->attr('name', 'apiKey');
+    $field->label = __("API Key");
+    $field->description = __("A secret key to authenticate API requests. Should be long and random.");
+    $field->notes = __("This key must be configured in the desktop application to allow access.");
+    $field->attr('value', !empty($data['apiKey']) ? $data['apiKey'] : '');
+    $fs->append($field);
+
+    $fields->add($fs);
+
 
     /**
      * Cloud Providers Settings

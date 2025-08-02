@@ -1,95 +1,60 @@
 object Form1: TForm1
   Left = 0
   Top = 0
-  ClientHeight = 600
+  ClientHeight = 520
   ClientWidth = 640
   Position = ScreenCenter
   Caption = 'Duplicator Desktop'
   object Layout: TLayout
     Align = Client
-    object lblSourceDir: TLabel
+    object grpAPI: TGroupBox
       Position.X = 20
       Position.Y = 20
-      Text = 'Source Website Directory:'
-    end
-    object editSourceDir: TEdit
-      Position.X = 20
-      Position.Y = 40
-      Width = 540
-    end
-    object btnSelectSource: TButton
-      Position.X = 570
-      Position.Y = 40
-      Width = 50
-      Text = '...'
-    end
-    object lblDestinationPath: TLabel
-      Position.X = 20
-      Position.Y = 80
-      Text = 'Backup Destination Path (.zip):'
-    end
-    object editDestinationPath: TEdit
-      Position.X = 20
-      Position.Y = 100
-      Width = 540
-    end
-    object btnSelectDestination: TButton
-      Position.X = 570
-      Position.Y = 100
-      Width = 50
-      Text = '...'
-    end
-    object grpDatabase: TGroupBox
-      Position.X = 20
-      Position.Y = 140
       Width = 600
       Height = 120
-      Text = 'Database Credentials'
-      object lblDBHost: TLabel
+      Text = 'API Settings'
+      object lblServerURL: TLabel
         Position.X = 10
         Position.Y = 10
-        Text = 'Host:'
+        Text = 'Server URL (e.g., http://your-site.com):'
       end
-      object editDBHost: TEdit
+      object editServerURL: TEdit
         Position.X = 10
         Position.Y = 30
-        Width = 280
+        Width = 580
       end
-      object lblDBName: TLabel
-        Position.X = 310
-        Position.Y = 10
-        Text = 'Database:'
-      end
-      object editDBName: TEdit
-        Position.X = 310
-        Position.Y = 30
-        Width = 280
-      end
-      object lblDBUser: TLabel
+      object lblAPIKey: TLabel
         Position.X = 10
         Position.Y = 60
-        Text = 'User:'
+        Text = 'API Key:'
       end
-      object editDBUser: TEdit
+      object editAPIKey: TEdit
         Position.X = 10
         Position.Y = 80
-        Width = 280
-      end
-      object lblDBPass: TLabel
-        Position.X = 310
-        Position.Y = 60
-        Text = 'Password:'
-      end
-      object editDBPass: TEdit
-        Position.X = 310
-        Position.Y = 80
-        Width = 280
+        Width = 580
         Password = True
+      end
+    end
+    object grpPackage: TGroupBox
+      Position.X = 20
+      Position.Y = 150
+      Width = 600
+      Height = 60
+      Text = 'Package Settings'
+       object lblPackageName: TLabel
+        Position.X = 10
+        Position.Y = 10
+        Text = 'Package Base Name:'
+      end
+      object editPackageName: TEdit
+        Position.X = 10
+        Position.Y = 30
+        Width = 580
       end
     end
     object grpExclusions: TGroupBox
       Position.X = 20
-      Position.Y = 270
+      Position.Y = 220
       Width = 600
       Height = 100
       Text = 'Exclusions (one per line: *.log, /cache/, filename.txt)'
@@ -99,21 +64,35 @@ object Form1: TForm1
     end
     object grpLogs: TGroupBox
       Position.X = 20
-      Position.Y = 380
+      Position.Y = 330
       Width = 600
-      Height = 150
+      Height = 120
       Text = 'Logs'
       object memoLogs: TMemo
         Align = Client
         ReadOnly = True
       end
     end
-    object btnCreateBackup: TButton
+    object btnFetchConfig: TButton
       Position.X = 20
-      Position.Y = 540
-      Width = 600
+      Position.Y = 460
+      Width = 190
       Height = 40
-      Text = 'Create Backup'
+      Text = 'Fetch Config from Server'
+    end
+    object btnSaveConfig: TButton
+      Position.X = 225
+      Position.Y = 460
+      Width = 190
+      Height = 40
+      Text = 'Save Config to Server'
+    end
+    object btnCreateBackup: TButton
+      Position.X = 430
+      Position.Y = 460
+      Width = 190
+      Height = 40
+      Text = 'Start Remote Backup'
     end
   end
 end

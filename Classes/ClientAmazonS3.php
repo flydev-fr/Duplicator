@@ -249,7 +249,7 @@ class AmazonS3Client
 
 class AmazonS3ClientException extends \Exception
 {
-  public function __construct($message = null, $code = 0, Exception $previous = null)
+  public function __construct($message = null, $code = 0, ?\Exception $previous = null)
   {
     DUP_Logs::log("AmazonS3: " . $message);
     parent::__construct($message, $code, $previous);

@@ -98,7 +98,7 @@ class ProcessDuplicator extends Process
               break;
 
             case 'amazon':
-              $amazonaws = new \AmazonS3Client();
+              $amazonaws = new AmazonS3Client();
               $amazonaws->setAccessKey($this->dupmod->awsAccessKey);
               $amazonaws->setSecretKey($this->dupmod->awsSecretKey);
               $amazonaws->setRegion($this->dupmod->awsRegion);
@@ -143,7 +143,7 @@ class ProcessDuplicator extends Process
               break;
 
             case 'amazon':
-              $amazonaws = new \AmazonS3Client();
+              $amazonaws = new AmazonS3Client();
               $amazonaws->setAccessKey($this->dupmod->awsAccessKey);
               $amazonaws->setSecretKey($this->dupmod->awsSecretKey);
               $amazonaws->setRegion($this->dupmod->awsRegion);

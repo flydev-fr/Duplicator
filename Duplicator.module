@@ -579,19 +579,22 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $packageInfos = array();
 
     try {
-      $dbbackup = $this->buildDatabaseBackup();
-      if ($dbbackup == false) {
-        DUP_Logs::log("- an error occured during database backup.");
-        return false;
-      }
-      $packageInfos['db'] = $dbbackup;
-
+      // files first: the dump lives in a temporary folder that ProcessWire removes after
+      // DUP_WIRETEMP_MAX_TIME, which a long file archive could outlast
       $pwbackup = $this->buildProcessWireBackup();
       if ($pwbackup == false) {
         DUP_Logs::log("- an error occured during package build.");
         return false;
       }
       $packageInfos['pw'] = $pwbackup;
+
+      $dbbackup = $this->buildDatabaseBackup();
+      if ($dbbackup == false) {
+        DUP_Logs::log("- an error occured during database backup.");
+        DUP_Util::deleteFile($pwbackup['zipfile']);
+        return false;
+      }
+      $packageInfos['db'] = $dbbackup;
 
       if (true) //ATO: Add SQL ZIP to archive
       {
@@ -600,10 +603,21 @@ class Duplicator extends WireData implements Module, ConfigurableModule
           throw new WireException("Unable to open ZIP: {$pwbackup['zipfile']}");
         }
 
-        $zip->addFile($dbbackup['zipfile'], basename($dbbackup['zipfile']));
-        $zip->close();
-        $zipfile = $pwbackup['zipfile']; //ATO: Fix to properly return new archive
+        // a package without its database cannot be restored: check the dump really is in it
+        $dumpName = basename($dbbackup['zipfile']);
+        $added = is_file($dbbackup['zipfile']) && $zip->addFile($dbbackup['zipfile'], $dumpName);
+        $closed = $zip->close();
+        if ($added && $closed) {
+          $added = $zip->open($pwbackup['zipfile']) === true && $zip->locateName($dumpName) !== false;
+          $zip->close();
+        }
         DUP_Util::deleteFile($dbbackup['zipfile']);
+        if (!$added || !$closed) {
+          DUP_Logs::log("- the database dump could not be added to the package, it was deleted.");
+          DUP_Util::deleteFile($pwbackup['zipfile']);
+          return false;
+        }
+        $zipfile = $pwbackup['zipfile']; //ATO: Fix to properly return new archive
       } else {
         $files = array(
           $packageInfos['db']['zipfile'],

@@ -122,3 +122,27 @@ test('scripts/dupcrypt.php: keygen, encrypt, decrypt', function () use ($dir) {
   checkSame(0, $code, 'decrypt exit code');
   checkSame(sha1_file("$dir/cli-plain"), sha1_file("$dir/cli-dec"));
 });
+
+test('downloadable dupcrypt.php works alone and decrypts what the module encrypts', function () use ($dir, $keys) {
+  // alone in its own folder: no Classes/DupCrypto.php next to it
+  $standaloneDir = "$dir/standalone";
+  if (!is_dir($standaloneDir)) mkdir($standaloneDir);
+  file_put_contents("$standaloneDir/dupcrypt.php", DupCrypto::standaloneScript());
+  $php = escapeshellarg(PHP_BINARY) . ' ';
+  exec($php . '-r ' . escapeshellarg("exit(extension_loaded('sodium') ? 0 : 1);"), $out, $code);
+  if ($code !== 0) $php .= '-d extension=sodium ';
+  $script = escapeshellarg("$standaloneDir/dupcrypt.php");
+  $out = array();
+  exec("$php$script keygen", $out, $code);
+  checkSame(0, $code, 'keygen exit code');
+  check(preg_match('/dup-pk1:\S+/', implode("\n", $out)) === 1, 'no key printed');
+  file_put_contents("$dir/sa-plain", random_bytes(DupCrypto::CHUNK_SIZE + 99));
+  DupCrypto::encryptFile("$dir/sa-plain", "$dir/sa-enc", $keys['public']);
+  putenv('DUPLICATOR_SECRET_KEY=' . $keys['secret']);
+  exec("$php$script decrypt " . escapeshellarg("$dir/sa-enc") . ' ' . escapeshellarg("$dir/sa-dec"), $out, $code);
+  putenv('DUPLICATOR_SECRET_KEY');
+  checkSame(0, $code, 'decrypt exit code');
+  checkSame(sha1_file("$dir/sa-plain"), sha1_file("$dir/sa-dec"));
+  @unlink("$standaloneDir/dupcrypt.php");
+  @rmdir($standaloneDir);
+});

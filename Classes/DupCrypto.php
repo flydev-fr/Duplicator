@@ -176,6 +176,23 @@ class DupCrypto
     }
   }
 
+  /**
+   * scripts/dupcrypt.php and this class in a single file, to download and run anywhere with PHP 7.2+
+   *
+   * @return string PHP source
+   */
+  public static function standaloneScript()
+  {
+    $strip = function ($code) {
+      $code = preg_replace('/^<\?php\s*/', '', $code);
+      return trim(preg_replace('/^namespace ProcessWire;\s*$/m', '', $code, 1));
+    };
+    return "<?php\n\nnamespace ProcessWire;\n\n"
+      . "// Duplicator encryption tool, single file: php dupcrypt.php keygen | encrypt | decrypt\n\n"
+      . $strip(file_get_contents(__FILE__)) . "\n\n"
+      . $strip(file_get_contents(__DIR__ . '/../scripts/dupcrypt.php')) . "\n";
+  }
+
   protected static function parseKey($key, $prefix, $kind)
   {
     self::requireSodium();

@@ -1714,9 +1714,11 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $field->icon = 'key';
     $field->collapsed = Inputfield::collapsedYes;
     $field->showIf = 'encryptionEnabled=1';
+    $dupcryptUrl = wire('config')->urls->admin . 'setup/' . strtolower(self::DUP_APPLICATION_NAME) . '/?action=dupcrypt';
     $field->value =
-      "<p>" . __("Generate it on your own computer (PHP 7.2+), not on this server, with the script that comes with the module:") . "</p>" .
-      "<p><code>php site/modules/Duplicator/scripts/dupcrypt.php keygen</code></p>" .
+      "<p>" . __("Generate it on your own computer (PHP 7.2+), not on this server, with the encryption tool of the module:") . "</p>" .
+      "<p><a class='ui-button ui-widget ui-corner-all ui-state-default' href='" . htmlspecialchars($dupcryptUrl, ENT_QUOTES, 'UTF-8') . "'><span class='ui-button-text'><i class='fa fa-download'></i> " . __("Download dupcrypt.php") . "</span></a></p>" .
+      "<p><code>php dupcrypt.php keygen</code></p>" .
       "<p>" . __("Paste the public key in the field above. Store the secret key somewhere safe, outside this server (a password manager): without it, encrypted packages cannot be restored.") . "</p>";
     $fs->append($field);
 

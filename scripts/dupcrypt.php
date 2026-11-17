@@ -22,7 +22,10 @@ if (PHP_SAPI !== 'cli') {
   exit;
 }
 
-require_once __DIR__ . '/../Classes/DupCrypto.php';
+// the downloadable version of this script (DupCrypto::standaloneScript) already contains the class
+if (!class_exists(__NAMESPACE__ . '\DupCrypto', false)) {
+  require_once __DIR__ . '/../Classes/DupCrypto.php';
+}
 
 function usage()
 {

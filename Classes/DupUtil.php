@@ -85,7 +85,8 @@ class DUP_Util
     $error_message = __("- removing %1s from %2s failed!");
     $keep = DUP_Util::keep($path, $size, $deadline);
     foreach (new \DirectoryIterator($path) as $backup) {
-      if ($backup->getExtension() != 'zip' && $backup->getExtension() != 'json') continue;
+      // only packages: the folder can be a custom path that holds other .zip or .json files
+      if (substr($backup->getFilename(), -strlen('.' . Duplicator::DUP_PACKAGE_EXTENSION)) !== '.' . Duplicator::DUP_PACKAGE_EXTENSION) continue;
       $backup = $backup->getFilename();
       if (in_array($backup, $keep)) continue;
       if (DUP_Util::deleteFile($path . DIRECTORY_SEPARATOR . $backup)) {
@@ -181,14 +182,14 @@ class DUP_Util
   {
     //$ext = '.' . $extension;
     if (!empty($path) && is_dir($path)) {
-      $files = scandir($path);
-      if (!count($files)) return 0;
-      $n = 0;
-      foreach ($files as $file) {
-        if (strrchr($file, $extension) == false) continue;
-        $n++;
+      // only the packages: callers use this list to allow a download or a deletion
+      $packages = array();
+      foreach (scandir($path) as $file) {
+        if (substr($file, -strlen($extension)) !== $extension) continue;
+        if (!is_file($path . DIRECTORY_SEPARATOR . $file)) continue;
+        $packages[] = $file;
       }
-      return $files;
+      return $packages;
     }
 
     return 0;

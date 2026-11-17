@@ -22,6 +22,8 @@ OUTPUT="${CACHEPATH}${FILE}"
 # (3) Do the mysql database backup (dump)
 #  - to log errors of the dump process to a file, add --log-error=mysqldump_dup_error.log
 # (a) Use this command for a remote database. Add other options if need be.
-# mysqldump --opt --protocol=TCP --user=${USER} --password=${PASS} --host=${DBSERVER} --port=${PORT} ${DATABASE} > ${OUTPUT}
+#  - the password is given through MYSQL_PWD, so it does not show in the process list (ps)
+export MYSQL_PWD="${PASS}"
+# mysqldump --opt --protocol=TCP --user="${USER}" --host="${DBSERVER}" --port="${PORT}" "${DATABASE}" > "${OUTPUT}"
 # (b) Use this command for a database server on localhost. Add other options if need be.
-mysqldump --routines --triggers --single-transaction --user=${USER} --password=${PASS} --databases ${DATABASE} > ${OUTPUT}
+mysqldump --routines --triggers --single-transaction --user="${USER}" --databases "${DATABASE}" > "${OUTPUT}"

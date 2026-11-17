@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Api, Bootstrap, State } from './api';
 import { Icon } from './icons';
 import { ToastProvider } from './ui';
@@ -13,33 +13,7 @@ function readRoute(): Route {
   return hash === 'settings' || hash === 'log' ? hash : 'packages';
 }
 
-/** Follow the admin theme (light or dark) from its actual background colour */
-function useAdminTheme(ref: React.RefObject<HTMLDivElement | null>) {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  useLayoutEffect(() => {
-    const detect = () => {
-      let el: HTMLElement | null = ref.current?.parentElement ?? document.body;
-      let color = 'rgba(0, 0, 0, 0)';
-      while (el) {
-        color = getComputedStyle(el).backgroundColor;
-        if (!/rgba\(.*,\s*0\)$/.test(color) && color !== 'transparent') break;
-        el = el.parentElement;
-      }
-      const [r, g, b] = (color.match(/[\d.]+/g) ?? ['255', '255', '255']).map(Number);
-      setTheme(0.2126 * r + 0.7152 * g + 0.0722 * b < 128 ? 'dark' : 'light');
-    };
-    detect();
-    const observer = new MutationObserver(detect);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-theme'] });
-    return () => observer.disconnect();
-  }, [ref]);
-  return theme;
-}
-
 export function App({ boot, api }: { boot: Bootstrap; api: Api }) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const theme = useAdminTheme(rootRef);
   const [route, setRoute] = useState<Route>(readRoute);
   const [state, setState] = useState<State | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -70,7 +44,7 @@ export function App({ boot, api }: { boot: Bootstrap; api: Api }) {
   ];
 
   return (
-    <div ref={rootRef} className="dpa-app" data-theme={theme}>
+    <div className="dpa-app">
       <ToastProvider>
         <header className="dpa-header">
           <div className="dpa-brand">

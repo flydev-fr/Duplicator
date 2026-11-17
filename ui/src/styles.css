@@ -1,42 +1,36 @@
 /* Duplicator admin app. Everything is scoped under .dpa-app so the admin theme is left alone. */
 
+/*
+ * Colours come from the admin theme (AdminThemeUikit exposes them as --pw-* variables, which switch
+ * between light and dark on their own): the app follows the user's theme, main colour and dark mode.
+ * The fallbacks are for admin themes without these variables.
+ */
 .dpa-app {
-  --dpa-bg: transparent;
-  --dpa-surface: #ffffff;
-  --dpa-subtle: #f7f7f8;
-  --dpa-text: #1d1f24;
-  --dpa-muted: #6b7079;
-  --dpa-faint: #9a9fa8;
-  --dpa-line: #e6e7ea;
-  --dpa-track: #cfd2d7;
-  --dpa-accent: #c2185b;
+  --dpa-surface: var(--pw-blocks-background, #ffffff);
+  --dpa-subtle: var(--pw-inputs-background, #f8f8f8);
+  --dpa-field: var(--pw-inputs-background, #f8f8f8);
+  --dpa-text: var(--pw-text-color, #111111);
+  --dpa-muted: var(--pw-muted-color, rgba(0, 0, 0, 0.55));
+  --dpa-faint: color-mix(in srgb, var(--dpa-muted) 70%, transparent);
+  --dpa-line: var(--pw-border-color, rgba(0, 0, 0, 0.16));
+  --dpa-track: var(--pw-button-muted-background, #737373);
+  --dpa-accent: var(--pw-main-color, #eb1d61);
   --dpa-accent-text: #ffffff;
-  --dpa-accent-soft: rgba(194, 24, 91, 0.08);
-  --dpa-ok: #2f7d4f;
-  --dpa-warn: #a8640a;
-  --dpa-err: #b42318;
-  --dpa-radius: 0; /* ProcessWire uses square fields, cards and menus */
+  --dpa-accent-soft: color-mix(in srgb, var(--dpa-accent) 12%, transparent);
+  --dpa-button: var(--pw-button-background, #111111);
+  --dpa-button-hover: var(--pw-button-hover-background, var(--dpa-accent));
+  --dpa-button-hover-text: var(--pw-button-hover-color, #ffffff);
+  --dpa-ok: light-dark(#13855e, #4cc79a);
+  --dpa-warn: light-dark(#a8640a, #f0a742);
+  --dpa-err: var(--pw-error-inline-text-color, #cd0a0a);
+  --dpa-radius: var(--pw-input-radius, 0);
+  --dpa-button-radius: var(--pw-button-radius, 99999px);
   --dpa-control: 38px; /* height of buttons and single-line fields, so they line up */
 
   color: var(--dpa-text);
   font: 400 14px/1.55 system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   padding-bottom: 5rem;
-}
-.dpa-app[data-theme='dark'] {
-  --dpa-surface: #1a1c20;
-  --dpa-subtle: #202328;
-  --dpa-text: #e8e9ec;
-  --dpa-muted: #9aa0aa;
-  --dpa-faint: #6d727b;
-  --dpa-line: #2e3238;
-  --dpa-track: #454a52;
-  --dpa-accent: #ee6aa3;
-  --dpa-accent-text: #1a0610;
-  --dpa-accent-soft: rgba(238, 106, 163, 0.12);
-  --dpa-ok: #6cc28f;
-  --dpa-warn: #e2a64e;
-  --dpa-err: #f08a7e;
 }
 .dpa-app *, .dpa-app *::before, .dpa-app *::after { box-sizing: border-box; }
 .dpa-app h2 { margin: 0 0 0.25rem; font-size: 1.25rem; font-weight: 600; letter-spacing: -0.015em; line-height: 1.3; color: var(--dpa-text); }
@@ -71,18 +65,19 @@
 .dpa-app .dpa-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
   height: var(--dpa-control); margin: 0; padding: 0 0.95rem; font: inherit; font-size: 0.86rem; font-weight: 500; line-height: 1;
-  border: 1px solid var(--dpa-line); border-radius: 999px; background: var(--dpa-surface); color: var(--dpa-text);
-  cursor: pointer; transition: border-color 0.15s, background-color 0.15s, opacity 0.15s;
+  border: 1px solid var(--dpa-line); border-radius: var(--dpa-button-radius); background: var(--dpa-surface); color: var(--dpa-text);
+  cursor: pointer; transition: border-color 0.15s, background-color 0.15s, color 0.15s, opacity 0.15s;
 }
-.dpa-app .dpa-btn:hover:not(:disabled) { border-color: var(--dpa-faint); }
+.dpa-app .dpa-btn:hover:not(:disabled) { border-color: var(--dpa-muted); }
 .dpa-app .dpa-btn:focus-visible, .dpa-icon-btn:focus-visible, .dpa-tab:focus-visible, .dpa-settings-link:focus-visible { outline: 2px solid var(--dpa-accent); outline-offset: 2px; }
 .dpa-app .dpa-btn:disabled { opacity: 0.55; cursor: default; }
-.dpa-app .dpa-btn-primary { background: var(--dpa-accent); border-color: var(--dpa-accent); color: var(--dpa-accent-text); }
-.dpa-app .dpa-btn-primary:hover:not(:disabled) { border-color: var(--dpa-accent); opacity: 0.9; }
+/* the main button is styled like ProcessWire's own buttons */
+.dpa-app .dpa-btn-primary { background: var(--dpa-button); border-color: transparent; color: #ffffff; }
+.dpa-app .dpa-btn-primary:hover:not(:disabled) { background: var(--dpa-button-hover); border-color: transparent; color: var(--dpa-button-hover-text); }
 .dpa-app .dpa-btn-ghost { background: transparent; border-color: transparent; color: var(--dpa-muted); }
 .dpa-app .dpa-btn-ghost:hover:not(:disabled) { color: var(--dpa-text); border-color: var(--dpa-line); }
-.dpa-app .dpa-btn-danger { background: var(--dpa-err); border-color: var(--dpa-err); color: #fff; }
-.dpa-app[data-theme="dark"] .dpa-btn-danger { color: #1b0805; }
+.dpa-app .dpa-btn-danger { background: var(--dpa-accent); border-color: transparent; color: #ffffff; }
+.dpa-app .dpa-btn-danger:hover:not(:disabled) { opacity: 0.9; }
 .dpa-icon-btn {
   display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0;
   border: 1px solid transparent; border-radius: 0; background: none; color: var(--dpa-muted); cursor: pointer; text-decoration: none;
@@ -177,7 +172,7 @@
 /* fields */
 .dpa-app input[type='text'], .dpa-app input[type='password'], .dpa-app input[type='email'], .dpa-app input[type='number'], .dpa-app input[type='search'], .dpa-app select, .dpa-app textarea {
   width: 100%; max-width: 100%; margin: 0; padding: 0 0.7rem;
-  font: inherit; font-size: 0.88rem; color: var(--dpa-text); background: var(--dpa-surface);
+  font: inherit; font-size: 0.88rem; color: var(--dpa-text); background: var(--dpa-field);
   border: 1px solid var(--dpa-line); border-radius: 0; box-shadow: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }

@@ -91,6 +91,12 @@ class Installer
 
     $this->renderHead();
 
+    // every step needs the installer key, see checkAccess()
+    if (!$this->checkAccess()) {
+      $this->renderFooter();
+      return;
+    }
+
     if (isset($_POST['step'])) switch ($_POST['step']) {
 
       case 0:
@@ -113,7 +119,9 @@ class Installer
         $this->dbSaveConfig();
         break;
 
-        //case 5: $this->AdjustConfigPhp(); break;
+      case 5:
+        $this->cleanup();
+        break;
 
       default:
         $this->welcome();
@@ -124,6 +132,115 @@ class Installer
     $this->renderFooter();
   }
 
+
+  /**
+   * File next to the installer that holds the installer key
+   *
+   * It is a PHP file that exits at once, so requesting it over HTTP shows nothing:
+   * only someone with access to the server files (FTP, file manager) can read the key.
+   */
+  const ACCESS_KEY_FILE = 'installer-key.php';
+
+  /**
+   * First line of the temporary .htaccess written by makeTempHtaccess()
+   */
+  const TEMP_HTACCESS_MARK = '# Temporary file created by the Duplicator installer';
+
+  /**
+   * Only let through someone who can read the installer key from the server files
+   *
+   * The installer writes a site's config.php and imports a database, so it must not be
+   * usable by anyone who reaches it over HTTP while it sits on the server.
+   *
+   * @return bool True if this session has given the right key
+   *
+   */
+  protected function checkAccess()
+  {
+    $keyFile = __DIR__ . DIRECTORY_SEPARATOR . self::ACCESS_KEY_FILE;
+    $key = $this->readAccessKey($keyFile);
+    if ($key === null) {
+      $key = bin2hex(random_bytes(16));
+      $content = "<?php exit; // Duplicator installer key: $key\n";
+      $fp = @fopen($keyFile, 'x');
+      if (!$fp || fwrite($fp, $content) !== strlen($content)) {
+        if ($fp) fclose($fp);
+        $this->err("The installer could not create " . self::ACCESS_KEY_FILE . " next to installer.php. Please make this folder writable and reload the page.");
+        return false;
+      }
+      fclose($fp);
+      @chmod($keyFile, 0600);
+      // read it back, in case another request created it at the same time
+      $key = $this->readAccessKey($keyFile);
+      if ($key === null) return false;
+    }
+
+    $expected = hash('sha256', $key);
+    if (isset($_SESSION['dupInstallerKey']) && is_string($_SESSION['dupInstallerKey']) && hash_equals($expected, $_SESSION['dupInstallerKey'])) {
+      return true;
+    }
+
+    $this->h("Installer key");
+    if (isset($_POST['installerKey'])) {
+      if (hash_equals($key, trim((string) $_POST['installerKey']))) {
+        session_regenerate_id(true);
+        $_SESSION['dupInstallerKey'] = $expected;
+        unset($_POST['step']);
+        return true;
+      }
+      $this->err("This key is not correct.");
+    }
+    $this->p("For your security, the installer needs its key before going further. It was written to the file <strong>" . self::ACCESS_KEY_FILE . "</strong>, next to installer.php. Open this file with FTP or your hosting file manager, and copy the key from it.");
+    echo "\n<div class='fields'><label class='field wide'><span>Installer key</span><input type='password' name='installerKey' value='' autocomplete='off' required='required' /></label></div>";
+    echo "\n<button type='submit' class='btn'>Unlock " . $this->icon('start') . "</button>";
+    return false;
+  }
+
+  /**
+   * @param string $keyFile
+   * @return string|null The key, or null if the file does not exist
+   *
+   */
+  protected function readAccessKey($keyFile)
+  {
+    if (!is_file($keyFile)) return null;
+    if (!preg_match('/installer key: ([0-9a-f]{32})/', (string) file_get_contents($keyFile), $m)) {
+      // damaged file: start again with a new key
+      @unlink($keyFile);
+      return null;
+    }
+    return $m[1];
+  }
+
+  /**
+   * Last step: remove the installer, its key, the package and the extracted database dump
+   *
+   */
+  protected function cleanup()
+  {
+    $this->h("Cleanup");
+    $dir = __DIR__;
+    $files = array();
+    foreach (scandir($dir) as $entry) {
+      if (preg_match('/\.(package|package2|sql)\.zip$/', $entry)) $files[] = $dir . DIRECTORY_SEPARATOR . $entry;
+    }
+    $temp = $dir . DIRECTORY_SEPARATOR . self::DUP_TEMP_FOLDER;
+    if (is_dir($temp)) {
+      foreach (scandir($temp) as $entry) {
+        if ($entry !== '.' && $entry !== '..' && is_file($temp . DIRECTORY_SEPARATOR . $entry)) $files[] = $temp . DIRECTORY_SEPARATOR . $entry;
+      }
+    }
+    $files[] = $dir . DIRECTORY_SEPARATOR . self::ACCESS_KEY_FILE;
+    $files[] = __FILE__;
+    foreach ($files as $file) {
+      if (!file_exists($file)) continue;
+      if (@unlink($file)) $this->ok("Removed " . htmlspecialchars(basename($file), ENT_QUOTES, 'UTF-8'));
+      else $this->err("Could not remove " . htmlspecialchars($file, ENT_QUOTES, 'UTF-8') . ", please delete it yourself.");
+    }
+    if (is_dir($temp) && @rmdir($temp)) $this->ok("Removed " . self::DUP_TEMP_FOLDER);
+    unset($_SESSION['dupInstallerKey']);
+    $this->info("Done. The installer is no longer on this server.");
+  }
 
   /**
    * Welcome/Intro screen
@@ -171,6 +288,7 @@ class Installer
       'info' => '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/>',
       'globe' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3.5 3 14.5 0 18"/><path d="M12 3c-3 3.5-3 14.5 0 18"/>',
       'help' => '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1 1-1.1 1.8v.5"/><path d="M12 17.5v.01"/>',
+      'trash' => '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>',
       'start' => '<path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/>',
     );
     // names used by older calls (Font Awesome)
@@ -603,7 +721,9 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
                         SetEnv HTTP_MOD_REWRITE On\n
                       </IfModule>\n
                     </IfModule>";
-    file_put_contents('.htaccess', $txt);
+    // never overwrite the .htaccess of an existing site
+    if (file_exists('.htaccess')) return;
+    file_put_contents('.htaccess', self::TEMP_HTACCESS_MARK . "\n" . $txt);
   }
 
 
@@ -626,8 +746,8 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
       'wire',
       'site'
     );
-    // remove previously generated .htaccess
-    if (file_exists('.htaccess'))
+    // remove the .htaccess generated by makeTempHtaccess(), and only that one
+    if (is_file('.htaccess') && strpos((string) file_get_contents('.htaccess'), self::TEMP_HTACCESS_MARK) === 0)
       unlink('.htaccess');
 
     if ($handle = opendir('.')) {
@@ -843,7 +963,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
    * @param array $values
    *
    */
-  protected function makeDatabase()
+  protected function makeDatabase(array $values = array())
   {
 
     $this->h("Step #4 - Database Setup");
@@ -913,19 +1033,22 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
     // db configuration
     $fields = array('dbUser', 'dbName', 'dbPass', 'dbHost', 'dbPort', 'dbEngine', 'dbCharset');
 
+    // raw values: they are escaped where they are used (configValue() for config.php)
     foreach ($fields as $field) {
-      $value = addslashes($_POST[$field]);
-      $value = substr($value, 0, 255);
-      if (strpos($value, "'") !== false) $value = str_replace("'", "\\" . "'", $value); // allow for single quotes (i.e. dbPass)
-      $values[$field] = trim($value);
+      $value = isset($_POST[$field]) && is_string($_POST[$field]) ? substr($_POST[$field], 0, 255) : '';
+      $values[$field] = $field === 'dbPass' ? $value : trim($value);
     }
     $values['dbCharset'] = ($values['dbCharset'] === 'utf8mb4' ? 'utf8mb4' : 'utf8');
     $values['dbEngine'] = ($values['dbEngine'] === 'InnoDB' ? 'InnoDB' : 'MyISAM');
-    // if(!ctype_alnum($values['dbCharset'])) $values['dbCharset'] = 'utf8';
 
     if (!$values['dbUser'] || !$values['dbName'] || !$values['dbPort']) {
-
       $this->err("Missing database configuration fields");
+    } else if (!preg_match('/^[-_a-zA-Z0-9]+$/', $values['dbName'])) {
+      $this->err("The database name can only contain a-z, A-Z, 0-9, - and _");
+    } else if (!$this->isValidHost($values['dbHost'])) {
+      $this->err("The database host must be a host name or an IP address");
+    } else if (!ctype_digit($values['dbPort']) || (int) $values['dbPort'] > 65535) {
+      $this->err("The database port must be a number");
     } else {
       error_reporting(0);
 
@@ -944,18 +1067,17 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
           $database = $this->dbCreateDatabase($dsn, $values, $driver_options);
         } else {
           $this->err("Database connection information did not work.");
-          $this->err($e->getMessage());
+          $this->err(htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
           if (strtolower($values['dbHost']) === 'localhost') {
             // with 'localhost', PHP connects through the MySQL Unix socket instead of TCP
             $this->warn("With DB Host 'localhost', PHP uses the MySQL socket. If MySQL only listens on TCP (e.g. MAMP), try '127.0.0.1'.");
           }
-          $this->btn("Check Again", 3, 'refresh', false, true);
         }
       }
     }
 
     if ($this->numErrors || !$database) {
-      $this->dbConfig($values);
+      $this->makeDatabase($values);
       return;
     }
 
@@ -987,42 +1109,50 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
     } else {
       $lines = file($configphp, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
+      // each setting line is rewritten whole, with values exported as PHP strings (never pasted as is)
+      $settings = array(
+        'dbHost' => $values['dbHost'],
+        'dbName' => $values['dbName'],
+        'dbUser' => $values['dbUser'],
+        'dbPass' => $values['dbPass'],
+        'dbPort' => $values['dbPort'],
+      );
+      $httpHost = isset($_SERVER['HTTP_HOST']) ? strtolower($_SERVER['HTTP_HOST']) : '';
+      if (!$this->isValidHost($httpHost)) {
+        $this->warn("The current host name is not valid, \$config->httpHosts was not changed. Please check it in site/config.php.");
+        $httpHost = null;
+      }
+
       $content = '';
       foreach ($lines as $line) {
-        if (strpos($line, '$config->dbHost') === 0) {
-          $value = preg_replace("/'[^']*'/", "'{$values['dbHost']}'", $line);
-          $content .= $value . "\n";
-        } elseif (strpos($line, '$config->dbName') === 0) {
-          //preg_match("/'[^']*'/", $line, $output_array);
-          $value = preg_replace("/'[^']*'/", "'{$values['dbName']}'", $line);
-          $content .= $value . "\n";
-        } elseif (strpos($line, '$config->dbUser') === 0) {
-          //preg_match("/'[^']*'/", $line, $output_array);
-          $value = preg_replace("/'[^']*'/", "'{$values['dbUser']}'", $line);
-          $content .= $value . "\n";
-        } elseif (strpos($line, '$config->dbPass') === 0) {
-          //preg_match("/'[^']*'/", $line, $output_array);
-          $value = preg_replace("/'[^']*'/", "'{$values['dbPass']}'", $line);
-          $content .= $value . "\n";
-        } elseif (strpos($line, '$config->dbPort') === 0) {
-          //preg_match("/'[^']*'/", $line, $output_array);
-          $value = preg_replace("/'[^']*'/", "'{$values['dbPort']}'", $line);
-          $content .= $value . "\n";
-        } elseif (strpos($line, '$config->httpHosts') === 0) {
-          //preg_match("/'[^']*'/", $line, $output_array);
-          $value = preg_replace("/'[^']*'/", "'{$_SERVER['HTTP_HOST']}'", $line);
-          $content .= $value . "\n";
+        $name = preg_match('/^\$config->(\w+)\s*=/', $line, $m) ? $m[1] : '';
+        if (isset($settings[$name])) {
+          $content .= '$config->' . $name . ' = ' . var_export((string) $settings[$name], true) . ";\n";
+        } elseif ($name === 'httpHosts' && $httpHost !== null) {
+          $content .= '$config->httpHosts = array(' . var_export($httpHost, true) . ");\n";
         } else {
           $content .= $line . "\n";
         }
       }
       file_put_contents($configphp, $content);
-      $this->ok("Config.php updated: $configphp.");
+      $this->ok("Config.php updated: " . htmlspecialchars($configphp, ENT_QUOTES, 'UTF-8') . ".");
       // bootstrap pw :  get the wire() var in order to get the backend url
       include_once('./index.php');
       $backendUrl = $wire->config->urls->admin;
       $this->btn("Go to Admin Page", 1, 'globe', false, true, $backendUrl);
+      $this->p("When the site works, remove the installer files: anyone who gets the installer key could run it again.");
+      $this->btn("Remove installer, package and database dump", 5, 'trash', true);
     }
+  }
+
+  /**
+   * @param string $host Host name, IPv4 or [IPv6] address, with an optional :port
+   * @return bool
+   *
+   */
+  protected function isValidHost($host)
+  {
+    return is_string($host) && preg_match('/^([a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*|\[[0-9a-f:.]+\])(:\d{1,5})?$/i', $host) === 1;
   }
 
   function isWinOS()

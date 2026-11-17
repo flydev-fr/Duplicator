@@ -125,35 +125,45 @@ class DUP_Util
     return $res;
   }
 
+  /**
+   * Logs whose package is gone: the "<package>.log" files in $path with no package beside them
+   *
+   * Only files named like a package log count. The folder can hold other files and folders
+   * (it is site/assets/backups by default, which ProcessWire uses too): they are left alone.
+   *
+   * @param string $path
+   * @param string $extension Package extension, without a leading dot
+   * @return array File names, without their path
+   */
+  public static function orphanedLogFiles($path, $extension)
+  {
+    $orphaned = array();
+    if (empty($path) || !is_dir($path)) return $orphaned;
+    $packages = self::getPackages($path, $extension);
+    $suffix = '.' . $extension . '.log';
+    foreach (scandir($path) as $log) {
+      if (substr($log, -strlen($suffix)) !== $suffix) continue;
+      if (!is_file($path . DIRECTORY_SEPARATOR . $log)) continue;
+      $package = substr($log, 0, -strlen('.log'));
+      if (!in_array($package, $packages, true)) $orphaned[] = $log;
+    }
+    return $orphaned;
+  }
+
   public static function cleanOrphanedLogFiles($path)
   {
     // number of files cleaned
     $n = 0;
-    // array of package(s)
-    $packages = self::getPackages($path, Duplicator::DUP_PACKAGE_EXTENSION);
-    // array of log file(s)
-    $logs = scandir($path);
-    if (!count($logs)) return 0;
     $error_message = __("- removing %1s from %2s failed!");
     $success_message = __("- removed orphaned log %1s from %2s");
-    $extension = Duplicator::DUP_PACKAGE_EXTENSION . '.log';
-    foreach ($logs as $log) {
-      if (empty($log) || is_dir($log)) continue;
-      if (strrchr($log, $extension) == false) continue;
-      $package = str_replace('.log', '', $log);
-      if (in_array($package, $packages, true)) {
-        // package found, do not clean the log file
-        continue;
+    foreach (self::orphanedLogFiles($path, Duplicator::DUP_PACKAGE_EXTENSION) as $log) {
+      $logfile = $path . DIRECTORY_SEPARATOR . $log;
+      if (self::deleteFile($logfile)) {
+        $n++;
+        DUP_Logs::log(sprintf($success_message, $log, $path));
       } else {
-        // orphaned log file, delete it
-        $logfile = $path . DIRECTORY_SEPARATOR . $log;
-        if (self::deleteFile($logfile)) {
-          $n++;
-          DUP_Logs::log(sprintf($success_message, $log, $path));
-        } else {
-          DUP_Logs::log(sprintf($error_message, $log, $path));
-          return -1;
-        }
+        DUP_Logs::log(sprintf($error_message, $log, $path));
+        return -1;
       }
     }
 

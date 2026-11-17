@@ -1,3 +1,14 @@
+## [1.6.1](https://github.com/flydev-fr/Duplicator/compare/v1.6.0...v1.6.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* Extract large packages in batches in the installer ([ea4d1c5](https://github.com/flydev-fr/Duplicator/commit/ea4d1c503d5641306b5a980a5bc7e348166ac1b2))
+* Never save a package without its database dump ([e48f19c](https://github.com/flydev-fr/Duplicator/commit/e48f19ccf05f465a3f21986e70f8f1e69e551e96))
+* Package symbolic links safely and leave tool files out ([f089cdb](https://github.com/flydev-fr/Duplicator/commit/f089cdb91d2b975d324ec2139e264c0072acc3c0))
+
+
+
 # [1.6.0](https://github.com/flydev-fr/Duplicator/compare/v1.5.5...v1.6.0) (2026-11-17)
 
 
@@ -47,19 +58,6 @@
 ### Bug Fixes
 
 * Avoid error when first configuring S3 backups [#49](https://github.com/flydev-fr/Duplicator/issues/49) ([d338fc2](https://github.com/flydev-fr/Duplicator/commit/d338fc2e53778de595c7d99d23c71b2c4c7c1b35))
-
-
-
-## [1.5.2](https://github.com/flydev-fr/Duplicator/compare/v1.5.1...v1.5.2) (2023-11-01)
-
-
-### Bug Fixes
-
-* `set_time_limit` is called only when web cron is used ([4fe8e2b](https://github.com/flydev-fr/Duplicator/commit/4fe8e2babadf42ac08d8dadcd032436b51b3c4d7))
-* Added missing variable `PORT` and placeholder in shell scripts ([19dd37e](https://github.com/flydev-fr/Duplicator/commit/19dd37e51cd6fc466237d1858afe40758ed7c8dc))
-* Check if timestamp is not false ([c338f15](https://github.com/flydev-fr/Duplicator/commit/c338f15424d22806d982e0ce2c55e5fc84910383))
-* class "DUP_Logs" not found ([67b90c7](https://github.com/flydev-fr/Duplicator/commit/67b90c7e87fda7ada27b9c24e890a46beafed38e))
-* Remove AWS3 subfolder name from returned filename ([073ca0a](https://github.com/flydev-fr/Duplicator/commit/073ca0af46ddcf9f35e1eff597892ace3f7da200))
 
 
 

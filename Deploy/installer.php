@@ -220,7 +220,7 @@ class Installer
   --ok: #2f7d4f;
   --warn: #a8640a;
   --err: #b42318;
-  --radius: 12px;
+  --radius: 0; /* square like ProcessWire */
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -250,7 +250,7 @@ body {
 a { color: inherit; text-decoration-color: var(--faint); text-underline-offset: 3px; }
 a:hover { color: var(--accent); text-decoration-color: currentColor; }
 strong { font-weight: 600; }
-code { font: 0.9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 0.05em 0.3em; border: 1px solid var(--line); border-radius: 4px; }
+code { font: 0.9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 0.05em 0.3em; border: 1px solid var(--line); border-radius: 0; }
 .icon { width: 1em; height: 1em; flex: none; vertical-align: -0.125em; }
 .wrap { max-width: 680px; margin: 0 auto; padding: 0 16px; }
 
@@ -264,7 +264,7 @@ code { font: 0.9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; pad
 
 .steps { display: flex; gap: 6px; list-style: none; margin: 0 0 1.25rem; padding: 0; }
 .step { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); }
-.step::before { content: ''; height: 2px; border-radius: 1px; background: var(--line); }
+.step::before { content: ''; height: 2px; border-radius: 0; background: var(--line); }
 .step.done { color: var(--muted); }
 .step.done::before { background: var(--text); opacity: 0.35; }
 .step.current { color: var(--text); }
@@ -301,9 +301,14 @@ input[type=text], input[type=password], input[type=email], input[type=number], s
   color: var(--text);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0.55rem 0.7rem;
+  border-radius: 0;
+  height: 38px;
+  padding: 0 0.7rem;
   transition: border-color 0.15s, box-shadow 0.15s;
+}
+select {
+  -webkit-appearance: none; appearance: none; padding-right: 2rem;
+  background: var(--surface) url('data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%239a9fa8%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27><path d=%27M6 9l6 6 6-6%27/></svg>') no-repeat right 0.6rem center / 14px;
 }
 input:hover, select:hover { border-color: var(--faint); }
 input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
@@ -311,10 +316,10 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 
 .btn {
   display: inline-flex; align-items: center; gap: 0.5rem;
-  margin: 1.25rem 0.5rem 0 0; padding: 0.6rem 1.05rem;
+  height: 38px; margin: 1.25rem 0.5rem 0 0; padding: 0 1.1rem;
   font: inherit; font-size: 0.88rem; font-weight: 500; text-decoration: none;
   color: var(--accent-text); background: var(--accent);
-  border: 1px solid var(--accent); border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--accent); border-radius: 999px; cursor: pointer;
   transition: opacity 0.15s, background-color 0.15s, border-color 0.15s;
 }
 .btn:hover { color: var(--accent-text); opacity: 0.9; }

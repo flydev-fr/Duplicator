@@ -56,6 +56,19 @@ Now you can refresh the Duplicator's settings page, the corresponding checkbox w
 
 # Duplicator Features
 
+## Admin app
+**Setup > Duplicator** lists the packages of every storage, builds a package on demand, shows the log, and holds the settings (superuser only). The classic settings page (Modules > Configure > Duplicator) still works.
+
+Secrets (FTP password, Dropbox token and app secret, Google key file, AWS secret key) are never sent to the browser: leave such a field empty to keep the saved value.
+
+The app is built from `ui/` (Vite, React, TypeScript) into `Assets/app/`, which is committed: installing the module needs no build. To change it:
+```
+cd ui
+npm ci
+npm run build
+```
+Then commit `Assets/app/` with your change. The CI checks that it matches the sources.
+
 ## Backend Permission
 Permission set is `duplicator`. User with this permission can initiate a backup, download or sync a package. The module's settings is only accessible to `superuser`.
 

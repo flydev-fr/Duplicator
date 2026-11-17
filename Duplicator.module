@@ -155,6 +155,14 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     );
   }
 
+  /**
+   * @return array Default value of every setting (used by the admin app)
+   */
+  public static function getDefaultSettings()
+  {
+    return self::getDefaultData();
+  }
+
   protected static function getDefaultData()
   {
     return array(
@@ -1340,6 +1348,11 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $skip = false;
 
     $fields = new InputfieldWrapper();
+
+    // the same settings, in the admin app
+    $field = $modules->get("InputfieldMarkup");
+    $field->markupText = "<p id='dup-app-link'><a href='" . $config->urls->admin . "setup/" . strtolower(self::DUP_APPLICATION_NAME) . "/#/settings'>" . __("Open these settings in Setup > Duplicator") . "</a></p>";
+    $fields->add($field);
 
     // propaganda
     $modinfo = json_decode(file_get_contents(__DIR__ . "/package.json"));

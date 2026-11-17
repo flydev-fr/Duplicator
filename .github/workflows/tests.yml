@@ -23,3 +23,18 @@ jobs:
         run: find . -type f \( -name '*.php' -o -name '*.module' \) -not -path './.git/*' -print0 | xargs -0 -n1 php -l > /dev/null
       - name: Tests
         run: php tests/run.php
+
+  admin-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - name: Build
+        working-directory: ui
+        run: npm ci && npm run build
+      - name: Built files are committed
+        run: git diff --exit-code -- Assets/app || (echo "Assets/app is out of date: run 'npm run build' in ui/ and commit the result." && exit 1)

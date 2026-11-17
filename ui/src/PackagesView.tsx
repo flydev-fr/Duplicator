@@ -4,6 +4,14 @@ import { Icon, ServiceIcon } from './icons';
 import { Button, IconButton, useConfirm, useToast } from './ui';
 import { formatSize, fullDate, serviceLabel, timeAgo } from './util';
 
+const CYCLES: Record<string, string> = { everyHour: 'every hour', every6Hours: 'every 6 hours', everyDay: 'every day', every2Days: 'every 2 days', everyWeek: 'every week', every2Weeks: 'every 2 weeks', every4Weeks: 'every 4 weeks', logoutTrigger: 'on logout' };
+
+function scheduleLabel(schedule: State['schedule']): string {
+  if (schedule.mode === 'LazyCron') return `On site visits, ${CYCLES[schedule.cycle] ?? 'off'}`;
+  if (schedule.mode === 'PWCron') return 'PwCron module';
+  return 'Manual or server cron';
+}
+
 export function PackagesView({ boot, api, state, refresh }: { boot: Bootstrap; api: Api; state: State | null; refresh: () => Promise<void> }) {
   const toast = useToast();
   const { confirm, dialog } = useConfirm();
@@ -12,8 +20,8 @@ export function PackagesView({ boot, api, state, refresh }: { boot: Bootstrap; a
 
   if (!state) {
     return (
-      <div className="dup-loading">
-        <span className="dup-spinner" /> Loading packages…
+      <div className="dpa-loading">
+        <span className="dpa-spinner" /> Loading packages…
       </div>
     );
   }
@@ -67,18 +75,18 @@ export function PackagesView({ boot, api, state, refresh }: { boot: Bootstrap; a
   };
 
   const retention = [
-    state.retention.maxPackages ? `keeps ${state.retention.maxPackages}` : null,
-    state.retention.deadline && state.retention.deadline !== 'never' ? `removes after ${state.retention.deadline}` : null,
+    state.retention.maxPackages ? `Keeps the last ${state.retention.maxPackages}` : null,
+    state.retention.deadline && state.retention.deadline !== 'never' ? `deletes after ${state.retention.deadline}` : null,
   ].filter(Boolean).join(', ');
 
   return (
     <>
-      <section className="dup-summary">
-        <div className="dup-summary-main">
+      <section className="dpa-summary">
+        <div className="dpa-summary-main">
           <h2>Packages</h2>
-          <p className="dup-muted">A package holds the site files and its database. Restore it anywhere with the installer.</p>
+          <p className="dpa-muted">A package holds the site files and its database. Restore it anywhere with the installer.</p>
         </div>
-        <div className="dup-summary-actions">
+        <div className="dpa-summary-actions">
           {localCount > 0 && (
             <Button variant="ghost" icon="trash" onClick={removeAll} disabled={building}>
               Delete all local
@@ -90,22 +98,30 @@ export function PackagesView({ boot, api, state, refresh }: { boot: Bootstrap; a
         </div>
       </section>
 
-      {building && <div className="dup-progress" role="progressbar" aria-label="Building package" />}
+      {building && <div className="dpa-progress" role="progressbar" aria-label="Building package" />}
 
-      <dl className="dup-facts">
+      <dl className="dpa-facts">
         <div>
           <dt>Storage</dt>
-          <dd>{enabledStorages.length ? enabledStorages.map(serviceLabel).join(', ') : <span className="dup-warn-text">None selected</span>}</dd>
+          <dd>{enabledStorages.length ? enabledStorages.map(serviceLabel).join(', ') : <span className="dpa-warn-text">None selected</span>}</dd>
         </div>
         <div>
           <dt>Encryption</dt>
-          <dd className="dup-with-icon">
-            <Icon name={state.encryption ? 'lock' : 'unlock'} />
-            {state.encryption ? 'On' : 'Off'}
-            {state.encryption && (
-              <a className="dup-inline-link" href={`${boot.urls.self}?action=dupcrypt`}>
-                dupcrypt.php
+          <dd>
+            <span className={`dpa-status ${state.encryption ? 'is-on' : 'is-off'}`}>
+              <Icon name={state.encryption ? 'shield-check' : 'shield'} />
+              {state.encryption ? 'Packages encrypted' : 'Not encrypted'}
+            </span>
+            {state.encryption ? (
+              <a className="dpa-fact-link" href={`${boot.urls.self}?action=dupcrypt`}>
+                <Icon name="download" /> Download dupcrypt.php
               </a>
+            ) : (
+              boot.canEditSettings && (
+                <a className="dpa-fact-link" href="#/settings">
+                  Turn on
+                </a>
+              )
             )}
           </dd>
         </div>
@@ -115,34 +131,34 @@ export function PackagesView({ boot, api, state, refresh }: { boot: Bootstrap; a
         </div>
         <div>
           <dt>Schedule</dt>
-          <dd>{state.schedule.mode && state.schedule.mode !== 'none' ? `${state.schedule.mode}${state.schedule.cycle ? ' · ' + state.schedule.cycle : ''}` : 'Manual'}</dd>
+          <dd>{scheduleLabel(state.schedule)}</dd>
         </div>
       </dl>
 
       {state.errors.map((err) => (
-        <div key={err} className="dup-notice dup-notice-warn">
+        <div key={err} className="dpa-notice dpa-notice-warn">
           <Icon name="alert" />
           <span>{err}</span>
         </div>
       ))}
 
       {state.packages.length === 0 ? (
-        <div className="dup-empty">
+        <div className="dpa-empty">
           <Icon name="layers" />
           <p>No package yet.</p>
-          <p className="dup-muted">Build the first one with “Backup now”.</p>
+          <p className="dpa-muted">Build the first one with “Backup now”.</p>
         </div>
       ) : (
-        <div className="dup-table-wrap">
-          <table className="dup-table">
+        <div className="dpa-table-wrap">
+          <table className="dpa-table">
             <thead>
               <tr>
                 <th scope="col">Package</th>
                 <th scope="col">Storage</th>
                 <th scope="col">Created</th>
-                <th scope="col" className="dup-num">Size</th>
-                <th scope="col" className="dup-actions-col">
-                  <span className="dup-sr">Actions</span>
+                <th scope="col" className="dpa-num">Size</th>
+                <th scope="col" className="dpa-actions-col">
+                  <span className="dpa-sr">Actions</span>
                 </th>
               </tr>
             </thead>
@@ -153,28 +169,27 @@ export function PackagesView({ boot, api, state, refresh }: { boot: Bootstrap; a
                 return (
                   <tr key={key} className={busy ? 'is-busy' : undefined}>
                     <td>
-                      <div className="dup-name">
-                        <span className="dup-name-text" title={p.name}>
+                      <div className="dpa-name">
+                        <span className={`dpa-enc${p.encrypted ? ' is-on' : ''}`} title={p.encrypted ? 'Encrypted: restoring it needs the secret key' : p.encrypted === false ? 'Not encrypted' : undefined}>
+                          {p.encrypted ? <Icon name="shield-check" /> : null}
+                          <span className="dpa-sr">{p.encrypted ? 'Encrypted' : p.encrypted === false ? 'Not encrypted' : ''}</span>
+                        </span>
+                        <span className="dpa-name-text" title={p.name}>
                           {p.name}
                         </span>
-                        {p.encrypted && (
-                          <span className="dup-badge" title="Encrypted: restoring it needs the secret key">
-                            <Icon name="lock" /> Encrypted
-                          </span>
-                        )}
                       </div>
                     </td>
-                    <td className="dup-muted">
-                      <span className="dup-with-icon">
+                    <td className="dpa-muted">
+                      <span className="dpa-with-icon">
                         <ServiceIcon service={p.service} />
                         {serviceLabel(p.service)}
                       </span>
                     </td>
                     <td title={fullDate(p.time)}>{timeAgo(p.time)}</td>
-                    <td className="dup-num">{formatSize(p.size)}</td>
-                    <td className="dup-actions">
+                    <td className="dpa-num">{formatSize(p.size)}</td>
+                    <td className="dpa-actions">
                       {busy ? (
-                        <span className="dup-spinner" aria-label="Working" />
+                        <span className="dpa-spinner" aria-label="Working" />
                       ) : (
                         <>
                           {p.service === 'local' ? (

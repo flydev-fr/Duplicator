@@ -39,7 +39,7 @@ Installing all SDK are not required, you can choose the one you need.
 
 #### Note:
 - `Dropbox` dropped support for the version 1 of the API since september 2017 - [api-v1-deprecation-timeline](https://blogs.dropbox.com/developers/2017/06/updated-api-v1-deprecation-timeline/) - so I removed it from Duplicator until I got the time to code an interface for the API v2
-- `GoogleDrive` tested the 2023-03-20 `successfully` ✅
+- `GoogleDrive` tested the 2023-03-20 successfully
 - `AmazonS3` tested the 2017-12-03 `todo` ⏳
 
 ### Using Composer
@@ -184,7 +184,7 @@ Thanks to all the contributors for their help and support.
 
 # Special thanks
 - Duplicator's logo made by [@szabeszg](https://github.com/szabeszg)
-- The processwire community 💙
+- The ProcessWire community
 
 
 

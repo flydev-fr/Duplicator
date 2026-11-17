@@ -70,34 +70,34 @@ export function App({ boot, api }: { boot: Bootstrap; api: Api }) {
   ];
 
   return (
-    <div ref={rootRef} className="dup-app" data-theme={theme}>
+    <div ref={rootRef} className="dpa-app" data-theme={theme}>
       <ToastProvider>
-        <header className="dup-header">
-          <div className="dup-brand">
-            <img src={boot.urls.logo} alt="Duplicator" className="dup-logo" />
-            <span className="dup-version">v{boot.version}</span>
+        <header className="dpa-header">
+          <div className="dpa-brand">
+            <img src={boot.urls.logo} alt="Duplicator" className="dpa-logo" />
+            <span className="dpa-version">v{boot.version}</span>
           </div>
-          <nav className="dup-tabs" aria-label="Duplicator">
+          <nav className="dpa-tabs" aria-label="Duplicator">
             {tabs.map((t) => (
-              <a key={t.id} href={`#/${t.id === 'packages' ? '' : t.id}`} className={`dup-tab${route === t.id ? ' is-active' : ''}`} aria-current={route === t.id ? 'page' : undefined}>
+              <a key={t.id} href={`#/${t.id === 'packages' ? '' : t.id}`} className={`dpa-tab${route === t.id ? ' is-active' : ''}`} aria-current={route === t.id ? 'page' : undefined}>
                 <Icon name={t.icon} />
                 {t.label}
               </a>
             ))}
           </nav>
-          <a className="dup-help" href={boot.urls.support} target="_blank" rel="noopener noreferrer">
+          <a className="dpa-help" href={boot.urls.support} target="_blank" rel="noopener noreferrer">
             Support <Icon name="external" />
           </a>
         </header>
 
         {loadError && (
-          <div className="dup-notice dup-notice-error" role="alert">
+          <div className="dpa-notice dpa-notice-error" role="alert">
             <Icon name="alert" />
             <span>{loadError}</span>
           </div>
         )}
 
-        <main className="dup-main">
+        <main className="dpa-main">
           {route === 'packages' && <PackagesView boot={boot} api={api} state={state} refresh={refresh} />}
           {route === 'settings' && boot.canEditSettings && <SettingsView boot={boot} api={api} onSaved={refresh} />}
           {route === 'log' && <LogView state={state} refresh={refresh} />}

@@ -9,8 +9,8 @@ export function LogView({ state, refresh }: { state: State | null; refresh: () =
 
   if (!state) {
     return (
-      <div className="dup-loading">
-        <span className="dup-spinner" /> Loading log…
+      <div className="dpa-loading">
+        <span className="dpa-spinner" /> Loading log…
       </div>
     );
   }
@@ -20,15 +20,15 @@ export function LogView({ state, refresh }: { state: State | null; refresh: () =
 
   return (
     <>
-      <section className="dup-summary">
-        <div className="dup-summary-main">
+      <section className="dpa-summary">
+        <div className="dpa-summary-main">
           <h2>Log</h2>
-          <p className="dup-muted">Latest entries first.</p>
+          <p className="dpa-muted">Latest entries first.</p>
         </div>
-        <div className="dup-summary-actions">
-          <label className="dup-search">
+        <div className="dpa-summary-actions">
+          <label className="dpa-search">
             <Icon name="search" />
-            <span className="dup-sr">Filter the log</span>
+            <span className="dpa-sr">Filter the log</span>
             <input type="search" placeholder="Filter" value={filter} onChange={(e) => setFilter(e.target.value)} />
           </label>
           <Button icon="refresh" busy={loading} onClick={async () => { setLoading(true); await refresh(); setLoading(false); }}>
@@ -37,12 +37,12 @@ export function LogView({ state, refresh }: { state: State | null; refresh: () =
         </div>
       </section>
       {lines.length === 0 ? (
-        <div className="dup-empty">
+        <div className="dpa-empty">
           <Icon name="clock" />
           <p>{needle ? 'No entry matches this filter.' : 'The log is empty.'}</p>
         </div>
       ) : (
-        <ol className="dup-log">
+        <ol className="dpa-log">
           {lines.map((l, i) => (
             <li key={i} className={/error|failed|fail\b/i.test(l.text) ? 'is-error' : /warning/i.test(l.text) ? 'is-warn' : undefined}>
               <time>{l.date}</time>

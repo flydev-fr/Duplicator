@@ -11,15 +11,15 @@ export function Button({
   ...rest
 }: { variant?: Variant; icon?: string; busy?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button type="button" className={`dup-btn dup-btn-${variant}`} disabled={busy || rest.disabled} aria-busy={busy || undefined} {...rest}>
-      {busy ? <span className="dup-spinner" aria-hidden="true" /> : icon ? <Icon name={icon} /> : null}
+    <button type="button" className={`dpa-btn dpa-btn-${variant}`} disabled={busy || rest.disabled} aria-busy={busy || undefined} {...rest}>
+      {busy ? <span className="dpa-spinner" aria-hidden="true" /> : icon ? <Icon name={icon} /> : null}
       {children}
     </button>
   );
 }
 
 export function IconButton({ icon, label, href, onClick, tone }: { icon: string; label: string; href?: string; onClick?: () => void; tone?: 'danger' }) {
-  const className = `dup-icon-btn${tone ? ' dup-icon-btn-' + tone : ''}`;
+  const className = `dpa-icon-btn${tone ? ' dpa-icon-btn-' + tone : ''}`;
   if (href) {
     return (
       <a className={className} href={href} title={label} aria-label={label}>
@@ -30,6 +30,24 @@ export function IconButton({ icon, label, href, onClick, tone }: { icon: string;
   return (
     <button type="button" className={className} onClick={onClick} title={label} aria-label={label}>
       <Icon name={icon} />
+    </button>
+  );
+}
+
+export function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard not allowed (http): the text stays selectable
+    }
+  };
+  return (
+    <button type="button" className="dpa-copy" onClick={copy} aria-label={copied ? 'Copied' : 'Copy'} title={copied ? 'Copied' : 'Copy'}>
+      <Icon name={copied ? 'check' : 'copy'} />
     </button>
   );
 }
@@ -55,10 +73,10 @@ export function useConfirm() {
   };
 
   const dialog = request ? (
-    <dialog ref={ref} className="dup-dialog" onCancel={(e) => { e.preventDefault(); close(false); }}>
+    <dialog ref={ref} className="dpa-dialog" onCancel={(e) => { e.preventDefault(); close(false); }}>
       <h3>{request.title}</h3>
-      <div className="dup-dialog-body">{request.body}</div>
-      <div className="dup-dialog-actions">
+      <div className="dpa-dialog-body">{request.body}</div>
+      <div className="dpa-dialog-actions">
         <Button onClick={() => close(false)}>Cancel</Button>
         <Button variant="danger" onClick={() => close(true)} autoFocus>
           {request.action}
@@ -88,9 +106,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={push}>
       {children}
-      <div className="dup-toasts" role="status" aria-live="polite">
+      <div className="dpa-toasts" role="status" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className={`dup-toast dup-toast-${t.tone}`}>
+          <div key={t.id} className={`dpa-toast dpa-toast-${t.tone}`}>
             <Icon name={t.tone === 'ok' ? 'check' : 'alert'} />
             <span>{t.text}</span>
           </div>

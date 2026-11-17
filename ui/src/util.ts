@@ -53,5 +53,5 @@ export function matchesCondition(rule: string, values: SettingValues): boolean {
 }
 
 export function serviceLabel(service: string): string {
-  return ({ local: 'Local folder', dropbox: 'Dropbox', googledrive: 'Google Drive', amazon: 'Amazon S3', ftp: 'FTP' } as Record<string, string>)[service] ?? service;
+  return ({ local: 'This server', dropbox: 'Dropbox', googledrive: 'Google Drive', amazon: 'Amazon S3', ftp: 'FTP' } as Record<string, string>)[service] ?? service;
 }

@@ -40,28 +40,34 @@ export interface Option {
   label: string;
 }
 
-export interface SettingNode {
-  type: string;
-  label: string;
-  description: string;
-  notes: string;
-  icon: string;
-  showIf: string;
-  children?: SettingNode[];
-  html?: string;
-  name?: string;
-  value?: string | number | string[];
-  options?: Option[];
-  multiple?: boolean;
-  required?: boolean;
-  requiredIf?: string;
-  columnWidth?: number;
-  errors?: string[];
-  secret?: boolean;
-  hasValue?: boolean;
+export type SettingValue = string | number | string[];
+export type SettingValues = Record<string, SettingValue>;
+
+export interface Environment {
+  host: string;
+  defaultPath: string;
+  folder: string;
+  folderWritable: boolean;
+  diskFree: number | null;
+  cronScript: string;
+  lazyCron: boolean;
+  pwCron: boolean;
+  phpZip: boolean;
+  mysqldump: boolean;
+  zipBinary: boolean;
+  sodium: boolean;
+  publicKey: null | 'valid' | string;
+  sdk: { dropbox: boolean; googledrive: boolean; amazon: boolean };
+  maxPackages: number;
+  dupcryptUrl: string;
 }
 
-export type SettingValues = Record<string, string | number | string[]>;
+export interface SettingsPayload {
+  values: SettingValues;
+  secretsSet: Record<string, boolean>;
+  options: Record<string, Option[]>;
+  env: Environment;
+}
 
 export function readBootstrap(): Bootstrap {
   const el = document.getElementById('duplicator-bootstrap');

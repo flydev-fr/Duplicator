@@ -306,13 +306,89 @@ class DupAdminApi extends Wire
   }
 
   /**
-   * The settings form, from the same Inputfields as Modules > Configure > Duplicator
+   * Settings for the app: raw values, the choices of each select, and what the server supports
+   *
+   * Labels and layout live in the app (ui/src/SettingsView.tsx). Values are validated on save
+   * by the module's own Inputfields, the same as Modules > Configure > Duplicator.
    */
   protected function settings()
   {
     $data = $this->configData();
-    $wrapper = Duplicator::getModuleConfigInputfields($data);
-    return array('sections' => $this->serialize($wrapper, $data));
+    $form = $this->settingsForm($data);
+
+    $values = array();
+    $secretsSet = array();
+    foreach ($this->fieldNames($form) as $name) {
+      if (in_array($name, self::SECRET_FIELDS, true)) {
+        $values[$name] = '';
+        $secretsSet[$name] = !empty($data[$name]);
+        continue;
+      }
+      $value = isset($data[$name]) ? $data[$name] : '';
+      $values[$name] = is_array($value) ? array_values(array_map('strval', $value)) : (is_int($value) ? $value : (string) $value);
+    }
+
+    $options = array();
+    foreach (array('cycle', 'deadline', 'awsRegion', 'ignoredExtensions', 'backup_mode') as $name) {
+      $f = $form->getChildByName($name);
+      if (!$f instanceof InputfieldSelect) continue;
+      $list = array();
+      foreach ($f->getOptions() as $value => $label) {
+        $list[] = array('value' => (string) $value, 'label' => html_entity_decode((string) $label, ENT_QUOTES, 'UTF-8'));
+      }
+      $options[$name] = $list;
+    }
+
+    return array('values' => $values, 'secretsSet' => $secretsSet, 'options' => $options, 'env' => $this->environment($data));
+  }
+
+  /**
+   * What the server can do, for the app to explain what is available
+   */
+  protected function environment(array $data)
+  {
+    $modules = $this->wire('modules');
+    $config = $this->wire('config');
+    $shell = DUP_Util::isEnabled('shell_exec');
+    $which = function ($tool) use ($shell) {
+      if (!$shell) return false;
+      $out = DUP_Util::isWinOS() ? shell_exec('where ' . $tool . ' 2>NUL') : shell_exec('command -v ' . $tool . ' 2>/dev/null');
+      return is_string($out) && trim($out) !== '';
+    };
+
+    $publicKey = null;
+    if (!empty($data['encryptionPublicKey']) && DupCrypto::isAvailable()) {
+      try {
+        DupCrypto::parsePublicKey($data['encryptionPublicKey']);
+        $publicKey = 'valid';
+      } catch (\Exception $e) {
+        $publicKey = $e->getMessage();
+      }
+    }
+
+    $path = $this->dup->path;
+    return array(
+      'host' => (string) $config->httpHost,
+      'defaultPath' => (string) $this->dup->defaultPath,
+      'folder' => (string) $path,
+      'folderWritable' => $path && is_dir($path) && is_writable($path),
+      'diskFree' => $path && function_exists('disk_free_space') && is_dir($path) ? (int) @disk_free_space($path) : null,
+      'cronScript' => rtrim($config->paths->{Duplicator::DUP_APPLICATION_NAME}, '/\\') . '/cron.php',
+      'lazyCron' => $modules->isInstalled('LazyCron'),
+      'pwCron' => $modules->isInstalled('PwCron'),
+      'phpZip' => extension_loaded('zip'),
+      'mysqldump' => $which('mysqldump'),
+      'zipBinary' => !DUP_Util::isWinOS() && $which('zip'),
+      'sodium' => DupCrypto::isAvailable(),
+      'publicKey' => $publicKey,
+      'sdk' => array(
+        'dropbox' => class_exists('\Kunnu\Dropbox\DropboxApp') || class_exists('\DropboxClient', false),
+        'googledrive' => class_exists('\Google_Client'),
+        'amazon' => class_exists('\Aws\S3\S3Client'),
+      ),
+      'maxPackages' => Duplicator::DUP_MAX_PACKAGES,
+      'dupcryptUrl' => $this->wire('page')->url . '?action=dupcrypt',
+    );
   }
 
   protected function configData()
@@ -322,74 +398,24 @@ class DupAdminApi extends Wire
   }
 
   /**
-   * @param InputfieldWrapper $wrapper
-   * @param array $data Stored settings, to tell whether a secret is set
-   * @return array Nodes: fieldsets with their fields
+   * The module's own settings Inputfields, used to validate and sanitize
    */
-  protected function serialize(InputfieldWrapper $wrapper, array $data)
+  protected function settingsForm(array $data)
   {
-    $sanitizer = $this->wire('sanitizer');
-    $text = function ($value) use ($sanitizer) {
-      $value = (string) $value;
-      return strlen($value) ? $sanitizer->entitiesMarkdown($value, array('fullMarkdown' => false)) : '';
-    };
-    $nodes = array();
-    foreach ($wrapper->children() as $f) {
-      /** @var Inputfield $f */
-      $node = array(
-        'type' => strtolower(str_replace('Inputfield', '', $f->className())),
-        'label' => (string) $f->label,
-        'description' => $text($f->description),
-        'notes' => $text($f->notes),
-        'icon' => (string) $f->icon,
-        'showIf' => (string) $f->getSetting('showIf'),
-      );
-      if ($f instanceof InputfieldWrapper && !($f instanceof InputfieldMarkup)) {
-        $node['type'] = 'fieldset';
-        $node['children'] = $this->serialize($f, $data);
-        $nodes[] = $node;
-        continue;
-      }
-      if ($f instanceof InputfieldMarkup) {
-        $html = (string) ($f->markupText ?: $f->attr('value'));
-        // the native page's header and its link to this app have no place in the app
-        if (strpos($html, "id='dup-head'") !== false || strpos($html, "id='dup-app-link'") !== false) continue;
-        $node['type'] = 'markup';
-        // built by the module itself (no user input): trusted HTML
-        $node['html'] = $html;
-        $nodes[] = $node;
-        continue;
-      }
+    $form = $this->wire('modules')->get('InputfieldForm');
+    $form->protectCSRF = false; // checked in handle() for every POST
+    $form->add(Duplicator::getModuleConfigInputfields($data));
+    return $form;
+  }
+
+  protected function fieldNames(InputfieldForm $form)
+  {
+    $names = array();
+    foreach ($form->getAll() as $f) {
       $name = (string) $f->attr('name');
-      if ($name === '') continue;
-      $node['name'] = $name;
-      $node['required'] = (bool) $f->getSetting('required');
-      $node['requiredIf'] = (string) $f->getSetting('requiredIf');
-      $node['columnWidth'] = (int) $f->getSetting('columnWidth');
-      $errors = $f->getErrors(true);
-      $node['errors'] = array_values(array_map('strval', $errors));
-      if ($f instanceof InputfieldCheckbox) {
-        $node['value'] = $f->attr('checked') ? 1 : 0;
-      } else if ($f instanceof InputfieldSelect) {
-        $options = array();
-        foreach ($f->getOptions() as $value => $label) {
-          $options[] = array('value' => (string) $value, 'label' => (string) $label);
-        }
-        $node['options'] = $options;
-        $value = $f->attr('value');
-        $node['value'] = is_array($value) ? array_values(array_map('strval', $value)) : (string) $value;
-        if ($f instanceof InputfieldSelectMultiple || $f instanceof InputfieldAsmSelect) $node['multiple'] = true;
-      } else {
-        $node['value'] = (string) $f->attr('value');
-      }
-      if (in_array($name, self::SECRET_FIELDS, true)) {
-        $node['secret'] = true;
-        $node['hasValue'] = !empty($data[$name]);
-        $node['value'] = '';
-      }
-      $nodes[] = $node;
+      if ($name !== '' && !$f instanceof InputfieldMarkup && !$f instanceof InputfieldWrapper) $names[] = $name;
     }
-    return $nodes;
+    return $names;
   }
 
   /**
@@ -403,23 +429,17 @@ class DupAdminApi extends Wire
     if (!is_array($values)) return array('ok' => false, 'error' => 'Invalid settings.');
     $data = $this->configData();
 
-    // the module's Inputfields validate and sanitize, like the native settings page
-    $form = $this->wire('modules')->get('InputfieldForm');
-    $form->protectCSRF = false; // checked in handle() for every POST
-    $form->add(Duplicator::getModuleConfigInputfields($data));
+    $form = $this->settingsForm($data);
     $input = new WireInputData();
     foreach ($form->getAll() as $f) {
       $name = (string) $f->attr('name');
-      if ($name === '' || $f instanceof InputfieldMarkup) continue;
+      if ($name === '' || $f instanceof InputfieldMarkup || $f instanceof InputfieldWrapper) continue;
       if ($f instanceof InputfieldCheckbox) {
-        if (!empty($values[$name])) $input->set($name, $f->attr('value') ?: 1);
+        $checked = array_key_exists($name, $values) ? !empty($values[$name]) : !empty($data[$name]);
+        if ($checked) $input->set($name, $f->attr('value') ?: 1);
         continue;
       }
-      if (!array_key_exists($name, $values)) {
-        $input->set($name, $f->attr('value'));
-        continue;
-      }
-      $value = $values[$name];
+      $value = array_key_exists($name, $values) ? $values[$name] : (isset($data[$name]) ? $data[$name] : '');
       // an empty secret keeps the stored one (secrets are never sent to the browser)
       if (in_array($name, self::SECRET_FIELDS, true) && ($value === '' || $value === null)) {
         $value = isset($data[$name]) ? $data[$name] : '';
@@ -436,14 +456,15 @@ class DupAdminApi extends Wire
     $errors = array();
     foreach ($form->getAll() as $f) {
       $name = (string) $f->attr('name');
-      if ($name === '' || $f instanceof InputfieldMarkup) continue;
-      foreach ($f->getErrors(true) as $error) $errors[$name][] = (string) $error;
+      if ($name === '' || $f instanceof InputfieldMarkup || $f instanceof InputfieldWrapper) continue;
+      foreach ($f->getErrors(true) as $error) $errors[$name][] = html_entity_decode((string) $error, ENT_QUOTES, 'UTF-8');
       $stored[$name] = $f instanceof InputfieldCheckbox ? ($f->attr('checked') ? 1 : 0) : $f->attr('value');
     }
     if (count($errors)) return array('ok' => false, 'errors' => $errors);
 
     $this->wire('modules')->saveConfig('Duplicator', $stored);
-    $data = array_merge(Duplicator::getDefaultSettings(), $stored);
-    return array('ok' => true, 'sections' => $this->serialize(Duplicator::getModuleConfigInputfields($data), $data));
+    // the module instance of this request still has the old values
+    foreach ($stored as $key => $value) $this->dup->set($key, $value);
+    return array('ok' => true) + $this->settings();
   }
 }

@@ -17,6 +17,7 @@ require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupUtil.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupLogs.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/BackupDatabase.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupCrypto.php';
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupFileFilter.php';
 
 class DupZipLog
 { //ATO: Utility class to implement some logging into a file per ZIP  
@@ -941,14 +942,14 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
     $zipLog = new DupZipLog($this->getPath() . '/' . basename($zipfile) . '.log', self::DUP_ZIP_LOGLEVEL);
 
-    if (isset($options['allowHidden'])) {
-      $allowHidden = $options['allowHidden'];
-      if (!is_array($allowHidden)) {
-        $allowHidden = [$allowHidden];
-      }
-    } else {
-      $allowHidden = [];
-    }
+    // true allows every hidden file (.htaccess, .user.ini, .well-known...), an array only the listed names
+    $allowAllHidden = isset($options['allowHidden']) && $options['allowHidden'] === true;
+    $allowHidden = isset($options['allowHidden']) && is_array($options['allowHidden']) ? $options['allowHidden'] : [];
+
+    // symbolic links: see DupFileFilter::checkLink()
+    $siteRoot = realpath($rootDirectory) ?: $rootDirectory;
+    $followedLinks = [];
+    $skippedLinks = [];
 
     $zipLog->setExcludes($options['exclude'], $options['extension']);
 
@@ -995,15 +996,30 @@ class Duplicator extends WireData implements Module, ConfigurableModule
               continue;
             }
 
-            if (!in_array($de, $allowHidden)) {
+            if (!$allowAllHidden && !in_array($de, $allowHidden, true)) {
               $zipLog->verbose("HIDDEN: {$thisDir}{$de}");
               continue;
             }
           }
 
+          if (DupFileFilter::isSkippedName($de)) {
+            $zipLog->verbose("SKIPPED: {$thisDir}{$de}");
+            continue;
+          }
+
           $filePath = $fullPath . $de;
           if ($zipLog->isExcluded($thisDir . $de)) {
             continue;
+          }
+
+          // checked before is_dir(), which follows the link and warns outside open_basedir
+          if (DupFileFilter::isLink($filePath)) {
+            list($reason) = DupFileFilter::checkLink($filePath, $siteRoot, $followedLinks);
+            if ($reason !== null) {
+              $zipLog->log("SKIPPED LINK: {$thisDir}{$de} ({$reason})");
+              $skippedLinks[] = "{$thisDir}{$de} ({$reason})";
+              continue;
+            }
           }
 
           if (is_dir($filePath)) {
@@ -1078,6 +1094,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       }
     }
 
+    if (count($skippedLinks)) {
+      DUP_Logs::log("- " . count($skippedLinks) . " symbolic link(s) not packaged: " . implode(', ', array_slice($skippedLinks, 0, 10)) . (count($skippedLinks) > 10 ? ', ...' : ''));
+    }
     $zipLog->log("{$totalFiles} Files in {$totalDirectories} Directories: " . sprintf("%.2fMB", $totalBytes / (1024 * 1024)));
     if ($zipLog->logLevel >= 2) {
       arsort($extSizes);

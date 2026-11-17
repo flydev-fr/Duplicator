@@ -105,10 +105,22 @@ foreach (glob(__DIR__ . '/*Test.php') as $file) {
   require $file;
 }
 
-// cleanup
-$dir = tempDir();
-foreach (glob($dir . DIRECTORY_SEPARATOR . '*') as $f) @unlink($f);
-@rmdir($dir);
+// cleanup: links are removed, never followed
+function removeTree($path)
+{
+  require_once __DIR__ . '/../Classes/DupFileFilter.php';
+  if (\ProcessWire\DupFileFilter::isLink($path)) {
+    if (!@unlink($path)) @rmdir($path); // a link to a folder, on Windows
+  } else if (is_dir($path)) {
+    foreach (scandir($path) as $entry) {
+      if ($entry !== '.' && $entry !== '..') removeTree($path . DIRECTORY_SEPARATOR . $entry);
+    }
+    @rmdir($path);
+  } else if (file_exists($path)) {
+    @unlink($path);
+  }
+}
+removeTree(tempDir());
 
 $r = $GLOBALS['dupTests'];
 echo "\n{$r['passed']} passed, {$r['failed']} failed, {$r['skipped']} skipped\n";

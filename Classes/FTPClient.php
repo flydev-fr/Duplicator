@@ -211,22 +211,26 @@ class FTPClient
 
   public function deleteOldBackups($retaincount, $deadline = null)
   {
-    if ($retaincount < 1 || empty($deadline)) return; // cleanup disabled.
+    // each limit works on its own: the max number of packages applies even without a deadline
+    $deadlineTs = empty($deadline) ? false : strtotime("-{$deadline}");
+    if ($retaincount < 1 && $deadlineTs === false) return; // cleanup disabled.
 
     $toDelete = array();
     $n = 0;
     $paths = @ftp_nlist($this->connId, $this->pwd());
+    if (!is_array($paths)) return;
     $objects = array();
     foreach ($paths as $path) {
       $parts = explode('/', $path);
       $parts = array_reverse($parts);
+      // only packages count towards the limit (ignore logs, '.' and '..')
+      if (substr($parts[0], -strlen(Duplicator::DUP_PACKAGE_EXTENSION)) !== Duplicator::DUP_PACKAGE_EXTENSION) continue;
       array_push($objects, $parts[0]);
     }
 
     array_multisort($objects, SORT_DESC);
 
     foreach ($objects as $object) {
-      $n++;
       $key   = $object;
       $tsstr = basename($key, '.package.zip');
       $parts = explode('-', $tsstr);
@@ -234,7 +238,8 @@ class FTPClient
       $tsstr = implode('-', $parts);
       $ts    = date_create_from_format(Duplicator::DUP_TIMESTAMP_FORMAT, $tsstr);
       if ($ts == false) continue;
-      $shouldDelete = ($retaincount > 0 && $n > $retaincount) || $ts->getTimestamp() < (strtotime("-{$deadline}"));
+      $n++;
+      $shouldDelete = ($retaincount > 0 && $n > $retaincount) || ($deadlineTs !== false && $ts->getTimestamp() < $deadlineTs);
       if ($shouldDelete) {
         $toDelete[] = array('Key' => $key);
       }

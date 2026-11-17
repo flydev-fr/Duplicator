@@ -119,7 +119,7 @@ class AmazonS3Client
       'Bucket' => $this->bucket,
       'Key' => $path . $name,
       'Body' => @fopen($file, 'rb'),
-      'ACL' => 'public-read'
+      // no ACL: the object stays private like the bucket (a package holds the whole site and its database)
     );
 
 

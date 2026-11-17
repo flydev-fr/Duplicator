@@ -16,6 +16,7 @@ namespace ProcessWire;
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupUtil.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupLogs.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/BackupDatabase.php';
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupCrypto.php';
 
 class DupZipLog
 { //ATO: Utility class to implement some logging into a file per ZIP  
@@ -175,6 +176,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       'shellScript' => '',
       'archiveFlush' => 0,
       'zip_flush_mbytes' => 0,
+      // encryption
+      'encryptionEnabled' => 0,
+      'encryptionPublicKey' => '',
       // CRON mode
       'cronMode' => 'none',
       // storage mode
@@ -639,6 +643,35 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
 
 
+  /**
+   * Encrypt a package in place with the public key from the settings
+   *
+   * The encrypted package keeps its name, so listings and retention rules work as before.
+   * The installer recognizes encrypted packages and asks for the secret key.
+   *
+   * @param string $zipfile
+   * @return bool False if the package could not be encrypted (the plain package is left untouched)
+   */
+  protected function encryptPackage($zipfile)
+  {
+    DUP_Logs::log('- package encryption starting...');
+    DUP_Util::timer('encryption');
+    $encrypted = $zipfile . '.enc';
+    try {
+      DupCrypto::encryptFile($zipfile, $encrypted, $this->encryptionPublicKey);
+      // rename() replaces the plain package with the encrypted one
+      if (!rename($encrypted, $zipfile)) {
+        throw new \RuntimeException("could not replace the package with its encrypted version");
+      }
+    } catch (\Exception $e) {
+      @unlink($encrypted);
+      DUP_Logs::log('- package encryption failed: ' . $e->getMessage(), 'error');
+      return false;
+    }
+    DUP_Logs::log('- package encrypted in ' . DUP_Util::timer('encryption') . 'sec');
+    return true;
+  }
+
   /*
   * call this function from a cron tool to launch the backup task
   */
@@ -654,6 +687,17 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     DUP_Util::setMaxExecutionTime(self::DUP_PHP_EXECUTION_TIME);
 
     $package = $this->buildPackage();
+
+    // when encryption is on, a package that could not be encrypted is never stored nor uploaded
+    if (is_array($package) && $package['zipfile'] !== null && $this->encryptionEnabled) {
+      if ($this->encryptPackage($package['zipfile'])) {
+        $package['size'] = filesize($package['zipfile']);
+      } else {
+        DUP_Util::deleteFile($package['zipfile']);
+        DUP_Logs::log("- package deleted: encryption is enabled but the package could not be encrypted", 'error');
+        $package = false;
+      }
+    }
 
     if (is_array($package) && $package['zipfile'] !== null) {
       $packageName = basename($package['zipfile']);
@@ -1585,6 +1629,62 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $field->value = $data['zip_flush_mbytes'];
     $field->notes = 'This option is disabled when empty or equal to 0.';
     $fs->append($field);
+
+    $fields->append($fs);
+
+    /**
+     * Encryption Settings
+     */
+    $fs = $modules->get("InputfieldFieldset");
+    $fs->label = __("Encryption");
+    $fs->icon = 'lock';
+    $fs->collapsed = $data['encryptionEnabled'] ? Inputfield::collapsedNo : Inputfield::collapsedYes;
+    $fs->description = __("Packages are encrypted with your public key before they are stored or uploaded. Only the matching secret key can decrypt them: the installer asks for it when you restore an encrypted package.");
+
+    if (!DupCrypto::isAvailable()) {
+      $fs->notes = __("⚠️ The PHP `sodium` extension is not enabled on this server. It is bundled with PHP since 7.2: enable `extension=sodium` in php.ini. While it is missing, no package can be built when encryption is enabled.");
+    }
+
+    $field = $modules->get('InputfieldCheckbox');
+    $field->attr('name', 'encryptionEnabled');
+    $field->label = __('Encrypt packages');
+    $field->attr('checked', $data['encryptionEnabled'] == '1' ? 'checked' : '');
+    $field->notes = __("If a package cannot be encrypted, it is deleted and not uploaded: an unencrypted copy never leaves the server.");
+    $fs->append($field);
+
+    $field = $modules->get('InputfieldText');
+    $field->attr('name', 'encryptionPublicKey');
+    $field->label = __("Public key");
+    $field->description = __("Paste the public key (`dup-pk1:...`). Never paste the secret key here.");
+    $field->value = $data['encryptionPublicKey'];
+    $field->showIf = 'encryptionEnabled=1';
+    $field->requiredIf = 'encryptionEnabled=1';
+    if (strlen($data['encryptionPublicKey']) && DupCrypto::isAvailable()) {
+      try {
+        DupCrypto::parsePublicKey($data['encryptionPublicKey']);
+        $field->notes = __("☑️ Valid public key.");
+      } catch (\Exception $e) {
+        $field->error($e->getMessage());
+      }
+    }
+    $fs->append($field);
+
+    if (DupCrypto::isAvailable()) {
+      // a fresh key pair on each display: it is not stored anywhere
+      $keys = DupCrypto::generateKeyPair();
+      $field = $modules->get('InputfieldMarkup');
+      $field->label = __("Need a key pair?");
+      $field->icon = 'key';
+      $field->collapsed = Inputfield::collapsedYes;
+      $field->showIf = 'encryptionEnabled=1';
+      $field->value =
+        "<p>" . __("Here is a new key pair, generated for this page only and not saved. You can also generate one offline with <code>php scripts/dupcrypt.php keygen</code>.") . "</p>" .
+        "<p><strong>" . __("Secret key") . "</strong> — " . __("store it somewhere safe, outside this server (password manager). Without it, your encrypted packages cannot be restored.") . "<br>" .
+        "<code style='user-select: all; word-break: break-all;'>" . htmlspecialchars($keys['secret'], ENT_QUOTES, 'UTF-8') . "</code></p>" .
+        "<p><strong>" . __("Public key") . "</strong> — " . __("paste it in the field above, then save.") . "<br>" .
+        "<code style='user-select: all; word-break: break-all;'>" . htmlspecialchars($keys['public'], ENT_QUOTES, 'UTF-8') . "</code></p>";
+      $fs->append($field);
+    }
 
     $fields->append($fs);
 

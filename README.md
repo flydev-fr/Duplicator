@@ -1,177 +1,392 @@
-![Duplicator](https://s3.us-west-2.amazonaws.com/processwire-forums/monthly_2017_11/Duplicator-logo-v2-Dlong.thumb.png.8898ec8cda79046779b10d8527fc0def.png)
-
-***
-
 <div align="center">
 
-![Current stable version)](https://img.shields.io/github/package-json/v/flydev-fr/duplicator)
+<img src="Assets/Duplicator-logo-xl-v2.png" alt="Duplicator" width="360" />
+
+**Back up a whole ProcessWire site, files and database, and move it to another server.**
+
+![Current version](https://img.shields.io/github/package-json/v/flydev-fr/duplicator)
 ![GitHub Repo stars](https://img.shields.io/github/stars/flydev-fr/duplicator)
-[![process.com](https://img.shields.io/badge/%F0%9F%8C%80_processwire-lightblue)](https://processwire.com)
-[![Get support](https://img.shields.io/badge/%F0%9F%9B%9F_support_thread-gray)](https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/?page=2#comment-139376)
+[![ProcessWire](https://img.shields.io/badge/processwire-3.0.34%2B-lightblue)](https://processwire.com)
+[![Support thread](https://img.shields.io/badge/support-forum_thread-gray)](https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/)
 
 </div>
 
-***
+---
 
-### WIP
+Duplicator builds a **package**: one ZIP file with your site files and a dump of its database. Packages are kept on the server, on an FTP server or in the cloud (Dropbox, Google Drive, Amazon S3), and can be encrypted. To restore a site, or to move it to a new host, you upload a package with `installer.php` and follow the steps in your browser.
 
-- The readme is being re-written.
+## Contents
 
-# Introduction
-Duplicator will create a ZIP archive called `package` bundled with a full database backup and all your files.
-This package is stored on local disk or in the cloud and can be used to restore your site.
-You can use Duplicator to duplicate and deploy/restore your site on a new host. It can be used as backup utility. 
+- [Features](#features)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [The Duplicator page](#the-duplicator-page)
+- [Settings](#settings)
+- [Storages](#storages)
+- [Scheduled backups](#scheduled-backups)
+- [Encryption](#encryption)
+- [Restoring or moving a site](#restoring-or-moving-a-site)
+- [Security](#security)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Contributors](#contributors)
 
-## Install
+## Features
 
-1. Download the module from the [directory](https://modules.processwire.com/modules/duplicator/) or [Github]()
-2. Drop the module files in /site/modules/Duplicator/
-3. In your admin, click Modules > Refresh
-4. Click "install" for "Duplicator"
-6. Go to Setup > Duplicator and build your package!
+- One-click backup of the site files and the database, from the admin
+- Choose what to leave out: core, uploaded files, image variations, logs, cache, sessions, file types, paths
+- Five storages, used together or alone: this server, FTP/FTPS, Dropbox, Google Drive, Amazon S3
+- Scheduled backups with cron, PwCron or LazyCron
+- Retention: keep at most N packages, delete packages older than a given age
+- Package encryption with a key pair (PHP sodium, no library to install)
+- A browser installer to restore a package on any server, protected by a key
+- Database dump with PHP (works everywhere) or `mysqldump` (faster on large databases)
+- An admin page that follows the ProcessWire admin theme, dark mode included
 
-### SDK Installation (optional)
-You can skip these instructions if you plan to only use the built-in features `Local Folder` or `FTP/FTPS`.
+## Requirements
 
-If you want to use `GoogleDrive` or `AmazonS3`, you have two choices of type of installation. Using Composer or downloading directly a ZIP archive from the repository.
+| | |
+|---|---|
+| ProcessWire | 3.0.34 or newer |
+| PHP | The `zip` extension, to build packages |
+| Encryption (optional) | The `sodium` extension, bundled with PHP since 7.2 |
+| Cloud storages (optional) | The PHP library of each provider, see [Cloud libraries](#cloud-libraries) |
+| `mysqldump` mode (optional) | `mysqldump` and a shell the web server can run |
 
-Installing all SDK are not required, you can choose the one you need.
+The installer needs PHP 5.4 or newer on the target server and a MySQL or MariaDB database.
 
-#### Note:
-- `Dropbox` dropped support for the version 1 of the API since september 2017 - [api-v1-deprecation-timeline](https://blogs.dropbox.com/developers/2017/06/updated-api-v1-deprecation-timeline/) - so I removed it from Duplicator until I got the time to code an interface for the API v2
-- `GoogleDrive` tested the 2023-03-20 successfully
-- `AmazonS3` tested the 2017-12-03 `todo` ⏳
+## Installation
 
-### Using Composer
-In the root directory of your ProcessWire installation, just type in a terminal :
-* `composer require google/apiclient`
-* `composer require aws/aws-sdk-php`
+1. Download the module from the [modules directory](https://processwire.com/modules/duplicator/) or from the [releases](https://github.com/flydev-fr/Duplicator/releases).
+2. Put its files in `site/modules/Duplicator/`.
+3. In the admin, go to **Modules > Refresh**, then install **Duplicator**. It also installs **ProcessDuplicator**, the admin page.
+4. Go to **Setup > Duplicator**.
 
-### ZIP Archive
-After downloading the archive, open it, you will find a folder called **`SDKs`** under each provider named directory. Extract or Upload this folder in the **`Duplicator module folder`**. If the folder already exist, merge it. Example: `/www/public_html/site/modules/Duplicator/SDKs`
+### Cloud libraries
 
-Download it from the [**Duplicator-SDKs**](https://github.com/flydev-fr/Duplicator-SDKs/archive/master.zip) repository.
+Skip this if you only use this server or FTP. Each cloud storage needs its PHP library. Install only the ones you use.
 
-Now you can refresh the Duplicator's settings page, the corresponding checkbox will be enabled.
+**With Composer**, in the root folder of the site:
 
-# Duplicator Features
-
-## Admin app
-**Setup > Duplicator** lists the packages of every storage, builds a package on demand, shows the log, and holds the settings (superuser only). The classic settings page (Modules > Configure > Duplicator) still works.
-
-Secrets (FTP password, Dropbox token and app secret, Google key file, AWS secret key) are never sent to the browser: leave such a field empty to keep the saved value.
-
-The app is built from `ui/` (Vite, React, TypeScript) into `Assets/app/`, which is committed: installing the module needs no build. To change it:
+```bash
+composer require kunalvarma05/dropbox-php-sdk   # Dropbox
+composer require google/apiclient               # Google Drive
+composer require aws/aws-sdk-php                # Amazon S3
 ```
+
+**Without Composer**, download the [Duplicator-SDKs](https://github.com/flydev-fr/Duplicator-SDKs/archive/master.zip) archive. Each provider folder holds an `SDKs` folder: upload it into `site/modules/Duplicator/`, merging it with an existing one.
+
+A storage stays greyed out in the settings until its library is found.
+
+## Quick start
+
+1. Go to **Setup > Duplicator > Settings**.
+2. Choose at least one storage. **This server** is on by default.
+3. Click **Backup now** on the **Packages** tab.
+4. Download the package and `installer.php` from the list.
+
+That's all you need for a manual backup. For automatic backups, see [Scheduled backups](#scheduled-backups).
+
+## The Duplicator page
+
+**Setup > Duplicator** has three tabs.
+
+- **Packages** - every package of every storage, with its size, date and whether it is encrypted. From there you can:
+  - build a package now
+  - download a package, or `installer.php`
+  - copy a cloud package to the local folder
+  - delete one package, or all local packages (cloud packages are kept)
+- **Settings** - all the settings below, plus a summary of the server: free disk space, PHP extensions, `mysqldump`, cloud libraries.
+- **Log** - the latest lines of the Duplicator log.
+
+### Permissions
+
+- Users with the `duplicator` permission can build, download, copy and delete packages.
+- Only superusers can change the settings.
+
+The classic settings page (**Modules > Configure > Duplicator**) holds the same settings and still works.
+
+Passwords, tokens and keys (FTP password, Dropbox token, Google key, AWS secret key) are never sent back to the browser. Leave such a field empty to keep the saved value.
+
+## Settings
+
+### Package
+
+| Setting | What it does |
+|---|---|
+| File name | Packages are named `date-name.package2.zip`. Empty uses the site host name. |
+| Included files | Everything in the site folder is included, except what you leave out: ProcessWire core (`wire/`), uploaded files, image variations, logs, cache, sessions, previous packages. The database is always included. |
+| Excluded file types | Files with these extensions are left out. |
+| Excluded paths and patterns | One per line: a folder like `/site/assets/files/1042/`, a file name, an extension like `*.log`, or a regular expression between `%` signs. |
+
+Leave out **Previous packages** (on by default): otherwise each package contains all the older ones.
+
+### Storage
+
+Each package is saved to every storage turned on. See [Storages](#storages) for each one.
+
+### Schedule and retention
+
+| Setting | What it does |
+|---|---|
+| Automatic backups | Off (or your server's scheduler), LazyCron, or PwCron. See [Scheduled backups](#scheduled-backups). |
+| Interval | LazyCron only: how often a visit may start a backup, or when a user with the `duplicator` permission logs out. |
+| Keep at most | From 1 to 100 packages. Older packages are deleted after each new one, in every storage. |
+| Delete packages older than | Never, 1 day, 1 week, 1 month or 1 year. |
+
+### Encryption settings
+
+| Setting | What it does |
+|---|---|
+| Encrypt packages | Encrypt every package before it is stored. |
+| Public key | Your public key, starting with `dup-pk1:`. |
+
+See [Encryption](#encryption) to create your keys.
+
+### Advanced
+
+| Setting | What it does |
+|---|---|
+| Database dump | **PHP** works on every server. **mysqldump** is faster for large databases and runs a shell script. It is offered only when `mysqldump` is found. |
+| Script permissions | Applied to the generated dump script. `0700` lets only the web server user read and run it. |
+| Dump script | The script used in mysqldump mode. Placeholders such as `%%DATABASE%%` are replaced when it runs. |
+| Write the archive every (MB) | Saves memory on very large sites. `0` writes the archive once, at the end. |
+
+## Storages
+
+### This server
+
+Packages go to `site/assets/backups/` by default. You can set another folder: an absolute path, or `~/` for a folder inside the site. Keep it out of the web root when you can.
+
+- **Clean up old logs** - removes the log files of deleted packages.
+- **Delete the package from this server after upload** - when this server is not a storage, removes the local package once it is uploaded.
+
+### FTP
+
+Any FTP server: host name, port, user name, password, folder (created if needed) and timeout.
+
+- **Encrypted connection** - FTPS (FTP over TLS). Use it whenever the server supports it.
+- **Passive mode** - needed by most servers behind a firewall.
+
+### Dropbox
+
+Packages go to the `Apps/Duplicator` folder.
+
+1. Create an app in the [Dropbox App Console](https://www.dropbox.com/developers/apps).
+2. Generate an access token and paste it in the settings.
+
+### Google Drive
+
+Packages are uploaded with a Google service account.
+
+1. In the [Google Cloud console](https://console.cloud.google.com/apis/credentials), create a service account and enable the Google Drive API.
+2. Create a JSON key for this account and paste its content in **Service account key**.
+3. In **Share with**, enter your own Google account to see the packages in your Drive.
+
+A tutorial is available on the [forum thread](https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/?page=2#comment-139376).
+
+### Amazon S3
+
+1. Create a bucket and an IAM user in the [AWS console](https://console.aws.amazon.com/iam/home).
+2. Give this user access to the bucket only.
+3. Enter the access key, secret key, bucket name, an optional sub folder and the region.
+
+Packages are uploaded **private**. Also turn on **Block public access** on the bucket.
+
+Bucket names follow the DNS rules: 3 to 63 characters, lowercase letters, digits, dots and dashes, no underscore, no dash at the end, no two dots in a row, no dash next to a dot.
+
+## Scheduled backups
+
+Choose one of these ways in **Settings > Schedule and retention**.
+
+### Your server's scheduler (recommended)
+
+Set **Automatic backups** to *Off, or with your server's scheduler*, then add a cron job that runs `cron.php`. For example, every night at 00:04:
+
+```cron
+4 0 * * * php /path/to/site/modules/Duplicator/cron.php >/dev/null 2>&1
+```
+
+Edit your crontab with `crontab -e`, or use the cron page of your hosting panel. The exact command, with the right path, is shown under the setting.
+
+`cron.php` runs from the command line only. It answers 403 over HTTP.
+
+On Windows, use the Task Scheduler to run the same `php` command.
+
+### PwCron
+
+With the [PwCron](https://processwire.com/modules/pwcron/) module installed, choose *With the PwCron module* and run PwCron's own `cron.php` from your scheduler.
+
+### LazyCron
+
+Choose *On site visits (LazyCron)* and an **Interval**. Backups start on a page view, so this can slow down the visit that starts one. Use it when your host has no cron.
+
+### Cron intervals
+
+| When | Expression |
+|---|---|
+| Every 15 minutes | `*/15 * * * *` |
+| Every hour | `0 * * * *` |
+| Every 6 hours | `0 */6 * * *` |
+| Once a day | `4 0 * * *` |
+| Once a week | `4 0 * * 0` |
+| Once a month | `4 0 1 * *` |
+
+## Encryption
+
+Packages can be encrypted before they are stored or uploaded, in every storage.
+
+Encryption uses a key pair:
+- the server only gets the **public key**: it can encrypt packages, never decrypt them
+- the **secret key** stays with you, outside the server, and is needed to restore a package
+
+It needs the PHP `sodium` extension, bundled with PHP since 7.2. If it is disabled, enable `extension=sodium` in `php.ini`. There is no library to install.
+
+### Set it up
+
+1. Download `dupcrypt.php` from **Setup > Duplicator > Settings > Encryption**. It is a single file and does not need ProcessWire.
+2. **On your own computer**, not on the server, open a terminal where you saved it and run:
+   ```bash
+   php dupcrypt.php keygen
+   ```
+   It prints a public key (`dup-pk1:...`) and a secret key (`dup-sk1:...`).
+3. Store the secret key in your password manager. **Without it, your encrypted packages cannot be restored.**
+4. In the settings, turn on **Encrypt packages**, paste the public key and save.
+
+If a package cannot be encrypted (missing extension, invalid key, disk full...), it is deleted and not uploaded. An unencrypted copy never leaves the server, and the error is written in the log. If the job stops during the build or the encryption (timeout, fatal error), the unencrypted package is removed at the end of the request.
+
+### Restore an encrypted package
+
+Encrypted packages keep their name. The installer recognizes them and asks for the secret key before extracting.
+
+Send the secret key to the installer over **HTTPS** only. Otherwise, decrypt the package on your computer and upload the decrypted one:
+
+```bash
+php dupcrypt.php decrypt 2026-01-01_00-00-00-example.com.package2.zip decrypted.zip
+```
+
+The secret key is asked in the terminal, or read from the `DUPLICATOR_SECRET_KEY` environment variable.
+
+### Limits
+
+- Encryption protects the **confidentiality** of packages. It does not prove who made a package: the public key is not secret, so someone who can write to your storage could put a package of their own there. Only restore packages from storages you trust.
+- The `.log` file written next to each package lists the files it contains, unencrypted. It stays in the local folder and is not uploaded.
+
+### How it works
+
+Each package is encrypted with a random key, using XChaCha20-Poly1305 by chunks of 1 MiB (`crypto_secretstream`). This key is sealed with your public key (`crypto_box_seal`). A wrong key, a damaged or a truncated package is detected and refused.
+
+## Restoring or moving a site
+
+The same steps restore a site on its own server or move it to a new one.
+
+### 1. Upload
+
+Upload the package and `installer.php` (from **Setup > Duplicator**) to the root folder of the target site. This folder should be empty: the installer overwrites existing files.
+
+Create the database first if your host does not let the installer create it. The user needs these rights: select, insert, update, delete, create, alter, index, drop, create temporary tables and lock tables.
+
+### 2. Unlock the installer
+
+Open `https://your-site/installer.php` in your browser.
+
+The first visit writes a key to `installer-key.php`, next to the installer. Open this file with FTP or your hosting file manager and copy the key into the page. The file shows nothing over HTTP, so only someone with access to the files can run the installer.
+
+### 3. Follow the steps
+
+1. **Check** - PHP version and extensions, folder permissions.
+2. **Package** - choose the package. For an encrypted package, paste the secret key.
+3. **Extract** - the files are extracted. Large packages can take minutes.
+4. **Database** - host, port, name, user, password, charset and engine. An existing database is overwritten. The installer then imports the dump and updates `site/config.php`, including `$config->httpHosts`.
+5. **Finish** - removes the installer, its key, the package and the temporary files.
+
+### 4. After the restore
+
+- Log in to the admin and check the site.
+- Make sure `installer.php`, `installer-key.php`, the package and `duplicator-temp/` are gone. Remove them by hand if the Finish step could not.
+- If the host name changed, check `$config->httpHosts` in `site/config.php`.
+
+## Security
+
+- **Never leave the installer on a server.** Anyone with its key could restore a package over your site. The Finish step removes it.
+- **Packages contain everything**: the database, `site/config.php` with its passwords and salt, uploaded files. Keep them private, and encrypt them when they leave your server.
+- **Amazon S3**: packages are private, and **Block public access** should be on for the bucket.
+- **Local folder**: keep packages out of the web root when you can. The default folder, `site/assets/backups/`, is protected by ProcessWire's `.htaccess` on Apache. On nginx, deny access to it in your server configuration.
+- **cron.php** runs from the command line only.
+
+To report a vulnerability, please use [GitHub's private reporting](https://github.com/flydev-fr/Duplicator/security/advisories/new) rather than a public issue.
+
+## Troubleshooting
+
+### Timeouts or memory errors
+
+Usually on shared hosting with low limits. Try in this order:
+- leave out large folders (uploaded files, image variations, cache) and copy them with FTP
+- set **Write the archive every (MB)** in Advanced, for example to 200
+- use the **mysqldump** mode for large databases
+- build packages with cron rather than from the admin: the command line usually has longer time limits
+
+### A storage is greyed out
+
+Its PHP library is missing. See [Cloud libraries](#cloud-libraries).
+
+### "No storage is enabled"
+
+Turn on at least one storage in the settings.
+
+### The package was built but not uploaded
+
+Look at the **Log** tab. Wrong credentials, a full disk, or a failed encryption are written there.
+
+### The mysqldump mode is not offered
+
+`mysqldump` was not found on the server, or the web server cannot run shell commands. Use the PHP mode.
+
+### Where are the logs?
+
+On the **Log** tab, and in **Setup > Logs > duplicator**. Each package also has a `.log` file next to it in the local folder.
+
+If you are stuck, ask on the [support thread](https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/) or open an [issue](https://github.com/flydev-fr/Duplicator/issues).
+
+## Development
+
+### Layout
+
+| Path | Content |
+|---|---|
+| `Duplicator.module` | Backups, storages, settings |
+| `ProcessDuplicator.module` | The Setup > Duplicator page and its API |
+| `Classes/` | Database dump, storage clients, encryption, admin API |
+| `Deploy/installer.php` | The installer, a single file |
+| `scripts/dupcrypt.php` | The command line encryption tool |
+| `ui/` | Sources of the admin app (Vite, React, TypeScript) |
+| `Assets/app/` | The built admin app, committed |
+| `tests/` | Tests |
+
+### Admin app
+
+The app is built from `ui/` into `Assets/app/`. The built files are committed, so installing the module needs no build. After a change in `ui/`:
+
+```bash
 cd ui
 npm ci
 npm run build
 ```
-Then commit `Assets/app/` with your change. The CI checks that it matches the sources.
 
-## Backend Permission
-Permission set is `duplicator`. User with this permission can initiate a backup, download or sync a package. The module's settings is only accessible to `superuser`.
+Commit `Assets/app/` with your change. The CI checks that it matches the sources.
 
-## Encryption
-Packages can be encrypted before they are stored or uploaded (local folder, FTP, Dropbox, Google Drive, Amazon S3).
-Encryption uses a key pair: the server only gets the **public key**, so it can encrypt packages but never decrypt them.
-The **secret key** stays with you, outside the server, and is needed to restore a package.
+### Tests
 
-Requirements: the PHP `sodium` extension, bundled with PHP since 7.2. If it is disabled, enable `extension=sodium` in `php.ini`. There is no library to install.
-
-### Setup
-1. Generate a key pair **on your own computer**, not on the server: `php scripts/dupcrypt.php keygen` (the script only needs PHP 7.2+, not ProcessWire).
-2. Store the secret key (`dup-sk1:...`) somewhere safe, outside the server, e.g. in a password manager.
-   **Without it, your encrypted packages cannot be restored.**
-3. In the module settings, tick **Encrypt packages**, paste the public key (`dup-pk1:...`) and save.
-
-If a package cannot be encrypted (missing extension, invalid key, disk full...), it is deleted and not uploaded: an unencrypted copy never leaves the server. The error is written in the Duplicator log. If the job stops during the build or the encryption (timeout, fatal error), the unencrypted package it was writing is removed at the end of the request.
-
-### Limits
-- Encryption protects the **confidentiality** of packages. It does not prove who made a package: the public key is not secret, so someone who can write to your storage could put a package of their own there. Only restore packages from storages you trust.
-- The `.log` file written next to each package lists the files it contains, unencrypted. It stays in the local folder and is not uploaded.
-- Send the secret key to the installer over **HTTPS** only. Otherwise, decrypt the package on your computer with `dupcrypt.php` and upload the decrypted package.
-
-### Restore
-Encrypted packages keep their name. The installer recognizes them and asks for the secret key before extracting the package.
-
-You can also decrypt a package on any computer with PHP:
+```bash
+php tests/run.php
 ```
-php scripts/dupcrypt.php decrypt 2026-01-01_00-00-00-example.com.package2.zip decrypted.zip
-```
-The secret key is asked on the terminal, or read from the `DUPLICATOR_SECRET_KEY` environment variable.
 
-### How it works
-Each package is encrypted with a random key (XChaCha20-Poly1305 by chunks of 1 MiB, `crypto_secretstream`), and this key is sealed with your public key (`crypto_box_seal`). A wrong key, a damaged or a truncated package is detected and refused.
+The CI lints every PHP file and runs the tests on PHP 8.1 to 8.4.
 
-## CRON job
-Actually you have 3 choices to setup a cron job.
+### Releases
 
-### System CRON
-#### The standard way
-To edit a crontab through the command line, type: `cronjob -e` then add for example the following line to build a package once a day :
-> `4 0 * * * php /www/mysite/wwwroot/site/modules/Duplicator/cron.php >/dev/null 2>&1`
-
-### PwCron
-#### modules
-You can rely on [PwCron](https://modules.processwire.com/modules/pwcron/) to setup the job.
-> `4 0 * * * php /www/mysite/wwwroot/site/modules/PwCron/cron.php >/dev/null 2>&1`
-
-### LazyCron
-#### modules
-Because it's triggered by a pageview, this choice can slowdown your site - [LazyCron documentation](https://modules.processwire.com/modules/lazy-cron/)
-
-### Notes :
-#### For Windows
-Please look at this answer on stackoverflow to set up it: http://stackoverflow.com/questions/7195503/setting-up-a-cron-job-in-windows
-
-#### Using a control panel ?
-If you are running CRON via a panel, please rely on the documentation of your hosting provider. Do not hesitate to ping on the support forum thread.
-
-#### Some hosting companies don’t allow access to cron
-If this the case, you can rely on [LazyCron](https://processwire.com/api/modules/lazy-cron/) module.
-
-#### Example CRON delay table:
-
-| When | Settings |
-| -------- | -------- |
-| Every 1 minute   | */1 * * * *   |
-| Every 15 minutes   | */15 * * * *   |
-| Every 30 minutes |	*/30 * * * *
-| Every 1 hour |	0 * * * * |
-| Every 6 hours |	0 */6 * * * |
-| Every 12 hours |	0 */12 * * * |
-| Once a day |	4 0 * * * |
-| Once a week |	4 0 * * 0 |
-| Once a month |	4 0 1 * * |
-
-## Cloud Backup/Store Settings
-
-### GoogleDrive
-Obtain credentials there: [https://console.developers.google.com/apis/credentials](https://console.developers.google.com/apis/credentials)
-
-A tutorial is available on the forum :  [Duplicator Dev Thread](https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/?page=2#comment-139376)
-
-### AmazonS3
-Obtain credentials there: [https://console.aws.amazon.com/iam/home](https://console.aws.amazon.com/iam/home)
-
-#### Note:
-A **bucket name** should conform with **DNS requirements**:
-* Should not contain uppercase characters
-* Should not contain underscores (_)
-* Should be between 3 and 63 characters long
-* Should not end with a dash
-* Cannot contain two, adjacent periods
-* Cannot contain dashes next to periods (e.g., "my-.bucket.com" and "my.-bucket" are invalid)
-
-## Issues
-
-### Timeout
-Timeout usually happen if you are on a low-end budget host with limitations. The easiest way to solve this issue, is to use directory filters on some of your larger directories like your `files`, `vendor`, or even `bower_components` directory to get the size down. Then reinstall the package at the new location and then FTP all the files over that you filtered.
-
-**Hosting Provider Issue List:**
-* 1and1 Shared hosting (resolved by using Filters)
-* Dreamhost hosting (resolved using the `Archive Flush` option); Need to be tested again.
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/). Each push to `master` with a `fix:` or `feat:` commit creates a release: `fix:` bumps the patch version, `feat:` the minor version. The changelog is written from the commit messages.
 
 ## Contributors
 
@@ -182,9 +397,7 @@ Thanks to all the contributors for their help and support.
 <a href="https://github.com/netcarver" title="Steve"><img src="https://avatars.githubusercontent.com/u/16049?v=4" width="32;" alt="Steve"/></a>
 <a href="https://github.com/StanLindsey" title="Stan Lindsey"><img src="https://avatars.githubusercontent.com/u/3317882?v=4" width="32;" alt="Stan Lindsey"/></a><!--GAMFC-END-->
 
-# Special thanks
-- Duplicator's logo made by [@szabeszg](https://github.com/szabeszg)
+### Special thanks
+
+- The Duplicator logo is by [@szabeszg](https://github.com/szabeszg)
 - The ProcessWire community
-
-
-

@@ -1,3 +1,12 @@
+## [1.6.2](https://github.com/flydev-fr/Duplicator/compare/v1.6.1...v1.6.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* Only remove package logs in the orphaned-log cleanup ([35a664c](https://github.com/flydev-fr/Duplicator/commit/35a664ccf61d7c91a19e778828970a4c6cbb50f8)), closes [#69](https://github.com/flydev-fr/Duplicator/issues/69)
+
+
+
 ## [1.6.1](https://github.com/flydev-fr/Duplicator/compare/v1.6.0...v1.6.1) (2026-11-17)
 
 
@@ -49,15 +58,6 @@
 ### Bug Fixes
 
 * PHP deprecated var [#51](https://github.com/flydev-fr/Duplicator/issues/51) ([8c333f0](https://github.com/flydev-fr/Duplicator/commit/8c333f065a67eb622bb0dd4a0277dd753f69f65e)), closes [#48](https://github.com/flydev-fr/Duplicator/issues/48)
-
-
-
-## [1.5.3](https://github.com/flydev-fr/Duplicator/compare/v1.5.2...v1.5.3) (2024-06-05)
-
-
-### Bug Fixes
-
-* Avoid error when first configuring S3 backups [#49](https://github.com/flydev-fr/Duplicator/issues/49) ([d338fc2](https://github.com/flydev-fr/Duplicator/commit/d338fc2e53778de595c7d99d23c71b2c4c7c1b35))
 
 
 

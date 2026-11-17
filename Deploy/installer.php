@@ -928,6 +928,10 @@ class Installer
         } else {
           $this->err("Database connection information did not work.");
           $this->err($e->getMessage());
+          if (strtolower($values['dbHost']) === 'localhost') {
+            // with 'localhost', PHP connects through the MySQL Unix socket instead of TCP
+            $this->warn("With DB Host 'localhost', PHP uses the MySQL socket. If MySQL only listens on TCP (e.g. MAMP), try '127.0.0.1'.");
+          }
           $this->btn("Check Again", 3, 'refresh', false, true);
         }
       }
@@ -1896,6 +1900,9 @@ class WireDatabaseBackup
     $tables = array(); // selective tables to restore, optional
     foreach ($options['tables'] as $table) $tables[$table] = $table;
     if (!count($tables)) $tables = null;
+
+    $sqlMode = $this->restoreSessionStart();
+
     while (!feof($fp)) {
       $line = trim(fgets($fp));
       if (!$this->restoreUseLine($line)) continue;
@@ -1934,12 +1941,16 @@ class WireDatabaseBackup
         if ($command === 'INSERT') $numInserts++;
         if ($command === 'CREATE') $numTables++;
         $numQueries++;
+        // commit inserts by batches instead of one by one (much faster with InnoDB)
+        if ($command === 'INSERT' && $numInserts % self::restoreCommitEvery === 0) $this->restoreCommit();
       } catch (Exception $e) {
         $this->error($e->getMessage());
         if ($options['haltOnError']) break;
       }
     }
     fclose($fp);
+
+    $this->restoreSessionEnd($sqlMode);
 
     $this->note('queries', $numQueries);
     $this->note('inserts', $numInserts);
@@ -1951,6 +1962,85 @@ class WireDatabaseBackup
       return $numQueries;
     }
   }
+  /**
+   * Number of INSERT statements committed together during a PDO restore
+   *
+   */
+  const restoreCommitEvery = 1000;
+
+  /**
+   * Prepare the database session for a restore
+   *
+   * - Foreign key checks are disabled: a table can reference a table that comes later in the dump.
+   * - sql_mode is emptied: a strict mode rejects values that the source server accepted (e.g. '' in an ENUM).
+   * - autocommit is disabled: inserts are committed by batches (see restoreCommit).
+   *
+   * @return string|null The previous sql_mode, to give to restoreSessionEnd()
+   *
+   */
+  protected function restoreSessionStart()
+  {
+    $database = $this->getDatabase();
+    $sqlMode = null;
+    try {
+      $sqlMode = $database->query("SELECT @@SESSION.sql_mode")->fetchColumn();
+    } catch (Exception $e) {
+      $this->note('session', "sql_mode not read: " . $e->getMessage());
+    }
+    $statements = array(
+      "SET SESSION sql_mode = ''",
+      "SET FOREIGN_KEY_CHECKS = 0",
+      "SET autocommit = 0",
+    );
+    foreach ($statements as $statement) {
+      try {
+        $database->exec($statement);
+      } catch (Exception $e) {
+        $this->note('session', "$statement failed: " . $e->getMessage());
+      }
+    }
+    return $sqlMode;
+  }
+
+  /**
+   * Commit what has been imported so far
+   *
+   */
+  protected function restoreCommit()
+  {
+    try {
+      $this->getDatabase()->exec("COMMIT");
+    } catch (Exception $e) {
+      $this->error("COMMIT failed: " . $e->getMessage());
+    }
+  }
+
+  /**
+   * Commit the last batch and restore the session settings changed by restoreSessionStart()
+   *
+   * @param string|null $sqlMode The sql_mode returned by restoreSessionStart()
+   *
+   */
+  protected function restoreSessionEnd($sqlMode)
+  {
+    $this->restoreCommit();
+    $database = $this->getDatabase();
+    $statements = array(
+      "SET autocommit = 1",
+      "SET FOREIGN_KEY_CHECKS = 1",
+    );
+    if ($sqlMode !== null && $sqlMode !== false) {
+      $statements[] = "SET SESSION sql_mode = " . $database->quote($sqlMode);
+    }
+    foreach ($statements as $statement) {
+      try {
+        $database->exec($statement);
+      } catch (Exception $e) {
+        $this->note('session', "$statement failed: " . $e->getMessage());
+      }
+    }
+  }
+
   /**
    * Import a database SQL file using exec(mysql)
    *

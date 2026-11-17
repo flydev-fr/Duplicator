@@ -198,7 +198,7 @@ class ProcessDuplicator extends Process
    */
   protected function getInstaller($filename)
   {
-    wireSendFile(wire('config')->paths->siteModules . Duplicator::DUP_APPLICATION_NAME . DS . 'Deploy' . DS . 'installer.php');
+    wireSendFile(__DIR__ . DS . 'Deploy' . DS . 'installer.php');
   }
 
   /**
@@ -210,10 +210,10 @@ class ProcessDuplicator extends Process
 
     $modinfo = self::getModuleInfo();
     $out = "<div id='dup-head'>";
-    $out .= "  <img id='dup-logo' src='" . wire('config')->urls->siteModules . Duplicator::DUP_APPLICATION_NAME . "/Assets/Duplicator-logo-xl-v2.png'>";
+    $out .= "  <img id='dup-logo' src='" . wire('config')->urls->Duplicator . "Assets/Duplicator-logo-xl-v2.png'>";
     $out .= "  <ul>";
-    $out .= "	   <li><a title='Goto Support Thread' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank'><img src='" . wire('config')->urls->siteModules . Duplicator::DUP_APPLICATION_NAME . "/Assets/support.svg' class='dup-icon'><span class='dup-label'>Discussion</span></a></li>";
-    $out .= "	   <li><a title='Goto Duplicator Settings' href='" . wire('config')->urls->httpAdmin . "module/edit?collapse_info=1&name=" . Duplicator::DUP_APPLICATION_NAME . "' target='_self'><img src='" . wire('config')->urls->siteModules . Duplicator::DUP_APPLICATION_NAME . "/Assets/settings.svg' class='dup-icon'><span class='dup-label'>Settings</span></a></li>";
+    $out .= "	   <li><a title='Goto Support Thread' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank'><img src='" . wire('config')->urls->Duplicator . "Assets/support.svg' class='dup-icon'><span class='dup-label'>Discussion</span></a></li>";
+    $out .= "	   <li><a title='Goto Duplicator Settings' href='" . wire('config')->urls->httpAdmin . "module/edit?collapse_info=1&name=" . Duplicator::DUP_APPLICATION_NAME . "' target='_self'><img src='" . wire('config')->urls->Duplicator . "Assets/settings.svg' class='dup-icon'><span class='dup-label'>Settings</span></a></li>";
     $out .= "  </ul>";
     $out .= "  <span class='dup-head-label dup-glitch animate-chars dup-version'> v{$modinfo['version']}</span>";
     $out .= "  <div class='dup-flex-r'>";
@@ -366,7 +366,7 @@ class ProcessDuplicator extends Process
 
             $data = array(
               'time' => $ts->getTimestamp(),
-              "<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/localfolder-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
+              "<img src='{$this->config->urls->Duplicator}Assets/localfolder-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
               $createdOn,
               DUP_Util::human_filesize(filesize($path . DS . $originalFilename)),
               $href1 . ' ' . $href2 . ' ',
@@ -401,7 +401,7 @@ class ProcessDuplicator extends Process
 
             $data = array(
               'time' => $ts->getTimestamp(),
-              "<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/dropbox-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
+              "<img src='{$this->config->urls->Duplicator}Assets/dropbox-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
               $createdOn,
               DUP_Util::human_filesize($file['size']),
               $href1 . ' ' . $href2 . ' ',
@@ -442,7 +442,7 @@ class ProcessDuplicator extends Process
 
             $data = array(
               'time' => $ts->getTimestamp(),
-              "<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/google_drive-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
+              "<img src='{$this->config->urls->Duplicator}Assets/google_drive-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
               $createdOn,
               DUP_Util::human_filesize($file['size']),
               $href1 . ' ' . $href2 . ' ',
@@ -484,7 +484,7 @@ class ProcessDuplicator extends Process
             $href3 = '<a href="?action=delete&file=' . $file['Key'] . '&service=amazon&' . Duplicator::actionToken() . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
             $data = array(
               'time' => $ts ? $ts->getTimestamp() : 0,
-              "<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/amazon-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
+              "<img src='{$this->config->urls->Duplicator}Assets/amazon-64.png'> <span class='package-name'>" . $originalFilename . "</span>",
               $createdOn,
               DUP_Util::human_filesize($file['Size']),
               $href1 . ' ' . $href2 . ' ',

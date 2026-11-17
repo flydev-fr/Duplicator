@@ -123,6 +123,10 @@ class ProcessDuplicator extends Process
         break;
 
       case 'delete':
+        if (!Duplicator::hasActionToken()) {
+          wire('session')->redirect(wire('page')->url);
+          break;
+        }
         $out .= $this->renderGetPackages();
         if (isset(wire('input')->get->service) && isset(wire('input')->get->file)) {
           switch (wire('sanitizer')->text(wire('input')->get->service)) {
@@ -162,7 +166,9 @@ class ProcessDuplicator extends Process
         break;
 
       case 'deleteAll':
-        DUP_Util::clean(Duplicator::getPath(), 0);
+        if (Duplicator::hasActionToken()) {
+          DUP_Util::clean(Duplicator::getPath(), 0);
+        }
 
         $out .= $this->renderGetPackages();
         break;
@@ -303,7 +309,7 @@ class ProcessDuplicator extends Process
     $f->attr('id+name', 'newPackage');
     $f->value = __('Backup Now');
     $f->icon = 'clone';
-    $f->attr('data-action', $href . '/?action=backup_now');
+    $f->attr('data-action', $href . '/?action=backup_now&' . Duplicator::actionToken());
     $f->attr('target', '_SELF');
     $f->addClass('head_button_clone');
     $out .= $f->render();
@@ -312,7 +318,7 @@ class ProcessDuplicator extends Process
     $f->attr('id+name', 'deletePackages');
     $f->value = __('Delete All');
     $f->icon = 'trash';
-    $f->attr('data-action', $href . '/?action=deleteAll');
+    $f->attr('data-action', $href . '/?action=deleteAll&' . Duplicator::actionToken());
     $out .= $f->render();
     $out .= "<div id='out'></div>";
 
@@ -356,7 +362,7 @@ class ProcessDuplicator extends Process
             $dataAction = $this->config->urls->httpAdmin . 'setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
             $href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink" title="Download and run this php file to install the package."><i class="fa fa-bolt"></i> Installer</a>';
             $href2 = '<a href="?action=packages&file=' . $originalFilename . '" class="btnlink" title="Download and put it in the webroot alongside installer.php"><i class="fa fa-download"></i> Package</a>';
-            $href3 = '<a href="?action=delete&file=' . $originalFilename . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
+            $href3 = '<a href="?action=delete&file=' . $originalFilename . '&' . Duplicator::actionToken() . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
             $data = array(
               'time' => $ts->getTimestamp(),
@@ -391,7 +397,7 @@ class ProcessDuplicator extends Process
             $dataAction = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
             $href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
             $href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=dropbox" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
-            $href3 = '<a href="?action=delete&file=' . $file['name'] . '&service=dropbox" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
+            $href3 = '<a href="?action=delete&file=' . $file['name'] . '&service=dropbox&' . Duplicator::actionToken() . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
             $data = array(
               'time' => $ts->getTimestamp(),
@@ -432,7 +438,7 @@ class ProcessDuplicator extends Process
             $dataAction = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
             $href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
             $href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=googledrive" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
-            $href3 = '<a href="?action=delete&file=' . $file['id'] . '&service=googledrive" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
+            $href3 = '<a href="?action=delete&file=' . $file['id'] . '&service=googledrive&' . Duplicator::actionToken() . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
             $data = array(
               'time' => $ts->getTimestamp(),
@@ -475,7 +481,7 @@ class ProcessDuplicator extends Process
             $dataAction = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
             $href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
             $href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=amazon" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
-            $href3 = '<a href="?action=delete&file=' . $file['Key'] . '&service=amazon" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
+            $href3 = '<a href="?action=delete&file=' . $file['Key'] . '&service=amazon&' . Duplicator::actionToken() . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
             $data = array(
               'time' => $ts ? $ts->getTimestamp() : 0,
               "<img src='{$this->config->urls->siteModules}{$this->dupmod->className}/Assets/amazon-64.png'> <span class='package-name'>" . $originalFilename . "</span>",

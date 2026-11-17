@@ -215,7 +215,7 @@ class DUP_Util
 
         $href1 = '<a href="#" onclick="location.href=\'?action=packages&installer=' . $originalFilename . '\';" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
         $href2 = '<a href="#" onclick="location.href=\'?action=packages&file=' . $originalFilename . '\';" class="btnlink"><i class="fa fa-download"></i> Package</a>';
-        $href3 = '<a href="#" onclick="location.href=\'?action=delete&file=' . $originalFilename . $modal . '\';" class="btnlink"><i class="fa fa-trash"></i></a>';
+        $href3 = '<a href="#" onclick="location.href=\'?action=delete&file=' . $originalFilename . $modal . '&' . Duplicator::actionToken() . '\';" class="btnlink"><i class="fa fa-trash"></i></a>';
 
         $data = array(
           $originalFilename,

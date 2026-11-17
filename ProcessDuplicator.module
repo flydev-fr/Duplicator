@@ -173,6 +173,15 @@ class ProcessDuplicator extends Process
         $out .= $this->renderGetPackages();
         break;
 
+      case 'dupcrypt':
+        // the encryption tool in one file, to generate keys and decrypt packages on another computer
+        $script = DupCrypto::standaloneScript();
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="dupcrypt.php"');
+        header('Content-Length: ' . strlen($script));
+        echo $script;
+        exit;
+
       default:
         $out .= $this->renderGetPackages();
         break;

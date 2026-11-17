@@ -691,6 +691,7 @@ class Installer
       $warnstr = "Duplicator will extract the package \"<strong>$package</strong>\".";
       $warnstr .= $warn == false ? '.' : ', but we recommend you correct these issues before proceeding.';
       $this->info($warnstr);
+      if (DupDecrypt::isEncryptedFile($package)) $this->secretKeyInput();
       echo '<div style="display: inline-flex">';
       if ($warn) $this->btn("Check Again", 1, 'refresh', false, true);
       $this->btn('Continue to Next Step', 2);
@@ -702,11 +703,30 @@ class Installer
 
 
   /**
+   * Ask for the secret key of an encrypted package (sent with the next step, never stored)
+   *
+   */
+  protected function secretKeyInput()
+  {
+    $this->info("This package is encrypted. Paste the secret key (<code>dup-sk1:...</code>) that matches the public key set in Duplicator's settings.");
+    if (!DupDecrypt::isAvailable()) {
+      $this->err("The PHP sodium extension is required to decrypt this package. Enable <code>extension=sodium</code> in php.ini (bundled with PHP 7.2+).");
+    }
+    $https = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off')
+      || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+    $local = isset($_SERVER['REMOTE_ADDR']) && in_array($_SERVER['REMOTE_ADDR'], array('127.0.0.1', '::1'), true);
+    if (!$https && !$local) {
+      $this->warn("This page is not served over HTTPS: the secret key would be sent unencrypted. Use HTTPS, or decrypt the package on your computer with scripts/dupcrypt.php and upload the decrypted package instead.");
+    }
+    echo "\n<p style='clear: both;'><label>Secret key<br /><input type='password' name='secretKey' value='' autocomplete='off' style='width: 420px;' /></label></p>";
+  }
+
+  /**
    * @return bool
    */
   protected function extractPackage()
   {
-    $isV2 = strrpos($this->package, self::DUP_PACKAGE2_EXTENSION) == FALSE;
+    $isV2 = strrpos((string) $this->package, self::DUP_PACKAGE2_EXTENSION) == FALSE; // $this->package is not set yet here, the cast keeps the previous result without a PHP 8 deprecation notice
     $this->h("Step #3 - Package Extraction");
 
     $this->package = $_SESSION['package'];
@@ -728,14 +748,36 @@ class Installer
       $path .= '/' . self::DUP_TEMP_FOLDER;
     }
 
+    // an encrypted package is first decrypted into the temp folder
+    $packageFile = $this->package;
+    $decrypted = null;
+    if (DupDecrypt::isEncryptedFile($this->package)) {
+      // random name, removed even if the script stops (timeout): the plain package must not stay reachable
+      $decrypted = $tempfolder . DIRECTORY_SEPARATOR . 'package-' . bin2hex(random_bytes(12)) . '.zip';
+      register_shutdown_function(function () use ($decrypted) {
+        if (is_file($decrypted)) @unlink($decrypted);
+      });
+      try {
+        DupDecrypt::decryptFile($this->package, $decrypted, isset($_POST['secretKey']) ? $_POST['secretKey'] : '');
+      } catch (Exception $e) {
+        $this->err(htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+        $this->secretKeyInput();
+        $this->btn("Try Again", 2, 'refresh', false, true);
+        return false;
+      }
+      $this->ok("The package has been decrypted.");
+      $packageFile = $decrypted;
+    }
+
     $zip = new ZipArchive();
-    $res = $zip->open($this->package);
+    $res = $zip->open($packageFile);
     if ($res == true) {
       //$this->action("Extracting \"<i>{$this->package}</i>\" into \"<i>{$path}</i>\"...");
       if (is_writable($path))
         $zip->extractTo($path);
       else {
         $zip->close();
+        if ($decrypted) @unlink($decrypted);
         $this->err("The temp folder $path is not writable. Please adjust the permissions and try again.");
         $this->btn("Check Again", 2, 'refresh', false, true);
         return false;
@@ -745,6 +787,7 @@ class Installer
     } else {
       $this->err("An error occured! Duplicator couldn't open {$this->package}.");
     }
+    if ($decrypted) @unlink($decrypted);
 
     if ($isV2) {    //ATO: Unpack into subdirectory only for V1 files
       if ($handle = opendir($this->rootPath)) {
@@ -2337,6 +2380,95 @@ class WireDatabaseBackup
     }
 
     return false;
+  }
+}
+
+/**
+ * Decryption of packages encrypted by Duplicator (Classes/DupCrypto.php)
+ *
+ * This is a copy of the decryption part of DupCrypto, because the installer runs alone.
+ * Keep both in sync: see DupCrypto for the file format.
+ */
+class DupDecrypt
+{
+  const MAGIC = "DUPENC\x01\x00";
+  const CHUNK_SIZE = 1048576;
+  const SECRET_KEY_PREFIX = 'dup-sk1:';
+
+  public static function isAvailable()
+  {
+    return function_exists('sodium_crypto_secretstream_xchacha20poly1305_init_pull')
+      && function_exists('sodium_crypto_box_seal_open');
+  }
+
+  public static function isEncryptedFile($filename)
+  {
+    $fp = @fopen($filename, 'rb');
+    if (!$fp) return false;
+    $magic = fread($fp, strlen(self::MAGIC));
+    fclose($fp);
+    return $magic === self::MAGIC;
+  }
+
+  /**
+   * @param string $source Encrypted package
+   * @param string $destination Decrypted ZIP to write (overwritten)
+   * @param string $secretKey Secret key (dup-sk1:...)
+   * @throws Exception On any failure (wrong key, damaged or truncated file); $destination is then removed
+   */
+  public static function decryptFile($source, $destination, $secretKey)
+  {
+    if (!self::isAvailable()) throw new Exception("Decryption needs the PHP sodium extension (bundled with PHP 7.2+, enable it in php.ini)");
+    $secretKey = preg_replace('/\s+/', '', (string) $secretKey);
+    if (strpos($secretKey, self::SECRET_KEY_PREFIX) !== 0) throw new Exception("This is not a Duplicator secret key (it should start with " . self::SECRET_KEY_PREFIX . ")");
+    $secret = base64_decode(substr($secretKey, strlen(self::SECRET_KEY_PREFIX)), true);
+    if ($secret === false || strlen($secret) !== SODIUM_CRYPTO_BOX_SECRETKEYBYTES) throw new Exception("The Duplicator secret key is damaged");
+    $keypair = sodium_crypto_box_keypair_from_secretkey_and_publickey($secret, sodium_crypto_box_publickey_from_secretkey($secret));
+
+    $in = @fopen($source, 'rb');
+    if (!$in) throw new Exception("Could not open $source");
+    $out = @fopen($destination, 'wb');
+    if (!$out) {
+      fclose($in);
+      throw new Exception("Could not write $destination");
+    }
+    $error = null;
+    try {
+      if (self::read($in, strlen(self::MAGIC)) !== self::MAGIC) throw new Exception("$source is not an encrypted Duplicator package");
+      $sealed = self::read($in, SODIUM_CRYPTO_BOX_SEALBYTES + SODIUM_CRYPTO_SECRETSTREAM_XCHACHA20POLY1305_KEYBYTES);
+      $fileKey = sodium_crypto_box_seal_open($sealed, $keypair);
+      if ($fileKey === false) throw new Exception("This secret key cannot decrypt this package (wrong key or damaged file)");
+      $header = self::read($in, SODIUM_CRYPTO_SECRETSTREAM_XCHACHA20POLY1305_HEADERBYTES);
+      $state = sodium_crypto_secretstream_xchacha20poly1305_init_pull($header, $fileKey);
+      do {
+        $chunk = self::read($in, self::CHUNK_SIZE + SODIUM_CRYPTO_SECRETSTREAM_XCHACHA20POLY1305_ABYTES);
+        if ($chunk === '') throw new Exception("The package is truncated");
+        $result = sodium_crypto_secretstream_xchacha20poly1305_pull($state, $chunk);
+        if ($result === false) throw new Exception("The package is damaged");
+        list($plain, $tag) = $result;
+        if (fwrite($out, $plain) !== strlen($plain)) throw new Exception("Write error (disk full?)");
+      } while ($tag !== SODIUM_CRYPTO_SECRETSTREAM_XCHACHA20POLY1305_TAG_FINAL);
+      if (self::read($in, 1) !== '') throw new Exception("The package has unexpected data at its end");
+    } catch (Exception $e) {
+      $error = $e;
+    }
+    fclose($in);
+    if (!fclose($out) && !$error) $error = new Exception("Could not write $destination");
+    if ($error) {
+      @unlink($destination);
+      throw $error;
+    }
+  }
+
+  protected static function read($fp, $length)
+  {
+    $data = '';
+    while (strlen($data) < $length && !feof($fp)) {
+      $part = fread($fp, $length - strlen($data));
+      if ($part === false) throw new Exception("Read error");
+      $data .= $part;
+    }
+    return $data;
   }
 }
 

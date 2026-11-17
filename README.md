@@ -60,24 +60,36 @@ Now you can refresh the Duplicator's settings page, the corresponding checkbox w
 Permission set is `duplicator`. User with this permission can initiate a backup, download or sync a package. The module's settings is only accessible to `superuser`.
 
 ## Encryption
-- Encryption use libsodium 1.0.18 through Halite 5.0.x or 5.1 and newer
-- Version of PHP supported: PHP >= v8.x
-  Note: performance on PHP 8.0.x is poor. You must consider using PHP 8.1.x for better performance.
+Packages can be encrypted before they are stored or uploaded (local folder, FTP, Dropbox, Google Drive, Amazon S3).
+Encryption uses a key pair: the server only gets the **public key**, so it can encrypt packages but never decrypt them.
+The **secret key** stays with you, outside the server, and is needed to restore a package.
 
-### Windows Install
-Use `vcpkg` to install libsodium:
-  a. ``cd vcpkg
-  b. `.\bootstrap-vcpkg.bat`
-  c. `vcpkg install libsodium`
+Requirements: the PHP `sodium` extension, bundled with PHP since 7.2. If it is disabled, enable `extension=sodium` in `php.ini`. There is no library to install.
 
-You can find pre-built libraries there: https://download.libsodium.org/libsodium/releases/
+### Setup
+1. Generate a key pair **on your own computer**, not on the server: `php scripts/dupcrypt.php keygen` (the script only needs PHP 7.2+, not ProcessWire).
+2. Store the secret key (`dup-sk1:...`) somewhere safe, outside the server, e.g. in a password manager.
+   **Without it, your encrypted packages cannot be restored.**
+3. In the module settings, tick **Encrypt packages**, paste the public key (`dup-pk1:...`) and save.
 
-### Linux
-Run on terminal:
-`sudo apt-get install php8.1-sodium`
+If a package cannot be encrypted (missing extension, invalid key, disk full...), it is deleted and not uploaded: an unencrypted copy never leaves the server. The error is written in the Duplicator log. If the job stops during the build or the encryption (timeout, fatal error), the unencrypted package it was writing is removed at the end of the request.
 
-Once all prequisites installed, insatll Halite by running **composer** in the root directory:
-`composer require paragonie/halite:^5`
+### Limits
+- Encryption protects the **confidentiality** of packages. It does not prove who made a package: the public key is not secret, so someone who can write to your storage could put a package of their own there. Only restore packages from storages you trust.
+- The `.log` file written next to each package lists the files it contains, unencrypted. It stays in the local folder and is not uploaded.
+- Send the secret key to the installer over **HTTPS** only. Otherwise, decrypt the package on your computer with `dupcrypt.php` and upload the decrypted package.
+
+### Restore
+Encrypted packages keep their name. The installer recognizes them and asks for the secret key before extracting the package.
+
+You can also decrypt a package on any computer with PHP:
+```
+php scripts/dupcrypt.php decrypt 2026-01-01_00-00-00-example.com.package2.zip decrypted.zip
+```
+The secret key is asked on the terminal, or read from the `DUPLICATOR_SECRET_KEY` environment variable.
+
+### How it works
+Each package is encrypted with a random key (XChaCha20-Poly1305 by chunks of 1 MiB, `crypto_secretstream`), and this key is sealed with your public key (`crypto_box_seal`). A wrong key, a damaged or a truncated package is detected and refused.
 
 ## CRON job
 Actually you have 3 choices to setup a cron job.

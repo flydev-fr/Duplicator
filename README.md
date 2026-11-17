@@ -122,6 +122,14 @@ Passwords, tokens and keys (FTP password, Dropbox token, Google key, AWS secret 
 
 Leave out **Previous packages** (on by default): otherwise each package contains all the older ones.
 
+Always left out, wherever they are: version control files (`.git`, `.github`, `.gitignore`, `.svn`...), editor and AI tool folders (`.idea`, `.vscode`, `.cursor`, `.claude`...) and system files (`.DS_Store`, `Thumbs.db`...). Other hidden files, such as `.htaccess` or `.user.ini`, are kept.
+
+**Symbolic links** (and Windows junctions), for example a module linked from another repository:
+- a link to a folder outside the site is packaged as a real folder, so the restored site works on its own
+- a link that PHP cannot read because of `open_basedir`, a broken link, or a link back into the site is left out, without PHP warnings
+
+Every link left out is listed in the Duplicator log and in the package `.log` file.
+
 ### Storage
 
 Each package is saved to every storage turned on. See [Storages](#storages) for each one.
@@ -297,7 +305,7 @@ The first visit writes a key to `installer-key.php`, next to the installer. Open
 
 1. **Check** - PHP version and extensions, folder permissions.
 2. **Package** - choose the package. For an encrypted package, paste the secret key.
-3. **Extract** - the files are extracted. Large packages can take minutes.
+3. **Extract** - the files are extracted in batches, one request each, so no request hits the PHP time limit. The page goes on by itself and shows the progress.
 4. **Database** - host, port, name, user, password, charset and engine. An existing database is overwritten. The installer then imports the dump and updates `site/config.php`, including `$config->httpHosts`.
 5. **Finish** - removes the installer, its key, the package and the temporary files.
 
@@ -330,6 +338,18 @@ Usually on shared hosting with low limits. Try in this order:
 ### A storage is greyed out
 
 Its PHP library is missing. See [Cloud libraries](#cloud-libraries).
+
+### "Backup now" does nothing, or the app shows an unexpected answer
+
+Check `$config->httpHosts` in `site/config.php`: it must list every host name the admin is reached with, for example both `example.com` and `www.example.com`.
+
+### PHP warnings about open_basedir
+
+They came from symbolic links to folders PHP may not read, such as modules linked from another repository. Since 1.6.1 these links are left out without warnings, and listed in the log.
+
+### "The file containing the MySQL database couldn't be found"
+
+The package was built without its database dump. Since 1.6.1 Duplicator refuses to save such a package and writes the reason in the log. Build a new package.
 
 ### "No storage is enabled"
 

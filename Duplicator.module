@@ -17,6 +17,7 @@ require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupUtil.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupLogs.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/BackupDatabase.php';
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupCrypto.php';
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'Classes/DupFileFilter.php';
 
 class DupZipLog
 { //ATO: Utility class to implement some logging into a file per ZIP  
@@ -578,19 +579,22 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $packageInfos = array();
 
     try {
-      $dbbackup = $this->buildDatabaseBackup();
-      if ($dbbackup == false) {
-        DUP_Logs::log("- an error occured during database backup.");
-        return false;
-      }
-      $packageInfos['db'] = $dbbackup;
-
+      // files first: the dump lives in a temporary folder that ProcessWire removes after
+      // DUP_WIRETEMP_MAX_TIME, which a long file archive could outlast
       $pwbackup = $this->buildProcessWireBackup();
       if ($pwbackup == false) {
         DUP_Logs::log("- an error occured during package build.");
         return false;
       }
       $packageInfos['pw'] = $pwbackup;
+
+      $dbbackup = $this->buildDatabaseBackup();
+      if ($dbbackup == false) {
+        DUP_Logs::log("- an error occured during database backup.");
+        DUP_Util::deleteFile($pwbackup['zipfile']);
+        return false;
+      }
+      $packageInfos['db'] = $dbbackup;
 
       if (true) //ATO: Add SQL ZIP to archive
       {
@@ -599,10 +603,21 @@ class Duplicator extends WireData implements Module, ConfigurableModule
           throw new WireException("Unable to open ZIP: {$pwbackup['zipfile']}");
         }
 
-        $zip->addFile($dbbackup['zipfile'], basename($dbbackup['zipfile']));
-        $zip->close();
-        $zipfile = $pwbackup['zipfile']; //ATO: Fix to properly return new archive
+        // a package without its database cannot be restored: check the dump really is in it
+        $dumpName = basename($dbbackup['zipfile']);
+        $added = is_file($dbbackup['zipfile']) && $zip->addFile($dbbackup['zipfile'], $dumpName);
+        $closed = $zip->close();
+        if ($added && $closed) {
+          $added = $zip->open($pwbackup['zipfile']) === true && $zip->locateName($dumpName) !== false;
+          $zip->close();
+        }
         DUP_Util::deleteFile($dbbackup['zipfile']);
+        if (!$added || !$closed) {
+          DUP_Logs::log("- the database dump could not be added to the package, it was deleted.");
+          DUP_Util::deleteFile($pwbackup['zipfile']);
+          return false;
+        }
+        $zipfile = $pwbackup['zipfile']; //ATO: Fix to properly return new archive
       } else {
         $files = array(
           $packageInfos['db']['zipfile'],
@@ -941,14 +956,14 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
     $zipLog = new DupZipLog($this->getPath() . '/' . basename($zipfile) . '.log', self::DUP_ZIP_LOGLEVEL);
 
-    if (isset($options['allowHidden'])) {
-      $allowHidden = $options['allowHidden'];
-      if (!is_array($allowHidden)) {
-        $allowHidden = [$allowHidden];
-      }
-    } else {
-      $allowHidden = [];
-    }
+    // true allows every hidden file (.htaccess, .user.ini, .well-known...), an array only the listed names
+    $allowAllHidden = isset($options['allowHidden']) && $options['allowHidden'] === true;
+    $allowHidden = isset($options['allowHidden']) && is_array($options['allowHidden']) ? $options['allowHidden'] : [];
+
+    // symbolic links: see DupFileFilter::checkLink()
+    $siteRoot = realpath($rootDirectory) ?: $rootDirectory;
+    $followedLinks = [];
+    $skippedLinks = [];
 
     $zipLog->setExcludes($options['exclude'], $options['extension']);
 
@@ -995,15 +1010,30 @@ class Duplicator extends WireData implements Module, ConfigurableModule
               continue;
             }
 
-            if (!in_array($de, $allowHidden)) {
+            if (!$allowAllHidden && !in_array($de, $allowHidden, true)) {
               $zipLog->verbose("HIDDEN: {$thisDir}{$de}");
               continue;
             }
           }
 
+          if (DupFileFilter::isSkippedName($de)) {
+            $zipLog->verbose("SKIPPED: {$thisDir}{$de}");
+            continue;
+          }
+
           $filePath = $fullPath . $de;
           if ($zipLog->isExcluded($thisDir . $de)) {
             continue;
+          }
+
+          // checked before is_dir(), which follows the link and warns outside open_basedir
+          if (DupFileFilter::isLink($filePath)) {
+            list($reason) = DupFileFilter::checkLink($filePath, $siteRoot, $followedLinks);
+            if ($reason !== null) {
+              $zipLog->log("SKIPPED LINK: {$thisDir}{$de} ({$reason})");
+              $skippedLinks[] = "{$thisDir}{$de} ({$reason})";
+              continue;
+            }
           }
 
           if (is_dir($filePath)) {
@@ -1078,6 +1108,9 @@ class Duplicator extends WireData implements Module, ConfigurableModule
       }
     }
 
+    if (count($skippedLinks)) {
+      DUP_Logs::log("- " . count($skippedLinks) . " symbolic link(s) not packaged: " . implode(', ', array_slice($skippedLinks, 0, 10)) . (count($skippedLinks) > 10 ? ', ...' : ''));
+    }
     $zipLog->log("{$totalFiles} Files in {$totalDirectories} Directories: " . sprintf("%.2fMB", $totalBytes / (1024 * 1024)));
     if ($zipLog->logLevel >= 2) {
       arsort($extSizes);

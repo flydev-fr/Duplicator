@@ -1,6 +1,8 @@
 <?php session_start();
+// buffered: checkAccess() renews the session id after the page head is written
+ob_start();
 define('DUPLICATOR_INSTALLER', "1.1");
-set_time_limit(300);
+if (function_exists('set_time_limit')) @set_time_limit(300); // some hosts disable it
 
 /**
  * Class Installer
@@ -405,6 +407,10 @@ p { margin: 0 0 1rem; }
 .msg-warn span, .msg-err span { color: var(--text); }
 .msg + p, .msg + .fields { margin-top: 1.25rem; }
 .btn + p, div:has(> .btn) + p { margin-top: 1rem; color: var(--muted); font-size: 0.82rem; }
+.progress { display: block; width: 100%; height: 4px; margin: 0 0 1.25rem; border: 0; background: var(--line); appearance: none; }
+.progress::-webkit-progress-bar { background: var(--line); }
+.progress::-webkit-progress-value { background: var(--accent); }
+.progress::-moz-progress-bar { background: var(--accent); }
 
 .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); gap: 1rem 1.1rem; margin: 0 0 1.25rem; }
 .field { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; font-size: 0.78rem; font-weight: 500; color: var(--muted); }
@@ -817,6 +823,22 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
   }
 
   /**
+   * Seconds of extraction per request: short enough for the PHP time limit and for proxies
+   * that stop slow requests, long enough to keep the number of requests low
+   *
+   * @return float
+   */
+  protected function extractTimeBudget()
+  {
+    // a single large file can take long: lift the limit where the host allows it
+    if (function_exists('set_time_limit')) @set_time_limit(0);
+    $limit = (int) ini_get('max_execution_time');
+    $budget = 20.0;
+    if ($limit > 0) $budget = min($budget, max(3.0, $limit / 2));
+    return $budget;
+  }
+
+  /**
    * @return bool
    */
   protected function extractPackage()
@@ -843,45 +865,92 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
       $path .= '/' . self::DUP_TEMP_FOLDER;
     }
 
-    // an encrypted package is first decrypted into the temp folder
+    // large packages are extracted in batches, one request each, so no request hits the time limit
+    $batch = isset($_SESSION['extract']) ? $_SESSION['extract'] : null;
+    $continuing = isset($_POST['extractContinue']) && is_array($batch) && $batch['package'] === $this->package;
+    if (!$continuing) {
+      if (is_array($batch) && !empty($batch['decrypted']) && is_file($batch['decrypted'])) @unlink($batch['decrypted']);
+      unset($_SESSION['extract']);
+      $batch = null;
+    }
+
+    // an encrypted package is first decrypted into the temp folder, once: the next batches reuse it
     $packageFile = $this->package;
     $decrypted = null;
+    $keepDecrypted = false;
     if (DupDecrypt::isEncryptedFile($this->package)) {
-      // random name, removed even if the script stops (timeout): the plain package must not stay reachable
-      $decrypted = $tempfolder . DIRECTORY_SEPARATOR . 'package-' . bin2hex(random_bytes(12)) . '.zip';
-      register_shutdown_function(function () use ($decrypted) {
-        if (is_file($decrypted)) @unlink($decrypted);
-      });
-      try {
-        DupDecrypt::decryptFile($this->package, $decrypted, isset($_POST['secretKey']) ? $_POST['secretKey'] : '');
-      } catch (Exception $e) {
-        $this->err(htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
-        $this->secretKeyInput();
-        $this->btn("Try Again", 2, 'refresh', false, true);
-        return false;
+      if ($continuing && !empty($batch['decrypted']) && is_file($batch['decrypted'])) {
+        $decrypted = $batch['decrypted'];
+      } else {
+        // random name, removed when the script stops (timeout included) unless a next batch needs it:
+        // the plain package must not stay reachable
+        $decrypted = $tempfolder . DIRECTORY_SEPARATOR . 'package-' . bin2hex(random_bytes(12)) . '.zip';
+        try {
+          DupDecrypt::decryptFile($this->package, $decrypted, isset($_POST['secretKey']) ? $_POST['secretKey'] : '');
+        } catch (Exception $e) {
+          if (is_file($decrypted)) @unlink($decrypted);
+          unset($_SESSION['extract']);
+          $this->err(htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
+          $this->secretKeyInput();
+          $this->btn("Try Again", 2, 'refresh', false, true);
+          return false;
+        }
+        $this->ok("The package has been decrypted.");
       }
-      $this->ok("The package has been decrypted.");
+      register_shutdown_function(function () use ($decrypted, &$keepDecrypted) {
+        if (!$keepDecrypted && is_file($decrypted)) @unlink($decrypted);
+      });
       $packageFile = $decrypted;
     }
 
     $zip = new ZipArchive();
-    $res = $zip->open($packageFile);
-    if ($res == true) {
-      //$this->action("Extracting \"<i>{$this->package}</i>\" into \"<i>{$path}</i>\"...");
-      if (is_writable($path))
-        $zip->extractTo($path);
-      else {
+    if ($zip->open($packageFile) !== true) {
+      unset($_SESSION['extract']);
+      $this->err("An error occured! Duplicator couldn't open " . htmlspecialchars($this->package, ENT_QUOTES, 'UTF-8') . ". The file may be incomplete: upload it again.");
+      $this->btn("Check Again", 2, 'refresh', false, true);
+      return false;
+    }
+    if (!is_writable($path)) {
+      $zip->close();
+      unset($_SESSION['extract']);
+      $this->err("The temp folder $path is not writable. Please adjust the permissions and try again.");
+      $this->btn("Check Again", 2, 'refresh', false, true);
+      return false;
+    }
+
+    $total = $zip->numFiles;
+    $index = $continuing ? (int) $batch['index'] : 0;
+    $budget = $this->extractTimeBudget();
+    $start = microtime(true);
+    while ($index < $total) {
+      $name = $zip->getNameIndex($index);
+      if ($name !== false && !$zip->extractTo($path, $name)) {
         $zip->close();
-        if ($decrypted) @unlink($decrypted);
-        $this->err("The temp folder $path is not writable. Please adjust the permissions and try again.");
-        $this->btn("Check Again", 2, 'refresh', false, true);
+        unset($_SESSION['extract']);
+        $this->err("An error occured while extracting " . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . ". Check the free disk space and the folder permissions, then try again.");
+        $this->btn("Try Again", 2, 'refresh', false, true);
         return false;
       }
-      if ($zip) $zip->close();
-      $this->ok("The package has been extracted.");
-    } else {
-      $this->err("An error occured! Duplicator couldn't open {$this->package}.");
+      $index++;
+      if ($index < $total && microtime(true) - $start >= $budget) break;
     }
+    $zip->close();
+
+    if ($index < $total) {
+      // not done: save the position and let the browser send the next batch
+      $keepDecrypted = true;
+      $_SESSION['extract'] = array('package' => $this->package, 'index' => $index, 'decrypted' => $decrypted);
+      $percent = (int) floor($index * 100 / $total);
+      $this->info("Extracting the package: $index of $total files ($percent%). The next batch starts by itself.");
+      echo "\n<progress class='progress' max='$total' value='$index'>$percent%</progress>";
+      echo "\n<input type='hidden' name='extractContinue' value='1' />";
+      $this->btn('Continue', 2);
+      echo "\n<script>setTimeout(function () { var b = document.querySelector(\"button[name='step'][value='2']\"); if (b) b.click(); }, 200);</script>";
+      return true;
+    }
+
+    unset($_SESSION['extract']);
+    $this->ok("The package has been extracted ($total files).");
     if ($decrypted) @unlink($decrypted);
 
     if ($isV2) {    //ATO: Unpack into subdirectory only for V1 files
@@ -929,7 +998,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 
 
     if (!isset($sqlzip) || !$sqlzip) {
-      $this->err("The file containing the MySQL database couldn't be found.");
+      $this->err("The file containing the MySQL database couldn't be found: no file ending with ." . self::DUP_SQL_EXTENSION . " was extracted next to installer.php. This package was built without its database. Build a new package with Duplicator 1.6.1 or newer, which refuses to save a package without it.");
       $this->btn("Check Again", 2, 'refresh', false, true);
       return false;
     } else {

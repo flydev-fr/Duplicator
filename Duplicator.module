@@ -222,7 +222,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
 
     self::$_data = $this;
 
-    $this->moduleDir = $this->config->paths->siteModules . $this->className;
+    $this->moduleDir = __DIR__;
 
     $this->config->styles->add($this->config->urls->{$this->className} . "{$this->className}.css");
     $this->config->scripts->add($this->config->urls->{$this->className} . "Assets/lib/baffle.min.js");
@@ -244,7 +244,7 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     $this->addHookAfter('Page::render', $this, 'styles');
 
     if (wire('input') && wire('input')->get('name') == __CLASS__) {
-      $root = $this->config->urls->siteModules . __CLASS__;
+      $root = rtrim($this->config->urls->{__CLASS__}, '/');
       $this->config->styles->prepend($root . '/' . __CLASS__ . '.css');
       $this->config->scripts->add($root . '/' . __CLASS__ . '.js');
     }
@@ -1261,10 +1261,10 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     // propaganda
     $modinfo = json_decode(file_get_contents(__DIR__ . "/package.json"));
     $out = "<div id='dup-head'>";
-    $out .= "  <img id='dup-logo' src='" . wire('config')->urls->siteModules . self::DUP_APPLICATION_NAME . "/Assets/Duplicator-logo-xl-v2.png'>";
+    $out .= "  <img id='dup-logo' src='" . wire('config')->urls->Duplicator . "Assets/Duplicator-logo-xl-v2.png'>";
     $out .= "  <ul>";
-    $out .= "	   <li><a title='Goto Support Thread' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank'><img src='" . wire('config')->urls->siteModules . self::DUP_APPLICATION_NAME . "/Assets/support.svg' class='dup-icon'><span class='dup-label'>Discussion</span></a></li>";
-    $out .= "	   <li><a title='Goto Package Manager' href='" . wire('config')->urls->httpAdmin . "setup/" . strtolower(self::DUP_APPLICATION_NAME) . "' target='_self'><img src='" . wire('config')->urls->siteModules . self::DUP_APPLICATION_NAME . "/Assets/package.svg' class='dup-icon'><span class='dup-label'>Packages</span></a></li>";
+    $out .= "	   <li><a title='Goto Support Thread' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/' target='_blank'><img src='" . wire('config')->urls->Duplicator . "Assets/support.svg' class='dup-icon'><span class='dup-label'>Discussion</span></a></li>";
+    $out .= "	   <li><a title='Goto Package Manager' href='" . wire('config')->urls->httpAdmin . "setup/" . strtolower(self::DUP_APPLICATION_NAME) . "' target='_self'><img src='" . wire('config')->urls->Duplicator . "Assets/package.svg' class='dup-icon'><span class='dup-label'>Packages</span></a></li>";
     $out .= "  </ul>";
     $out .= "  <span class='dup-head-label dup-glitch animate-chars dup-version'> v{$modinfo->version}</span>";
     $out .= "  <div class='dup-flex-r'>";

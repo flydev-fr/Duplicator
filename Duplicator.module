@@ -292,6 +292,12 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     }
 
     $action = $this->sanitizer->text($this->input->get->action, array('maxLength' => 20));
+    // This module autoloads on any admin page requested with ?name=Duplicator, and for a guest
+    // every admin URL is the login page, so check who is asking before acting on ?action=.
+    // Scheduled backups (LazyCron, PwCron, cron.php) call cronJob() directly and are not affected.
+    if ($action && !$this->user->isSuperuser() && !$this->user->hasPermission('duplicator')) {
+      $action = '';
+    }
     switch ($action) {
       case 'backup_now': {
           $e = new HookEvent();

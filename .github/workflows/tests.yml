@@ -37,4 +37,8 @@ jobs:
         working-directory: ui
         run: npm ci && npm run build
       - name: Built files are committed
-        run: git diff --exit-code -- Assets/app || (echo "Assets/app is out of date: run 'npm run build' in ui/ and commit the result." && exit 1)
+        run: |
+          if ! git diff --exit-code -- Assets/app; then
+            echo "Assets/app is out of date: run 'npm run build' in ui/ and commit the result."
+            exit 1
+          fi

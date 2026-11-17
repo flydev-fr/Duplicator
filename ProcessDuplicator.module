@@ -54,9 +54,16 @@ class ProcessDuplicator extends Process
   {
     $page = $event->object;
     if (!($page->process == 'ProcessDuplicator')) return;
-    $github = '<script async defer src="https://buttons.github.io/buttons.js"></script>';
+    // no third-party script on this page, it lists packages and can download them
+  }
 
-    $event->return = str_replace("</head>", "\r\n$github</head>", $event->return);
+  /**
+   * @param string $name A file name or id read from a cloud storage
+   * @return bool True if it can be shown and put in a link as is (a package name never needs more)
+   */
+  protected static function isSafeName($name)
+  {
+    return is_string($name) && preg_match('#^[A-Za-z0-9._/-]+$#', $name) === 1;
   }
 
   public function ___execute()
@@ -71,6 +78,12 @@ class ProcessDuplicator extends Process
     switch ($action) {
       case 'packages':
         $out .= $this->renderGetPackages();
+
+        // Sync writes a file on this server: it needs this session's token like delete
+        if (isset(wire('input')->get->service) && isset(wire('input')->get->file) && !Duplicator::hasActionToken()) {
+          wire('session')->redirect(wire('page')->url);
+          break;
+        }
 
         if (isset(wire('input')->get->service) && isset(wire('input')->get->file)) {
           switch (wire('sanitizer')->text(wire('input')->get->service)) {
@@ -112,7 +125,7 @@ class ProcessDuplicator extends Process
         } elseif (isset(wire('input')->get->file)) {
           $filename = wire('sanitizer')->filename(wire('input')->get->file);
           $packages = DUP_Util::getPackages($this->dupmod->path, Duplicator::DUP_PACKAGE_EXTENSION);
-          if (in_array($filename, $packages)) {
+          if (is_array($packages) && in_array($filename, $packages, true)) {
             wireSendFile($this->dupmod->path . DS . $filename);
           }
         } elseif (isset(wire('input')->get->installer)) {
@@ -160,7 +173,12 @@ class ProcessDuplicator extends Process
           }
         } elseif (isset(wire('input')->get->file)) {
           $filename = wire('sanitizer')->filename(wire('input')->get->file);
-          DUP_Util::deleteFile($this->dupmod->path . DS . $filename);
+          // only packages (and their log) can be deleted, not any file of the folder
+          $packages = DUP_Util::getPackages($this->dupmod->path, Duplicator::DUP_PACKAGE_EXTENSION);
+          if (is_array($packages) && in_array($filename, $packages, true)) {
+            DUP_Util::deleteFile($this->dupmod->path . DS . $filename);
+            if (is_file($this->dupmod->path . DS . $filename . '.log')) DUP_Util::deleteFile($this->dupmod->path . DS . $filename . '.log');
+          }
         }
         wire('session')->redirect(wire('page')->url);
         break;
@@ -388,6 +406,7 @@ class ProcessDuplicator extends Process
         if (count($files)) {
           foreach ($files as $file) {
             if (strrpos($file['name'], $extension) == false) continue;
+            if (!self::isSafeName($file['name']) || (isset($file['id']) && !self::isSafeName($file['id']))) continue;
             $originalFilename = $file['name'];
             $parts = explode('-', $file['name']);
             array_pop($parts);
@@ -396,7 +415,7 @@ class ProcessDuplicator extends Process
             $createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
             $dataAction = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
             $href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
-            $href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=dropbox" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
+            $href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=dropbox&' . Duplicator::actionToken() . '" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
             $href3 = '<a href="?action=delete&file=' . $file['name'] . '&service=dropbox&' . Duplicator::actionToken() . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
             $data = array(
@@ -429,6 +448,7 @@ class ProcessDuplicator extends Process
         if ($cntFiles) {
           foreach ($files as $file) {
             if (strrpos($file['name'], $extension) == false) continue;
+            if (!self::isSafeName($file['name']) || (isset($file['id']) && !self::isSafeName($file['id']))) continue;
             $originalFilename = $file['name'];
             $parts = explode('-', $file['name']);
             array_pop($parts);
@@ -437,7 +457,7 @@ class ProcessDuplicator extends Process
             $createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
             $dataAction = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
             $href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
-            $href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=googledrive" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
+            $href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=googledrive&' . Duplicator::actionToken() . '" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
             $href3 = '<a href="?action=delete&file=' . $file['id'] . '&service=googledrive&' . Duplicator::actionToken() . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
 
             $data = array(
@@ -469,6 +489,7 @@ class ProcessDuplicator extends Process
         if ($files && count($files)) {
           foreach ($files as $file) {
             if (strrpos($file['Key'], $extension) == false) continue;
+            if (!self::isSafeName($file['Key'])) continue;
             $originalFilename = $file['Key'];
             if ($this->dupmod->awsSubDir !== '' && strpos($originalFilename, $this->dupmod->awsSubDir) === 0) {
               $originalFilename = substr($originalFilename, strlen($this->dupmod->awsSubDir . '/'));
@@ -480,7 +501,7 @@ class ProcessDuplicator extends Process
             $createdOn = ($ts === false) ? 'invalid timestamp' : wireRelativeTimeStr($ts->getTimestamp());
             $dataAction = $this->config->urls->httpRoot . str_replace('/', '', $this->config->urls->admin) . '/setup/' . strtolower(Duplicator::DUP_APPLICATION_NAME) . '/?action=none';
             $href1 = '<a href="?action=packages&installer=' . $originalFilename . '" class="btnlink"><i class="fa fa-bolt"></i> Installer</a>';
-            $href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=amazon" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
+            $href2 = '<a href="?action=packages&file=' . $originalFilename . '&service=amazon&' . Duplicator::actionToken() . '" class="btnlink" title="Synchronize the package from the Cloud to your Server."><i class="fa fa-cloud-download"></i> Sync</a>';
             $href3 = '<a href="?action=delete&file=' . $file['Key'] . '&service=amazon&' . Duplicator::actionToken() . '" class="trashTrigger" data-action="' . $dataAction . '"><i class="fa fa-trash"></i></a>';
             $data = array(
               'time' => $ts ? $ts->getTimestamp() : 0,

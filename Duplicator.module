@@ -1886,9 +1886,6 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     if (!($page->process == 'ProcessModule')) {
       return;
     }
-
-    $github = '<script async defer src="https://buttons.github.io/buttons.js"></script>';
-
-    $event->return = str_replace("</head>", "\r\n$github</head>", $event->return);
+    // no third-party script on the settings page: it shows the cloud credentials
   }
 }

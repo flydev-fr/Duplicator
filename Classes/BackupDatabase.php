@@ -61,13 +61,19 @@ class BackupDatabase
     }
 
     if ($stub) {
-      $stub = str_replace('%%FILE%%', $this->options['backup']['filename'], $stub);
-      $stub = str_replace('%%SERVER%%', wire('config')->dbHost, $stub);
-      $stub = str_replace('%%DATABASE%%', wire('config')->dbName, $stub);
-      $stub = str_replace('%%USER%%', wire('config')->dbUser, $stub);
-      $stub = str_replace('%%PASS%%', wire('config')->dbPass, $stub);
-      $stub = str_replace('%%CACHEPATH%%', $this->options['cachePath'], $stub);
-      $stub = str_replace('%%PORT%%', wire('config')->dbPort, $stub);
+      // on Unix, values are single-quoted so that characters like $ ; ` or spaces in a password stay data
+      $quote = $this->OS === 'UNIX' ? function ($value) {
+        return "'" . str_replace("'", "'\\''", (string) $value) . "'";
+      } : function ($value) {
+        return (string) $value;
+      };
+      $stub = str_replace('%%FILE%%', $quote($this->options['backup']['filename']), $stub);
+      $stub = str_replace('%%SERVER%%', $quote(wire('config')->dbHost), $stub);
+      $stub = str_replace('%%DATABASE%%', $quote(wire('config')->dbName), $stub);
+      $stub = str_replace('%%USER%%', $quote(wire('config')->dbUser), $stub);
+      $stub = str_replace('%%PASS%%', $quote(wire('config')->dbPass), $stub);
+      $stub = str_replace('%%CACHEPATH%%', $quote($this->options['cachePath']), $stub);
+      $stub = str_replace('%%PORT%%', $quote(wire('config')->dbPort), $stub);
     }
 
     // set shell script
@@ -126,7 +132,7 @@ class BackupDatabase
       if ($this->OS === 'UNIX') {
         if ($this->options['zipbinary']) {
           // use zip binary as it's available
-          exec('zip ' . $zipfile . ' ' . $sqlfile, $output, $return);
+          exec('zip ' . escapeshellarg($zipfile) . ' ' . escapeshellarg($sqlfile), $output, $return);
         }
         else {
           // use processwire zip function
@@ -138,7 +144,7 @@ class BackupDatabase
         
         unlink($cachePath . 'duplicator.sh');
       } else {
-        exec(str_replace('\\', '/', wire('config')->paths->Duplicator) . 'Bin/7za.exe a ' . $zipfile . ' ' . str_replace('\\', '/', $sqlfile), $output, $return);
+        exec(escapeshellarg(str_replace('\\', '/', wire('config')->paths->Duplicator) . 'Bin/7za.exe') . ' a ' . escapeshellarg($zipfile) . ' ' . escapeshellarg(str_replace('\\', '/', $sqlfile)), $output, $return);
         unlink(str_replace('\\', '/', $cachePath) . 'duplicator.bat');
       }
 
@@ -231,7 +237,10 @@ class BackupDatabase
     
     $return = null;
     $output = array();
+    // the script holds the database credentials: create it readable by its owner only
+    $umask = umask(0077);
     file_put_contents($cachePath . 'duplicator.sh', $data);
+    umask($umask);
     /**
      *  Default:
      *    Chmod 700 (chmod a+rwx,g-rwx,o-rwx) sets permissions so that:

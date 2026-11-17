@@ -720,7 +720,7 @@ class Installer
    */
   protected function extractPackage()
   {
-    $isV2 = strrpos($this->package, self::DUP_PACKAGE2_EXTENSION) == FALSE;
+    $isV2 = strrpos((string) $this->package, self::DUP_PACKAGE2_EXTENSION) == FALSE; // $this->package is not set yet here, the cast keeps the previous result without a PHP 8 deprecation notice
     $this->h("Step #3 - Package Extraction");
 
     $this->package = $_SESSION['package'];

@@ -298,6 +298,10 @@ class Duplicator extends WireData implements Module, ConfigurableModule
     if ($action && !$this->user->isSuperuser() && !$this->user->hasPermission('duplicator')) {
       $action = '';
     }
+    // The two that change something also need this session's token (see actionToken()).
+    if (($action === 'backup_now' || $action === 'clean_packages') && !self::hasActionToken()) {
+      $action = '';
+    }
     switch ($action) {
       case 'backup_now': {
           $e = new HookEvent();
@@ -424,6 +428,27 @@ class Duplicator extends WireData implements Module, ConfigurableModule
   public static function getPath()
   {
     return self::$_data['path'];
+  }
+
+  /**
+   * The query-string pair ("name=value") that the links and buttons which change something
+   * carry: starting a backup and deleting packages are plain GET requests, so without it a
+   * link on any other site, followed by a logged-in admin, would run them.
+   */
+  public static function actionToken()
+  {
+    $csrf = wire('session')->CSRF;
+    return $csrf->getTokenName() . '=' . $csrf->getTokenValue();
+  }
+
+  /**
+   * Does the request carry this session's token in its query string?
+   */
+  public static function hasActionToken()
+  {
+    $csrf = wire('session')->CSRF;
+    $given = wire('input')->get($csrf->getTokenName());
+    return is_string($given) && hash_equals((string) $csrf->getTokenValue(), $given);
   }
 
   /*

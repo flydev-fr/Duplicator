@@ -1,3 +1,15 @@
+## [1.5.5](https://github.com/flydev-fr/Duplicator/compare/v1.5.4...v1.5.5) (2026-11-17)
+
+
+### Bug Fixes
+
+* Fix AmazonS3Client namespace issue [#56](https://github.com/flydev-fr/Duplicator/issues/56) ([16a34b5](https://github.com/flydev-fr/Duplicator/commit/16a34b55f298af37e393c392a5e73efb9fed4ebf))
+* Fix AmazonS3 namespace issue and PHP 8.4 deprecations [#57](https://github.com/flydev-fr/Duplicator/issues/57) ([566d629](https://github.com/flydev-fr/Duplicator/commit/566d629fbc94a447d4c7f0757a62234cf60aa63d))
+* Check permission before acting on `?action=` [#60](https://github.com/flydev-fr/Duplicator/issues/60) ([13b7023](https://github.com/flydev-fr/Duplicator/commit/13b70234376f9517d76c140c974dc0e9626ec97b))
+* Require the session's CSRF token for the actions that change something [#61](https://github.com/flydev-fr/Duplicator/issues/61) ([289466d](https://github.com/flydev-fr/Duplicator/commit/289466d18be9372bfc9fe077e9a7612eb53e29d3))
+
+
+
 ## [1.5.4](https://github.com/flydev-fr/Duplicator/compare/v1.5.3...v1.5.4) (2024-06-07)
 
 

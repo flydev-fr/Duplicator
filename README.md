@@ -67,14 +67,17 @@ The **secret key** stays with you, outside the server, and is needed to restore 
 Requirements: the PHP `sodium` extension, bundled with PHP since 7.2. If it is disabled, enable `extension=sodium` in `php.ini`. There is no library to install.
 
 ### Setup
-1. Generate a key pair, either:
-   - in the module settings: **Encryption > Need a key pair?** (a new pair on each display, never saved), or
-   - offline, on your computer: `php site/modules/Duplicator/scripts/dupcrypt.php keygen`
+1. Generate a key pair **on your own computer**, not on the server: `php scripts/dupcrypt.php keygen` (the script only needs PHP 7.2+, not ProcessWire).
 2. Store the secret key (`dup-sk1:...`) somewhere safe, outside the server, e.g. in a password manager.
    **Without it, your encrypted packages cannot be restored.**
 3. In the module settings, tick **Encrypt packages**, paste the public key (`dup-pk1:...`) and save.
 
-If a package cannot be encrypted (missing extension, invalid key, disk full...), it is deleted and not uploaded: an unencrypted copy never leaves the server. The error is written in the Duplicator log.
+If a package cannot be encrypted (missing extension, invalid key, disk full...), it is deleted and not uploaded: an unencrypted copy never leaves the server. The error is written in the Duplicator log. If the job stops during the build or the encryption (timeout, fatal error), the unencrypted package it was writing is removed at the end of the request.
+
+### Limits
+- Encryption protects the **confidentiality** of packages. It does not prove who made a package: the public key is not secret, so someone who can write to your storage could put a package of their own there. Only restore packages from storages you trust.
+- The `.log` file written next to each package lists the files it contains, unencrypted. It stays in the local folder and is not uploaded.
+- Send the secret key to the installer over **HTTPS** only. Otherwise, decrypt the package on your computer with `dupcrypt.php` and upload the decrypted package.
 
 ### Restore
 Encrypted packages keep their name. The installer recognizes them and asks for the secret key before extracting the package.

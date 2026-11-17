@@ -712,6 +712,12 @@ class Installer
     if (!DupDecrypt::isAvailable()) {
       $this->err("The PHP sodium extension is required to decrypt this package. Enable <code>extension=sodium</code> in php.ini (bundled with PHP 7.2+).");
     }
+    $https = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off')
+      || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower($_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https');
+    $local = isset($_SERVER['REMOTE_ADDR']) && in_array($_SERVER['REMOTE_ADDR'], array('127.0.0.1', '::1'), true);
+    if (!$https && !$local) {
+      $this->warn("This page is not served over HTTPS: the secret key would be sent unencrypted. Use HTTPS, or decrypt the package on your computer with scripts/dupcrypt.php and upload the decrypted package instead.");
+    }
     echo "\n<p style='clear: both;'><label>Secret key<br /><input type='password' name='secretKey' value='' autocomplete='off' style='width: 420px;' /></label></p>";
   }
 
@@ -746,7 +752,11 @@ class Installer
     $packageFile = $this->package;
     $decrypted = null;
     if (DupDecrypt::isEncryptedFile($this->package)) {
-      $decrypted = $tempfolder . DIRECTORY_SEPARATOR . 'package.decrypted.zip';
+      // random name, removed even if the script stops (timeout): the plain package must not stay reachable
+      $decrypted = $tempfolder . DIRECTORY_SEPARATOR . 'package-' . bin2hex(random_bytes(12)) . '.zip';
+      register_shutdown_function(function () use ($decrypted) {
+        if (is_file($decrypted)) @unlink($decrypted);
+      });
       try {
         DupDecrypt::decryptFile($this->package, $decrypted, isset($_POST['secretKey']) ? $_POST['secretKey'] : '');
       } catch (Exception $e) {

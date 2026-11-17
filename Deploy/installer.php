@@ -138,6 +138,39 @@ class Installer
 
 
   /**
+   * Installer steps, as shown in the progress bar (index = posted step + 1)
+   *
+   */
+  protected static $stepLabels = array('Check', 'Package', 'Extract', 'Database', 'Finish');
+
+  /**
+   * Inline SVG icon (no external font or CDN: the installer often runs on a server without them)
+   *
+   * @param string $name
+   * @return string
+   *
+   */
+  protected function icon($name)
+  {
+    $paths = array(
+      'arrow' => '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
+      'refresh' => '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
+      'check' => '<path d="M5 12.5l4.5 4.5L19 7"/>',
+      'warning' => '<path d="M12 3.5L22 20.5H2z"/><path d="M12 10v4.5"/><path d="M12 17.5v.01"/>',
+      'error' => '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6"/><path d="M15 9l-6 6"/>',
+      'info' => '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/>',
+      'globe' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c3 3.5 3 14.5 0 18"/><path d="M12 3c-3 3.5-3 14.5 0 18"/>',
+      'help' => '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1 1-1.1 1.8v.5"/><path d="M12 17.5v.01"/>',
+      'start' => '<path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/>',
+    );
+    // names used by older calls (Font Awesome)
+    $aliases = array('angle-right' => 'arrow', 'sign-in' => 'start', 'exclamation-triangle' => 'warning', 'info-circle' => 'info', 'comments' => 'help');
+    if (isset($aliases[$name])) $name = $aliases[$name];
+    if (!isset($paths[$name])) $name = 'arrow';
+    return "<svg class='icon' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>{$paths[$name]}</svg>";
+  }
+
+  /**
    *
    */
   protected function renderHead()
@@ -145,227 +178,156 @@ class Installer
     if (!defined("DUPLICATOR_INSTALLER")) die("error.");
     $title = "Duplicator installer";
     $formAction = "./installer.php";
-    if (!isset($bgTitle)) $bgTitle = "Installer";
-    if ($title && $formAction) {
+    $current = isset($_POST['step']) ? ((int) $_POST['step']) + 1 : 0;
+
+    $steps = '';
+    foreach (self::$stepLabels as $i => $label) {
+      $n = $i + 1;
+      $state = $n < $current ? 'done' : ($n === $current ? 'current' : 'todo');
+      $aria = $state === 'current' ? " aria-current='step'" : '';
+      $steps .= "<li class='step $state'$aria><span class='step-label'>$label</span></li>";
     }
 
-    echo "
-            <!DOCTYPE html>
-            <html lang='en'>
-            <head>
-                <title>" . htmlentities($title, ENT_QUOTES, 'UTF-8') . "</title>
+    echo "<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8' />
+<meta name='viewport' content='width=device-width, initial-scale=1' />
+<meta name='robots' content='noindex, nofollow' />
+<title>" . htmlentities($title, ENT_QUOTES, 'UTF-8') . "</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --text: #1c2733;
+  --muted: #5b6b7c;
+  --border: #dde3ea;
+  --accent: #2459d6;
+  --accent-text: #ffffff;
+  --accent-soft: #e8eefc;
+  --ok: #1d7a46;
+  --ok-soft: #e6f4ec;
+  --warn: #9a5b00;
+  --warn-soft: #fdf3e1;
+  --err: #b42318;
+  --err-soft: #fdecea;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141a;
+    --surface: #171e26;
+    --text: #e3e9ef;
+    --muted: #93a2b1;
+    --border: #2a3542;
+    --accent: #6b93f5;
+    --accent-text: #0b1220;
+    --accent-soft: #1c2943;
+    --ok: #5cc68b;
+    --ok-soft: #142a1e;
+    --warn: #f0b350;
+    --warn-soft: #2c2312;
+    --err: #f38b80;
+    --err-soft: #321a18;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.55 system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+a { color: var(--accent); }
+code { font: 0.92em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--accent-soft); padding: 0.1em 0.35em; border-radius: 4px; }
+.icon { width: 1.15em; height: 1.15em; flex: none; vertical-align: -0.2em; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
 
-                <meta name='robots' content='noindex, nofollow' />
-                <link rel='stylesheet' type='text/css' href='https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' />
-                 <style>
+.top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem 0 1rem; }
+.brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.01em; }
+.brand-mark { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 8px; background: var(--accent); color: var(--accent-text); font-size: 1rem; }
+.brand small { font-weight: 500; color: var(--muted); font-size: 0.85rem; }
+.help { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; text-decoration: none; }
+.help:hover { text-decoration: underline; }
 
-                    #content, #footer {
-                        padding-right: 20px;
-                        padding-left: 20px;
-                    }
-                    #masthead {
-                        position: relative;
-                        background: #ffffff;
-                        min-height: 4.6em;
-                    }
-                    #logo {
-                        float: left;
-                        position: relative;
-                        left: -3px;
-                        top: 1px;
-                        margin-top: 0.75em;
-                        margin-bottom: 0.25em;
-                    }
-                    #logo img {
-                        max-width: 200px;
-                    }
+.steps { display: flex; gap: 0.25rem; list-style: none; margin: 0 0 1rem; padding: 0; counter-reset: step; }
+.step { flex: 1; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.8rem; color: var(--muted); }
+.step::before { content: ''; height: 4px; border-radius: 2px; background: var(--border); }
+.step.done::before, .step.current::before { background: var(--accent); }
+.step.current { color: var(--text); font-weight: 600; }
 
-                    body {
-                        background-color: #e4ebee;
-                        font: 10px/20px 'Helvetica Neue', Arial, sans-serif;
-                        color: #2f4248;
-                        padding: 0;
-                        margin: 0;
-                    }
-                    .container, .pw-container {
-                        position: relative;
-                        width: 85%;
-                        margin: 0 auto;
-                        max-width: 1024px;
-                        font-size: 14px;
-                    }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04); }
+.eyebrow { margin: 0 0 0.15rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }
+h2 { margin: 0 0 1rem; font-size: 1.4rem; line-height: 1.25; letter-spacing: -0.01em; }
+p { margin: 0 0 1rem; }
+.detail { color: var(--muted); font-size: 0.875rem; }
 
+.msg { display: flex; gap: 0.6rem; align-items: flex-start; margin: 0 0 0.4rem; padding: 0.5rem 0.75rem; border-radius: 8px; overflow-wrap: anywhere; }
+.msg .icon { margin-top: 0.15em; }
+.msg-ok { background: none; padding: 0.15rem 0; margin: 0 0 0.15rem; }
+.msg-ok .icon { color: var(--ok); }
+.msg-warn { background: var(--warn-soft); }
+.msg-warn .icon { color: var(--warn); }
+.msg-err { background: var(--err-soft); font-weight: 600; }
+.msg-err .icon { color: var(--err); }
+.msg-info { background: var(--accent-soft); }
+.msg-info .icon { color: var(--accent); }
+.msg + p, .msg + .fields { margin-top: 1rem; }
+.btn + p, div:has(> .btn) + p { margin-top: 0.75rem; color: var(--muted); font-size: 0.875rem; }
 
-                    #title {
-                        font-size: 37px;
-                        font-family: Georgia, 'Times New Roman', Times, serif;
-                        color: #003051;
-                        position: absolute;
-                        left: 0;
-                        white-space: nowrap;
-                    }
-                    #masthead, #content, #footer {
-                        padding-right: 20px;
-                        padding-left: 20px;
-                    }
-                    #breadcrumbs {
-                        padding-top: 1em;
-                        padding-bottom: 1em;
-                        color: rgba(219,17,116,0.3);
-                        background: #eaf0f2;
-                        border-bottom: 1px solid #eaf0f2;
-                    }
-                    ol, ul, li {
-                        list-style: none;
-                        margin: 0;
-                        padding: 0;
-                    }
-                    #breadcrumbs ul li {
-                        color: rgba(219,17,116,0.3);
-                        display: inline-block;
-                        padding: 0;
-                        line-height: 1em;
-                        white-space: nowrap;
-                        padding-right: 0.5em;
-                    }
-                    #breadcrumbs ul li.title {
-                        color: #2F4248;
-                        font-weight: bold;
-                    }
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: 0.75rem 1rem; margin: 0 0 1rem; }
+.field { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; font-size: 0.875rem; font-weight: 600; }
+.field.wide { grid-column: 1 / -1; }
+.field small { font-weight: 400; color: var(--muted); }
+input[type=text], input[type=password], input[type=email], input[type=number], select {
+  width: 100%;
+  max-width: 100%;
+  font: inherit;
+  font-weight: 400;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+}
+input:focus-visible, select:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-                    #breadcrumbs li.title {
-                        width: 50%;
-                        margin: 0;
-                        padding: 0;
+.btn {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  margin: 0.75rem 0.5rem 0 0; padding: 0.6rem 1.1rem;
+  font: inherit; font-weight: 600; font-size: 0.95rem; text-decoration: none;
+  color: var(--accent-text); background: var(--accent);
+  border: 1px solid var(--accent); border-radius: 8px; cursor: pointer;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn.secondary { color: var(--accent); background: transparent; }
+.btn.secondary:hover { background: var(--accent-soft); filter: none; }
+.btn .icon { order: 2; }
+.btn.icon-left .icon { order: 0; }
 
-                    }
-                    #breadcrumbs li.support {
-                        margin: 0;
-                        padding: 0;
-                        text-align: right;
-                        width: 48%;
-                        padding-left: 0 !important;
-                    }
-
-                    #content {
-                        position: relative;
-                        background: #fff;
-                        padding-top: 1.5em;
-                        padding-bottom: 2em;
-                        font-family: Georgia, serif;
-                        font-size: 1.3em;
-                    }
-                    #content form h2:first-child {
-                        margin-top: 0;
-                    }
-                    #content h2 {
-                        margin-top: 1.5em;
-                    }
-                    #content a {
-                        font-weight: bold;
-                    }
-                    a {
-                        font-family: 'Helvetica Neue', Arial, sans-serif;
-                        color: #f10055;
-                    }
-                    a:hover {
-                        color: #fff;
-                        background: #f10055;
-                    }
-                    #logo:hover {
-                        color: #fff;
-                        background: transparent;
-                    }
-
-                    body.modal .content h2, .container > h2, .container > form > h2 {
-                        margin-top: 0;
-                    }
-                    .content h2, .content h2 a {
-                        font-family: Georgia, serif;
-                        color: #006fbb;
-                    }
-                    .content h2 {
-                        margin: 1em 0;
-                        margin-top: 1em;
-                        font-size: 1.6em;
-                        line-height: 1.2em;
-                    }
-                    #content li {
-                        margin: 3px 0;
-                        padding: 3px 4px;
-                    }
-                    .content li {
-                        margin: 1em 0;
-                        display: block;
-                        list-style: disc;
-                    }
-                    #content strong {
-                        font-weight: bold;
-                    }
-
-                    #content li {
-                        margin: 3px 0;
-                        padding: 3px 4px;
-                    }
-
-                    #content a {
-                        font-weight: bold;
-                    }
-
-                    #content label {
-                        font-weight: bold;
-                    }
-
-                    #content button {
-                        padding: 2px 7px 2px 0;
-                        font-size: 1em;
-                    }
-
-                    #content .ui-state-error {
-                        font-weight: bold;
-                    }
-
-                    #content h2 {
-                        margin-top: 1.5em;
-                    }
-
-                    #content form h2:first-child {
-                            margin-top: 0;
-                    }
-                       .no-effect:hover {
-                            background: transparent;
-                       }
-                    #footer {
-                        margin: 2em 0 2em 0;
-                        font-size: 1.1em;
-                        color: #85AABA;
-                        font-family: Georgia, serif;
-                    }
-
-
-
-                </style>
-            </head>
-            <body>
-
-            <div id='masthead' class='pw-masthead ui-helper-clearfix'>
-                <div class='pw-container'>
-                    <a id='logo' target='_blank' href='https://processwire.com'><img src='http://i.imgur.com/QZJCXwy.png'></a>
-                </div>
-            </div>
-            <div id=\"breadcrumbs\">
-                <div class=\"pw-container\">
-                    <ul class=\"nav\">
-                        <li class=\"title\">Duplicator Cloning Process</li>
-                        <li class=\"support\"><a target=\"_blank\" href=\"https://processwire.com/talk/\"><i class=\"fa fa-comments\"></i> Need help?</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div id='content' class='content'>
-                <div class='container'>
-                    <form action='" . htmlentities($formAction, ENT_QUOTES, 'UTF-8') . "' method='post'>
-
-        ";
+.foot { padding: 1.25rem 0 2rem; color: var(--muted); font-size: 0.85rem; }
+.foot a { color: inherit; }
+@media (max-width: 520px) {
+  .card { padding: 1.1rem; }
+  .step-label { display: none; }
+  .step.current .step-label { display: block; }
+  .btn { width: 100%; justify-content: center; margin-right: 0; }
+}
+</style>
+</head>
+<body>
+<div class='wrap'>
+  <header class='top'>
+    <div class='brand'><span class='brand-mark' aria-hidden='true'>D</span><span>Duplicator <small>Installer</small></span></div>
+    <a class='help' target='_blank' rel='noopener' href='https://processwire.com/talk/topic/15345-duplicator-backup-and-move-sites/'>" . $this->icon('help') . " Need help?</a>
+  </header>
+  <ol class='steps' aria-label='Installation steps'>$steps</ol>
+  <main class='card'>
+    <form action='" . htmlentities($formAction, ENT_QUOTES, 'UTF-8') . "' method='post'>
+";
   }
 
   /**
@@ -373,20 +335,14 @@ class Installer
    */
   protected function renderFooter()
   {
-    echo '
-                </form>
-            </div><!--/container-->
-        </div><!--/content-->
-
-        <div id="footer" class="footer">
-            <div class="container">
-                <p>ProcessWire &copy; ' . date('Y', time()) . ' - Duplicator Installer by <a href="https://processwire.com/talk/profile/4048-flydev/">flydev</a></p>
-            </div>
-        </div>
-
-        </body>
-        </html>
-        ';
+    echo "
+    </form>
+  </main>
+  <footer class='foot'>ProcessWire &copy; " . date('Y') . " &middot; Duplicator Installer by <a href='https://processwire.com/talk/profile/4048-flydev/' target='_blank' rel='noopener'>flydev</a></footer>
+</div>
+</body>
+</html>
+";
   }
 
 
@@ -397,32 +353,33 @@ class Installer
    * @param string $value
    * @param string $icon
    * @param bool $secondary
-   * @param bool $float
+   * @param bool $float Kept for compatibility, buttons always line up
    * @param string $href
    *
    */
   protected function btn($label, $value, $icon = 'angle-right', $secondary = false, $float = false, $href = '')
   {
-    $class = $secondary ? 'ui-priority-secondary' : '';
-    if ($float) $class .= " floated";
-    $type = 'submit';
-    if ($href) $type = 'button';
-    if ($href) echo "<a href='$href' class='no-effect'>";
-    echo "\n<p><button name='step' type='$type' class='ui-button ui-widget ui-state-default $class ui-corner-all' value='$value'>";
-    echo "<span class='ui-button-text'><i class='fa fa-$icon'></i> $label</span>";
-    echo "</button></p>";
-    if ($href) echo "</a>";
-    echo " ";
+    $class = 'btn' . ($secondary ? ' secondary' : '');
+    if ($icon === 'refresh') $class .= ' icon-left';
+    if ($href) {
+      echo "\n<a class='$class' href='" . htmlentities($href, ENT_QUOTES, 'UTF-8') . "'>$label " . $this->icon($icon) . "</a>";
+    } else {
+      echo "\n<button name='step' type='submit' class='$class' value='$value'>$label " . $this->icon($icon) . "</button>";
+    }
   }
 
   /**
-   * Output a headline
+   * Output a headline; "Step #N - Title" is shown as a small "Step N of 5" above the title
    *
    * @param string $label
    *
    */
   protected function h($label)
   {
+    if (preg_match('/^Step #(\d+)\s*-\s*(.+)$/', $label, $m)) {
+      echo "\n<p class='eyebrow'>Step {$m[1]} of " . count(self::$stepLabels) . "</p>";
+      $label = $m[2];
+    }
     echo "\n<h2>$label</h2>";
   }
 
@@ -440,35 +397,32 @@ class Installer
   }
 
   /**
-   * Output an <input type='text'>
+   * Output an <input>
    *
    * @param string $name
    * @param string $label
    * @param string $value
-   * @param bool $clear
+   * @param bool $clear Kept for compatibility, fields wrap on their own
    * @param string $type
    * @param bool $required
    *
    */
   protected function input($name, $label, $value, $clear = false, $type = "text", $required = true)
   {
-    $width = 135;
+    $class = 'field';
     $required = $required ? "required='required'" : "";
     $pattern = '';
     $note = '';
     if ($type == 'email') {
-      $width = ($width * 2);
+      $class .= ' wide';
       $required = '';
     } else if ($type == 'name') {
       $type = 'text';
       $pattern = "pattern='[-_a-z0-9]{2,50}' ";
-      if ($name == 'admin_name') $width = ($width * 2);
-      $note = "<small class='detail' style='font-weight: normal;'>(a-z 0-9)</small>";
+      $note = " <small>(a-z 0-9)</small>";
     }
-    $inputWidth = $width - 15;
     $value = htmlentities($value, ENT_QUOTES, "UTF-8");
-    echo "\n<p style='width: {$width}px; float: left; margin-top: 0;'><label>$label $note<br /><input type='$type' name='$name' value='$value' $required $pattern style='width: {$inputWidth}px;' /></label></p>";
-    if ($clear) echo "\n<br style='clear: both;' />";
+    echo "\n<label class='$class'><span>$label$note</span><input type='$type' name='$name' value='$value' $required $pattern/></label>";
   }
 
   /**
@@ -477,8 +431,7 @@ class Installer
    */
   protected function action($text, $class = '')
   {
-    if ($class) echo "\n<p class='$class'><i class='fa fa-angle-right' style='color: deepskyblue;'></i> $text</p>";
-    else echo "\n<p><i class='fa fa-angle-right' style='color: deepskyblue;'></i> $text</p>";
+    echo "\n<div class='msg msg-info $class'>" . $this->icon('arrow') . "<span>$text</span></div>";
   }
 
   /**
@@ -487,8 +440,7 @@ class Installer
    */
   protected function info($text, $class = '')
   {
-    if ($class) echo "\n<p class='$class'><i class='fa fa-info-circle' style='color: deepskyblue;'></i> $text</p>";
-    else echo "\n<p><i class='fa fa-info-circle' style='color: deepskyblue;'></i> $text</p>";
+    echo "\n<div class='msg msg-info $class'>" . $this->icon('info') . "<span>$text</span></div>";
   }
 
   /**
@@ -501,7 +453,7 @@ class Installer
   protected function err($str)
   {
     $this->numErrors++;
-    echo "\n<li class='ui-state-error'><i class='fa fa-exclamation-triangle' style='color: red;'></i> $str</li>";
+    echo "\n<div class='msg msg-err' role='alert'>" . $this->icon('error') . "<span>$str</span></div>";
     return false;
   }
 
@@ -515,7 +467,7 @@ class Installer
   protected function warn($str)
   {
     $this->numErrors++;
-    echo "\n<li class='ui-state-error ui-priority-secondary'><i class='fa fa-asterisk' style='color: orange;'></i> $str</li>";
+    echo "\n<div class='msg msg-warn'>" . $this->icon('warning') . "<span>$str</span></div>";
     return false;
   }
 
@@ -528,7 +480,7 @@ class Installer
    */
   protected function ok($str)
   {
-    echo "\n<li class='ui-state-highlight'><i class='fa fa-check' style='color: green;'></i> $str</li>";
+    echo "\n<div class='msg msg-ok'>" . $this->icon('check') . "<span>$str</span></div>";
     return true;
   }
 
@@ -688,7 +640,7 @@ class Installer
       $this->package = $package;
       $_SESSION['package'] = $package;
       $this->ok("Package Found.");
-      $warnstr = "Duplicator will extract the package \"<strong>$package</strong>\".";
+      $warnstr = "Duplicator will extract the package \"<strong>$package</strong>\"";
       $warnstr .= $warn == false ? '.' : ', but we recommend you correct these issues before proceeding.';
       $this->info($warnstr);
       echo '<div style="display: inline-flex">';
@@ -857,24 +809,23 @@ class Installer
       }
     }
 
+    echo "<div class='fields'>";
     $this->input('dbName', 'DB Name', $values['dbName']);
     $this->input('dbUser', 'DB User', $values['dbUser']);
     $this->input('dbPass', 'DB Pass', $values['dbPass'], false, 'password', false);
     $this->input('dbHost', 'DB Host', $values['dbHost']);
     $this->input('dbPort', 'DB Port', $values['dbPort'], true);
 
-    echo "<div style='display: inline-block;'>";
-    echo "<p style='width: 135px; float: left; margin-top: 0;'><label>DB Charset</label><br />";
+    echo "<label class='field'><span>DB Charset</span>";
     echo "<select name='dbCharset'>";
     echo "<option value='utf8'" . ($values['dbCharset'] != 'utf8mb4' ? " selected" : "") . ">utf8</option>";
     echo "<option value='utf8mb4'" . ($values['dbCharset'] == 'utf8mb4' ? " selected" : "") . ">utf8mb4</option>";
-    echo "</select></p>";
-    // $this->input('dbCharset', 'DB Charset', $values['dbCharset']);
-    echo "<p style='width: 135px; float: left; margin-top: 0;'><label>DB Engine</label><br />";
+    echo "</select></label>";
+    echo "<label class='field'><span>DB Engine</span>";
     echo "<select name='dbEngine'>";
     echo "<option value='MyISAM'" . ($values['dbEngine'] != 'InnoDB' ? " selected" : "") . ">MyISAM</option>";
     echo "<option value='InnoDB'" . ($values['dbEngine'] == 'InnoDB' ? " selected" : "") . ">InnoDB*</option>";
-    echo "</select></p>";
+    echo "</select></label>";
     echo "</div>";
 
     $this->btn("Continue", 4);

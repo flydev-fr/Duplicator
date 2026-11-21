@@ -1,3 +1,12 @@
+## [1.6.3](https://github.com/flydev-fr/Duplicator/compare/v1.6.2...v1.6.3) (2026-11-21)
+
+
+### Bug Fixes
+
+* Declare DUP_DataFilter's return types ([e053e43](https://github.com/flydev-fr/Duplicator/commit/e053e43df1b32e7a65bed092312188579336820d))
+
+
+
 ## [1.6.2](https://github.com/flydev-fr/Duplicator/compare/v1.6.1...v1.6.2) (2026-11-17)
 
 
@@ -49,15 +58,6 @@
 
 
 ## [1.5.5](https://github.com/flydev-fr/Duplicator/compare/v1.5.4...v1.5.5) (2026-11-17)
-
-
-
-## [1.5.4](https://github.com/flydev-fr/Duplicator/compare/v1.5.3...v1.5.4) (2024-06-07)
-
-
-### Bug Fixes
-
-* PHP deprecated var [#51](https://github.com/flydev-fr/Duplicator/issues/51) ([8c333f0](https://github.com/flydev-fr/Duplicator/commit/8c333f065a67eb622bb0dd4a0277dd753f69f65e)), closes [#48](https://github.com/flydev-fr/Duplicator/issues/48)
 
 
 

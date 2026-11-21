@@ -350,7 +350,7 @@ class DUP_DataFilter extends \RecursiveFilterIterator
     parent::__construct($iterator);
   }
 
-  public function accept()
+  public function accept(): bool
   {
     return ($this->current()->isReadable() &&
       ($this->current()->isDir() || $this->current()->isFile()) &&
@@ -359,7 +359,7 @@ class DUP_DataFilter extends \RecursiveFilterIterator
     );
   }
 
-  public function getChildren()
+  public function getChildren(): ?\RecursiveFilterIterator
   {
     ini_set('max_execution_time', 300);
     return new self($this->getInnerIterator()->getChildren(), $this->excluded);
